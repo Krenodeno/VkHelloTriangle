@@ -31,7 +31,12 @@
     <Image Include="textures\texture.jpg" />
   </ItemGroup>
   <ItemGroup>
-    <Object Include="models\chalet.obj" />
+    <Object Include="models\chalet.obj">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </Object>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{36822bf2-9c5e-44a1-bd05-e5aaec4dbefa}</ProjectGuid>
@@ -103,7 +108,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>C:\VulkanSDK\1.0.37.0\Include;D:\Users\MacGamer\Documents\Visual Studio 2015\Libraries\glm-0.9.8.3;D:\Users\MacGamer\Documents\Visual Studio 2015\Libraries\glfw-3.2.1.bin.WIN32\include;D:\Users\MacGamer\Documents\Visual Studio 2015\Libraries\tinyobjloader;D:\Users\MacGamer\Documents\Visual Studio 2015\Libraries\stb;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\VulkanSDK\1.0.37.0\Include;D:\Users\MacGamer\Documents\Visual Studio 2015\Libraries\glfw-3.2.1.bin.WIN32\include;D:\Users\MacGamer\Documents\Visual Studio 2015\Libraries\glm-0.9.8.3;D:\Users\MacGamer\Documents\Visual Studio 2015\Libraries\stb;D:\Users\MacGamer\Documents\Visual Studio 2015\Libraries\tinyobjloader;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -119,7 +124,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>C:\VulkanSDK\1.0.37.0\Include;D:\Users\MacGamer\Documents\Visual Studio 2015\Libraries\glm-0.9.8.3;D:\Users\MacGamer\Documents\Visual Studio 2015\Libraries\glfw-3.2.1.bin.WIN64\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\VulkanSDK\1.0.37.0\Include;D:\Users\MacGamer\Documents\Visual Studio 2015\Libraries\glfw-3.2.1.bin.WIN64\include;D:\Users\MacGamer\Documents\Visual Studio 2015\Libraries\glm-0.9.8.3;D:\Users\MacGamer\Documents\Visual Studio 2015\Libraries\stb;D:\Users\MacGamer\Documents\Visual Studio 2015\Libraries\tinyobjloader;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -137,7 +142,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>C:\VulkanSDK\1.0.37.0\Include;D:\Users\MacGamer\Documents\Visual Studio 2015\Libraries\glm-0.9.8.3;D:\Users\MacGamer\Documents\Visual Studio 2015\Libraries\glfw-3.2.1.bin.WIN32\include;D:\Users\MacGamer\Documents\Visual Studio 2015\Libraries\stb;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\VulkanSDK\1.0.37.0\Include;D:\Users\MacGamer\Documents\Visual Studio 2015\Libraries\glfw-3.2.1.bin.WIN32\include;D:\Users\MacGamer\Documents\Visual Studio 2015\Libraries\glm-0.9.8.3;D:\Users\MacGamer\Documents\Visual Studio 2015\Libraries\stb;D:\Users\MacGamer\Documents\Visual Studio 2015\Libraries\tinyobjloader;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -157,7 +162,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>C:\VulkanSDK\1.0.37.0\Include;D:\Users\MacGamer\Documents\Visual Studio 2015\Libraries\glm-0.9.8.3;D:\Users\MacGamer\Documents\Visual Studio 2015\Libraries\glfw-3.2.1.bin.WIN64\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\VulkanSDK\1.0.37.0\Include;D:\Users\MacGamer\Documents\Visual Studio 2015\Libraries\glfw-3.2.1.bin.WIN64\include;D:\Users\MacGamer\Documents\Visual Studio 2015\Libraries\glm-0.9.8.3;D:\Users\MacGamer\Documents\Visual Studio 2015\Libraries\stb;D:\Users\MacGamer\Documents\Visual Studio 2015\Libraries\tinyobjloader;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
