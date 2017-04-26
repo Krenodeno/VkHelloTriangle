@@ -13,13 +13,17 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="Shaders Files">
-      <UniqueIdentifier>{ec3843c9-ff0a-4afb-9e03-e19ee77e54ff}</UniqueIdentifier>
-      <Extensions>vert;frag;</Extensions>
-    </Filter>
     <Filter Include="Textures Files">
       <UniqueIdentifier>{0457399c-8ab8-4646-843e-252e5c053578}</UniqueIdentifier>
       <Extensions>jpg;jpeg;png;bmn;gif;</Extensions>
+    </Filter>
+    <Filter Include="Model files">
+      <UniqueIdentifier>{bd6b67bf-7154-468d-8cf9-a531f46b3003}</UniqueIdentifier>
+      <Extensions>obj;</Extensions>
+    </Filter>
+    <Filter Include="Shader Files">
+      <UniqueIdentifier>{ec3843c9-ff0a-4afb-9e03-e19ee77e54ff}</UniqueIdentifier>
+      <Extensions>vert;frag;</Extensions>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -32,15 +36,23 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\shader.frag">
-      <Filter>Shaders Files</Filter>
+      <Filter>Shader Files</Filter>
     </None>
     <None Include="shaders\shader.vert">
-      <Filter>Shaders Files</Filter>
+      <Filter>Shader Files</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
     <Image Include="textures\texture.jpg">
       <Filter>Resource Files</Filter>
     </Image>
+    <Image Include="textures\chalet.jpg">
+      <Filter>Resource Files</Filter>
+    </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <Object Include="models\chalet.obj">
+      <Filter>Model files</Filter>
+    </Object>
   </ItemGroup>
 </Project>

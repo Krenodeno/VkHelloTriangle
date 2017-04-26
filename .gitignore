@@ -259,3 +259,9 @@ paket-files/
 # Python Tools for Visual Studio (PTVS)
 __pycache__/
 *.pyc
+
+# SPIR-V generated shaders
+*.spv
+
+# Do not ignore .obj files in models folder
+!Hello\ triangle/models/*.obj
