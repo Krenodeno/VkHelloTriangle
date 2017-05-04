@@ -1287,7 +1287,7 @@ private:
 			VkBool32 presentSupport = false;	// check present capability of the queues
 			vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &presentSupport);
 
-			if (queueFamily.queueCount > 0 && presentQueue) {
+			if (queueFamily.queueCount > 0 && presentSupport) {
 				indices.presentFamily = i;
 			}
 
