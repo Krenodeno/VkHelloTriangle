@@ -427,6 +427,7 @@ private:
 		}
 
 		VkPhysicalDeviceFeatures deviceFeatures = {};
+		deviceFeatures.samplerAnisotropy = VK_TRUE;
 
 		VkDeviceCreateInfo createInfo = {};
 		createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -554,8 +555,8 @@ private:
 	}
 
 	void createGraphicsPipeline() {
-		auto vertShaderCode = readFile("shaders/shader.vert.spv");
-		auto fragShaderCode = readFile("shaders/shader.frag.spv");
+		auto vertShaderCode = readFile("shaders/vert.spv");
+		auto fragShaderCode = readFile("shaders/frag.spv");
 
 		VDeleter<VkShaderModule> vertShaderModule{ device, vkDestroyShaderModule };
 		VDeleter<VkShaderModule> fragShaderModule{ device, vkDestroyShaderModule };
