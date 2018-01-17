@@ -100,10 +100,8 @@ void VulkanRenderer::updateUniformBuffer()
 	auto up = glm::vec3(0.0f, 0.0f, 1.0f);
 	//ubo.model = glm::rotate(glm::mat4(), time * glm::radians(90.0f), up);
 	ubo.model = glm::mat4();
-	//ubo.view = glm::lookAt(camPos, cam.centre(), up);
 	ubo.view = cam.view();
-	//ubo.proj = glm::perspective(glm::radians(45.0f), swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 1000.0f);
-	ubo.proj = cam.projection(glm::radians(45.0f), swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 1000.0f);
+	ubo.proj = cam.prespective();
 	ubo.proj[1][1] *= -1;	// Fix image upside down because of OpenGL
 
 	void* data;

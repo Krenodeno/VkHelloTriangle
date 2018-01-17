@@ -88,7 +88,7 @@ public:
 	void drawFrame();
 	void waitIdle();
 
-	
+	VulkanRenderer() : cam(Orbiter(8.0f, glm::radians(45.0f), glm::radians(45.0f), glm::radians(50.0f), 4.0f / 3.0f)) {}
 
 	/** Getter */
 
