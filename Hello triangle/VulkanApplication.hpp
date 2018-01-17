@@ -5,6 +5,8 @@
 
 #include "VulkanRenderer.hpp"
 
+void onWindowResized(GLFWwindow* window, int width, int height);
+
 class VulkanApplication
 {
 public:
@@ -25,7 +27,7 @@ private:
 
 	void initWindow();
 
-	static void onWindowResized(GLFWwindow* window, int width, int height);
+	void createRendererSurface();
 
 };
 

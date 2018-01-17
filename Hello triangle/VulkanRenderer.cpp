@@ -65,12 +65,46 @@ void VulkanRenderer::updateUniformBuffer()
 	auto currentTime = std::chrono::high_resolution_clock::now();
 	float time = std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - startTime).count() / 1000.0f;
 
+	int limite = 500;
+	if (++test % limite == 0)
+		res  = ++res % 6;
+
+	switch (res)
+	{
+	case 0:
+		cam.translate(glm::vec3(0.0f, 0.005f, 0.0f));
+		break;
+	case 1:
+		cam.translate(glm::vec3(0.0f, -0.005f, 0.0f));
+		break;
+	case 2:
+		cam.move(0.01f);
+		break;
+	case 3:
+		cam.move(-0.01f);
+		break;
+	case 4:
+		cam.rotate(glm::vec2(0.01f, 0.0f));
+		break;
+	case 5:
+		cam.rotate(glm::vec2(-0.01f, 0.0f));
+		break;
+	default:
+		break;
+	}
+
+	auto camPos = cam.pos();
+	//std::cout << "Cam pos : " << camPos.x << ", " << cam.pos().y << ", " << cam.pos().z << "\n";
+
 	UniformBufferObject ubo = {};
 	auto up = glm::vec3(0.0f, 0.0f, 1.0f);
-	ubo.model = glm::rotate(glm::mat4(), time * glm::radians(90.0f), up);
-	ubo.view = glm::lookAt(glm::vec3(70.0f, 70.0f, 70.0f), glm::vec3(0.0f, 0.0f, 0.0f), up);
-	ubo.proj = glm::perspective(glm::radians(45.0f), swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 1000.0f);
-	ubo.proj[1][1] *= -1;
+	//ubo.model = glm::rotate(glm::mat4(), time * glm::radians(90.0f), up);
+	ubo.model = glm::mat4();
+	//ubo.view = glm::lookAt(camPos, cam.centre(), up);
+	ubo.view = cam.view();
+	//ubo.proj = glm::perspective(glm::radians(45.0f), swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 1000.0f);
+	ubo.proj = cam.projection(glm::radians(45.0f), swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 1000.0f);
+	ubo.proj[1][1] *= -1;	// Fix image upside down because of OpenGL
 
 	void* data;
 	vkMapMemory(device, uniformStagingBufferMemory, 0, sizeof(ubo), 0, &data);
@@ -223,7 +257,7 @@ void VulkanRenderer::setupDebugCallback() {
 
 void VulkanRenderer::createSurface() {
 	if (glfwCreateWindowSurface(instance, window, nullptr, surface.replace()) != VK_SUCCESS) {
-		throw std::runtime_error("Failes to create window surface !");
+		throw std::runtime_error("Failed to create window surface !");
 	}
 }
 
@@ -1525,4 +1559,59 @@ std::vector<char> VulkanRenderer::readFile(const std::string & filename)
 	file.close();
 
 	return buffer;
+}
+
+/** Getter */
+
+VkInstance VulkanRenderer::getInstance()
+{
+	return instance;
+}
+
+VkSurfaceKHR VulkanRenderer::getSurface()
+{
+	return surface;
+}
+
+void VulkanRenderer::move(float step)
+{
+	cam.move(step);
+}
+
+void VulkanRenderer::translate(glm::vec3 translation)
+{
+	cam.translate(translation);
+}
+
+void VulkanRenderer::rotate(glm::vec2 rotation)
+{
+	cam.rotate(rotation);
+}
+
+void mouseCallBack(GLFWwindow* window, int button, int action, int mode)
+{
+	static double lastX, lastY;
+	static bool pressLeft;
+
+	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
+		pressLeft = true;
+
+	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE)
+		pressLeft = false;
+
+	double currentX, currentY;
+	glfwGetCursorPos(window, &currentX, &currentY);
+
+	if (pressLeft)
+	{
+		
+	}
+
+	lastX = currentX;
+	lastY = currentY;
+}
+
+void scrollCallback(GLFWwindow * window, double xoffset, double yoffset)
+{
+	
 }

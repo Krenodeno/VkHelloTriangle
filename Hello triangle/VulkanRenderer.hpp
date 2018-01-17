@@ -2,9 +2,12 @@
 #include "Renderer.hpp"
 #include "VDeleter.hpp"
 #include "Vertex.hpp"
+#include "Orbiter.hpp"
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
+
+#include <vulkan/vulkan.h>
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
@@ -66,6 +69,12 @@ void DestroyDebugReportCallbackEXT(
 	VkDebugReportCallbackEXT callback,
 	const VkAllocationCallbacks* pAllocator);
 
+/* GLFW CallBack */
+
+void mouseCallBack(GLFWwindow* window, int button, int action, int mode);
+
+void scrollCallback(GLFWwindow* window, double xoffset, double yoffset);
+
 /******************** APP CLASS ********************/
 
 class VulkanRenderer :
@@ -79,7 +88,28 @@ public:
 	void drawFrame();
 	void waitIdle();
 
+	
+
+	/** Getter */
+
+	VkInstance getInstance();
+
+	VkSurfaceKHR getSurface();
+
+	/* camera functions proxy */
+
+	void move(float step);
+	void translate(glm::vec3 translation);
+	void rotate(glm::vec2 rotation);
+
 private:
+
+	Orbiter cam;
+	bool leftMouseButtonPressed;
+	bool middleMouseButtonPressed;
+	double relativeScrolling;
+
+	int test = 0, res = 0;
 
 	// TODO : suppr this 
 	GLFWwindow * window;
