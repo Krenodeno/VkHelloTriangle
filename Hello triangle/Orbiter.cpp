@@ -2,7 +2,7 @@
 
 
 Orbiter::Orbiter(float radius, float phy, float theta, float fov, float aspectRatio, float near, float far)
-	: radius(radius), theta(theta), phy(phy), center(glm::vec3(0.0f, 0.0f, 0.0f)), up(0.0f, 0.0f, 1.0f),
+	: radius(radius), theta(theta), phy(phy), center(0.0f, 0.0f, 0.0f), up(0.0f, 0.0f, 1.0f),
 	fov(fov), aspectRatio(aspectRatio), near(near), far(far)
 {
 	move(0.0f);
@@ -47,7 +47,7 @@ glm::mat4 Orbiter::view() const
 	return glm::lookAt(eye, center, up);
 }
 
-glm::mat4 Orbiter::prespective() const
+glm::mat4 Orbiter::perspective() const
 {
 	return glm::perspective(fov, aspectRatio, near, far);
 }

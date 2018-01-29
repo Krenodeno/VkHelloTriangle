@@ -17,11 +17,11 @@ public:
 	void move(float step);
 	/*Move center and eye positions*/
 	void translate(glm::vec3 translation);
-	/*Move the eye position around the center of view*/
+	/*Move the eye position around the center of view, x axis is moving right/left and y is moving up/down*/
 	void rotate(glm::vec2 rotation);
 
 	glm::mat4 view() const;
-	glm::mat4 prespective() const;
+	glm::mat4 perspective() const;
 	glm::mat4 ortho() const;
 
 	glm::vec3 pos() const { return eye; }
