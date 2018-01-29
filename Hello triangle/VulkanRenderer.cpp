@@ -69,39 +69,41 @@ void VulkanRenderer::updateUniformBuffer()
 	if (++test % limite == 0)
 		res  = ++res % 6;
 
-	switch (res)
+	/*switch (res)
 	{
 	case 0:
-		cam.translate(glm::vec3(0.0f, 0.005f, 0.0f));
+		//fly.translate(glm::vec3(0.1f, 0.0f, 0.0f));
 		break;
 	case 1:
-		cam.translate(glm::vec3(0.0f, -0.005f, 0.0f));
+		//fly.translate(glm::vec3(-0.1f, 0.0f, 0.0f));
 		break;
 	case 2:
-		cam.move(0.01f);
+		//fly.move(glm::vec3(0.0f, 0.0f, 0.01f));
+		//fly.rotate(glm::vec2(0.0f, 0.01f));	// up
 		break;
 	case 3:
-		cam.move(-0.01f);
+		//fly.move(glm::vec3(0.0f, 0.0f, -0.01f));
+		//fly.rotate(glm::vec2(0.0f, -0.01f));	// down
 		break;
 	case 4:
-		cam.rotate(glm::vec2(0.01f, 0.0f));
+		//fly.rotate(glm::vec2(0.001f, 0.0f));	// right
 		break;
 	case 5:
-		cam.rotate(glm::vec2(-0.01f, 0.0f));
+		//fly.rotate(glm::vec2(-0.001f, 0.0f));	// left
 		break;
 	default:
 		break;
-	}
+	}*/
 
-	auto camPos = cam.pos();
+	//auto camPos = cam.pos();
 	//std::cout << "Cam pos : " << camPos.x << ", " << cam.pos().y << ", " << cam.pos().z << "\n";
 
 	UniformBufferObject ubo = {};
 	auto up = glm::vec3(0.0f, 0.0f, 1.0f);
 	//ubo.model = glm::rotate(glm::mat4(), time * glm::radians(90.0f), up);
 	ubo.model = glm::mat4();
-	ubo.view = cam.view();
-	ubo.proj = cam.prespective();
+	ubo.view = fly.view();
+	ubo.proj = fly.perspective();
 	ubo.proj[1][1] *= -1;	// Fix image upside down because of OpenGL
 
 	void* data;

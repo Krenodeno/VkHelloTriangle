@@ -3,6 +3,7 @@
 #include "VDeleter.hpp"
 #include "Vertex.hpp"
 #include "Orbiter.hpp"
+#include "FlyCamera.hpp"
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -105,6 +106,7 @@ public:
 private:
 
 	Orbiter cam;
+	FlyCamera fly;
 	bool leftMouseButtonPressed;
 	bool middleMouseButtonPressed;
 	double relativeScrolling;
