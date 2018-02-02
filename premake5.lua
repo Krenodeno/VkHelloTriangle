@@ -10,11 +10,7 @@ project "VkHelloTriangle"
 
 	-- Includes
 	includedirs { 
-		"Librairies/Include"
-	}
-	-- Librairies
-	libdirs {
-		"Librairies/Lib"
+		"Libraries/Include"
 	}
 
 	files { "Hello Triangle/**.hpp", "Hello Triangle/**.inl", "Hello Triangle/**.cpp" }
@@ -29,9 +25,17 @@ project "VkHelloTriangle"
 
 	filter "configurations:*32"
 		architecture "x86"
+		-- Librairies
+		libdirs {
+			"Libraries/Lib32"
+		}
 
 	filter "configurations:*64"
 		architecture "x86_64"
+		-- Librairies
+		libdirs {
+			"Libraries/Lib"
+		}
 
 	filter "platforms:Win32"
 		system "windows"
