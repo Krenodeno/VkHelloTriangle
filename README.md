@@ -1,7 +1,6 @@
 ## TODO LIST
 
 * Renderer
-    * Modularity needed to future APIs implementations
     * Rendering technics
 	    * SSR
 		* SSAO
@@ -12,3 +11,11 @@
 * Cameras
     * Orbiter (Done)
 	* Free fly camera (ongoing)
+
+## Used Libraries
+
+* Vulkan 1.0.65.1
+* GLFW 3.2.1
+* GLM 0.9.8.5
+* STB_image
+* Tiny_Obj_Loader
