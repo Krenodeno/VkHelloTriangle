@@ -1,7 +1,7 @@
 -- premake5.lua
 workspace "VkHelloTriangle"
-	configurations { "Debug32", "Release32", "Debug64", "Release64" }
-	platforms { "Win32", "Linux" }
+	configurations { "Debug", "Release" }
+	platforms { "x64", "x86" }
 
 project "VkHelloTriangle"
 	kind "ConsoleApp"
@@ -15,30 +15,29 @@ project "VkHelloTriangle"
 
 	files { "Hello Triangle/**.hpp", "Hello Triangle/**.inl", "Hello Triangle/**.cpp" }
 
-	filter "configurations:Debug*"
+	filter "configurations:Debug"
 		defines { "DEBUG" }
 		symbols "On"
 
-	filter "configurations:Release*"
+	filter "configurations:Release"
 		defines { "NDEBUG" }
 		optimize "On"
 
-	filter "configurations:*32"
+	filter "platforms:x86"
 		architecture "x86"
-		-- Librairies
-		libdirs {
-			"Libraries/Lib32"
-		}
 
-	filter "configurations:*64"
+	filter "platforms:x64"
 		architecture "x86_64"
-		-- Librairies
-		libdirs {
-			"Libraries/Lib"
-		}
 
-	filter "platforms:Win32"
-		system "windows"
+	filter "system:Windows"
+		defines "VK_USE_PLATFORM_WIN32_KHR"
 
-	filter "platforms:Linux"
-		system "linux"
+	filter "system:Linux"
+		defines { "VK_USE_PLATFORM_XCB_KHR", "VK_USE_PLATFORM_XLIB_KHR" }
+		links { "glfw"}
+
+	filter { "system:Windows", "platforms:x86" }
+		libdirs { "Libraries/Lib32" }
+	
+	filter { "system:Windows", "platforms:x64" }
+		libdirs { "Libraries/Lib" }
