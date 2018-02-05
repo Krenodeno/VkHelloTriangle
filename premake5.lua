@@ -14,6 +14,8 @@ project "VkHelloTriangle"
 	}
 
 	files { "Hello Triangle/**.hpp", "Hello Triangle/**.inl", "Hello Triangle/**.cpp" }
+	
+	links { "glfw3", "vulkan" }
 
 	filter "configurations:Debug"
 		defines { "DEBUG" }
@@ -34,10 +36,9 @@ project "VkHelloTriangle"
 
 	filter "system:Linux"
 		defines { "VK_USE_PLATFORM_XCB_KHR", "VK_USE_PLATFORM_XLIB_KHR" }
-		links { "glfw"}
 
 	filter { "system:Windows", "platforms:x86" }
-		libdirs { "Libraries/Lib32" }
+		libdirs { "Libraries/Lib32/*" }
 	
 	filter { "system:Windows", "platforms:x64" }
-		libdirs { "Libraries/Lib" }
+		libdirs { "Libraries/Lib/*" }
