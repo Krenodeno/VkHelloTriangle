@@ -260,6 +260,12 @@ paket-files/
 __pycache__/
 *.pyc
 
+## We don't need VS files as we can generate them with premake
+*.sln
+*.vcproj
+*.vcxproj
+*.filters
+
 # SPIR-V generated shaders
 *.spv
 

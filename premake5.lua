@@ -2,20 +2,12 @@
 workspace "VkHelloTriangle"
 	configurations { "Debug", "Release" }
 	platforms { "x64", "x86" }
-
-project "VkHelloTriangle"
-	kind "ConsoleApp"
-	language "C++"
-	targetdir "bin/%{cfg.buildcfg}"
-
-	-- Includes
-	includedirs { 
-		"Libraries/Include"
-	}
-
-	files { "Hello Triangle/**.hpp", "Hello Triangle/**.inl", "Hello Triangle/**.cpp" }
 	
-	links { "glfw3", "vulkan" }
+	local sourceDir = "src/"
+	local LibDir = "Libraries/"
+	
+	targetdir "build/bin/%{cfg.buildcfg}"
+	objdir "build/obj/%{cfg.buildcfg}"
 
 	filter "configurations:Debug"
 		defines { "DEBUG" }
@@ -30,15 +22,46 @@ project "VkHelloTriangle"
 
 	filter "platforms:x64"
 		architecture "x86_64"
+	
+	vpaths {
+		["Headers"] = { "**.hpp", "**.inl" },
+		["Sources"] = "**.cpp"
+	}
+	
+	defines { "VK_NO_PROTOTYPES" }
+
+project "VkHelloTriangle"
+	kind "StaticLib"
+	language "C++"
+
+	-- Includes
+	includedirs { 
+		LibDir .. "Include"
+	}
+
+	files { sourceDir .. "**.hpp", sourceDir .. "**.inl", sourceDir .. "**.cpp" }
+	
+	--links { "glfw3" }
 
 	filter "system:Windows"
-		defines "VK_USE_PLATFORM_WIN32_KHR"
+		defines { "VK_USE_PLATFORM_WIN32_KHR" }
 
 	filter "system:Linux"
 		defines { "VK_USE_PLATFORM_XCB_KHR", "VK_USE_PLATFORM_XLIB_KHR" }
+		links { "dl" }
 
 	filter { "system:Windows", "platforms:x86" }
-		libdirs { "Libraries/Lib32/*" }
+		libdirs { LibDir .. "Lib32/*" }
 	
 	filter { "system:Windows", "platforms:x64" }
-		libdirs { "Libraries/Lib/*" }
+		libdirs { LibDir .. "Lib/*" }
+
+
+project "printCapabilities"
+	kind "ConsoleApp"
+	language "C++"
+	
+	includedirs { LibDir .. "Include", sourceDir }
+	files { "examples/printCapabilities.cpp" }
+	
+	links "VkHelloTriangle"

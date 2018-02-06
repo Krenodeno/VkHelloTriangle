@@ -18,6 +18,7 @@
 
 void VulkanRenderer::init(GLFWwindow* window)
 {
+	initiateVulkanLib();
 	this->window = window;
 	createInstance();
 	setupDebugCallback();
@@ -182,6 +183,11 @@ void DestroyDebugReportCallbackEXT(VkInstance instance, VkDebugReportCallbackEXT
 	if (func != nullptr) {
 		func(instance, callback, pAllocator);
 	}
+}
+
+void VulkanRenderer::initiateVulkanLib()
+{
+
 }
 
 void VulkanRenderer::createInstance() {
@@ -1082,7 +1088,7 @@ std::vector<const char*> VulkanRenderer::getRequiredExtensions()
 	return extensions;
 }
 
-VKAPI_ATTR VkBool32 VKAPI_CALL VulkanRenderer::debugCallBack(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objType, uint64_t obj, size_t location, int32_t code, const char * layerPrefix, const char * msg, void * userData)
+VKAPI_ATTR VkBool32 VKAPI_CALL debugCallBack(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objType, uint64_t obj, size_t location, int32_t code, const char * layerPrefix, const char * msg, void * userData)
 {
 
 	std::cerr << "Validation layer: " << msg << std::endl;

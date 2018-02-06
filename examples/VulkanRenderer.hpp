@@ -8,13 +8,13 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
-#include <vulkan/vulkan.h>
-
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include <memory>
+#include <stdexcept>
 #include <vector>
 
 /******************** UNIFORM BUFFER OBJECT STRUCT ********************/
@@ -70,6 +70,16 @@ void DestroyDebugReportCallbackEXT(
 	VkDebugReportCallbackEXT callback,
 	const VkAllocationCallbacks* pAllocator);
 
+VKAPI_ATTR VkBool32 VKAPI_CALL debugCallBack(
+	VkDebugReportFlagsEXT flags,
+	VkDebugReportObjectTypeEXT objType,
+	uint64_t obj,
+	size_t location,
+	int32_t code,
+	const char* layerPrefix,
+	const char* msg,
+	void* userData);
+
 /* GLFW CallBack */
 
 void mouseCallBack(GLFWwindow* window, int button, int action, int mode);
@@ -115,6 +125,8 @@ private:
 
 	// TODO : suppr this 
 	GLFWwindow * window;
+
+	std::unique_ptr<void> vulkanLibrary;
 
 	std::vector<Vertex> vertices;
 	std::vector<uint32_t> indices;
@@ -172,6 +184,7 @@ private:
 	VkQueue presentQueue;
 
 	/** Member functions */
+	void initiateVulkanLib();
 	void createInstance();
 	void setupDebugCallback();
 	void createSurface();
@@ -205,16 +218,6 @@ private:
 	bool checkValidationLayerSupport();
 
 	std::vector<const char*> getRequiredExtensions();
-
-	static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallBack(
-		VkDebugReportFlagsEXT flags,
-		VkDebugReportObjectTypeEXT objType,
-		uint64_t obj,
-		size_t location,
-		int32_t code,
-		const char* layerPrefix,
-		const char* msg,
-		void* userData);
 
 	bool isDeviceSuitable(VkPhysicalDevice device);
 

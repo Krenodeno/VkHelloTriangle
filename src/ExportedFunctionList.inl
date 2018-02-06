@@ -2,6 +2,6 @@
 #define VK_EXPORTED_FUNCTION( fun )
 #endif // !VK_EXPORTED_FUNCTION
 
-VK_EXPORTED_FUNCTION( VkGetInstanceProcAddr )
+VK_EXPORTED_FUNCTION(vkGetInstanceProcAddr)
 
 #undef VK_EXPORTED_FUNCTION
