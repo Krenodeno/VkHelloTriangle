@@ -1,0 +1,11 @@
+#ifndef VK_GLOBAL_LEVEL_FUNCTION
+#define VK_GLOBAL_LEVEL_FUNCTION( fun )
+#endif // !VK_GLOBAL_LEVEL_FUNCTION
+
+VK_GLOBAL_LEVEL_FUNCTION(vkCreateInstance)
+
+VK_GLOBAL_LEVEL_FUNCTION(vkEnumerateInstanceExtensionProperties)
+
+VK_GLOBAL_LEVEL_FUNCTION(vkEnumerateInstanceLayerProperties)
+
+#undef VK_GLOBAL_LEVEL_FUNCTION
