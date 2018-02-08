@@ -6,7 +6,8 @@ VulkanLoader::VulkanLoader() : vkLibHandle(nullptr)
 
 VulkanLoader::~VulkanLoader()
 {
-	unload();
+	if (!unload())
+		std::cout << "Error unloading Vulkan library : " << GetLastError() << "\n";
 }
 
 bool VulkanLoader::load()
@@ -50,8 +51,8 @@ bool VulkanLoader::LoadExportedEntryPoints()
 	#endif
 
 	#define VK_EXPORTED_FUNCTION( fun ) \
-	if ( !(fun = (PFN_##fun)LoadProcAddr(vkLibHandle, #fun)) ) {\
-		std::cout << "Could not load exported function: " << #fun << "!" << std::endl;\
+	if ( !(fun = (PFN_##fun) LoadProcAddr(vkLibHandle, #fun)) ) {\
+		std::cout << "Could not load exported function: " << #fun << "!\n";\
 		return false;\
 	}
 
@@ -63,12 +64,35 @@ bool VulkanLoader::LoadExportedEntryPoints()
 bool VulkanLoader::LoadGlobalEntryPoints()
 {
 	#define VK_GLOBAL_LEVEL_FUNCTION( fun ) \
-	if ( !(fun = (PFN_##fun)vkGetInstanceProcAddr(nullptr, #fun)) ) {\
-		std::cout << "Could not load global function: " << #fun << "!" << std::endl;\
+	if ( !(fun = (PFN_##fun) vkGetInstanceProcAddr(nullptr, #fun)) ) {\
+		std::cout << "Could not load global level function: " << #fun << "!\n";\
 		return false;\
 	}
 
 	#include "GlobalLevelFunctionList.inl"
 
+	return true;
+}
+
+bool VulkanLoader::loadInstanceEntryPoints(VkInstance instance)
+{
+	#define VK_INSTANCE_LEVEL_FUNCTION( fun ) \
+	if ( !(fun = (PFN_##fun) vkGetInstanceProcAddr(instance, #fun)) ) {\
+		std::cout << "Could not load instance level function: " << #fun << "!\n";\
+		return false;\
+	}
+
+	#include "InstanceLevelFunctionList.inl"
+
+	return true;
+}
+
+bool VulkanLoader::loadDeviceEntryPoints(VkDevice device)
+{
+#define VK_DEVICE_LEVEL_FUNCTION( fun ) \
+	if ( !(fun = (PFN_##fun) vkGetDeviceProcAddr(device, #fun))) {\
+		std::cout << "Could not load device level function: " << #fun << "!\n";\
+		return false;\
+	}
 	return true;
 }

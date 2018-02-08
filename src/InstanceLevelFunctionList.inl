@@ -4,6 +4,8 @@
 
 VK_INSTANCE_LEVEL_FUNCTION(vkDestroyInstance)
 
+VK_INSTANCE_LEVEL_FUNCTION(vkGetDeviceProcAddr)
+
 VK_INSTANCE_LEVEL_FUNCTION(vkEnumeratePhysicalDevices)
 
 #undef VK_INSTANCE_LEVEL_FUNCTION

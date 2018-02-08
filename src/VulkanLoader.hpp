@@ -20,6 +20,8 @@ public:
 
 	bool LoadExportedEntryPoints();
 	bool LoadGlobalEntryPoints();
+	bool loadInstanceEntryPoints(VkInstance instance);
+	bool loadDeviceEntryPoints(VkDevice device);
 
 private:
 #if defined(VK_USE_PLATFORM_WIN32_KHR)
