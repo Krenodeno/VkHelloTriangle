@@ -7,7 +7,7 @@ workspace "VkHelloTriangle"
 	local LibDir = "Libraries/"
 	
 	targetdir "build/bin/%{cfg.buildcfg}"
-	objdir "build/obj/%{cfg.buildcfg}"
+	objdir "build/"
 
 	filter "configurations:Debug"
 		defines { "DEBUG" }
@@ -22,6 +22,8 @@ workspace "VkHelloTriangle"
 
 	filter "platforms:x64"
 		architecture "x86_64"
+		
+	filter {}
 	
 	vpaths {
 		["Headers"] = { "**.hpp", "**.inl" },
@@ -55,6 +57,8 @@ project "VkHelloTriangle"
 	
 	filter { "system:Windows", "platforms:x64" }
 		libdirs { LibDir .. "Lib/*" }
+
+	filter {}
 
 
 project "printCapabilities"
