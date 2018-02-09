@@ -5,7 +5,7 @@ workspace "VkHelloTriangle"
 	
 	local sourceDir = "src/"
 	local LibDir = "Libraries/"
-	
+
 	targetdir "build/bin/%{cfg.buildcfg}"
 	objdir "build/"
 
@@ -22,7 +22,13 @@ workspace "VkHelloTriangle"
 
 	filter "platforms:x64"
 		architecture "x86_64"
-		
+
+	filter "system:Windows"
+		defines { "VK_USE_PLATFORM_WIN32_KHR" }
+
+	filter "system:Linux"
+		defines { "VK_USE_PLATFORM_XCB_KHR", "VK_USE_PLATFORM_XLIB_KHR" }
+
 	filter {}
 	
 	vpaths {
@@ -45,11 +51,7 @@ project "VkHelloTriangle"
 	
 	--links { "glfw3" }
 
-	filter "system:Windows"
-		defines { "VK_USE_PLATFORM_WIN32_KHR" }
-
 	filter "system:Linux"
-		defines { "VK_USE_PLATFORM_XCB_KHR", "VK_USE_PLATFORM_XLIB_KHR" }
 		links { "dl" }
 
 	filter { "system:Windows", "platforms:x86" }
@@ -64,8 +66,8 @@ project "VkHelloTriangle"
 project "printCapabilities"
 	kind "ConsoleApp"
 	language "C++"
-	
+
 	includedirs { LibDir .. "Include", sourceDir }
 	files { "examples/printCapabilities.cpp" }
-	
+
 	links "VkHelloTriangle"
