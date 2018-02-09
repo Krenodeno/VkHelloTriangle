@@ -26,7 +26,7 @@ bool VulkanLoader::load()
 
 bool VulkanLoader::unload()
 {
-	bool freeResult;
+	bool freeResult = true;
 	if (vkLibHandle != nullptr)
 #if defined(VK_USE_PLATFORM_WIN32_KHR)
 		freeResult = FreeLibrary(vkLibHandle);
