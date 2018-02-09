@@ -30,17 +30,21 @@ int main(int argc, char* argv[]) {
 	loader.load();
 
 	if (!loader.isLoaded()) {
-		throw std::runtime_error("Could not load Vulkan library !");
+		std::cout << "Could not load Vulkan library !";
 		return -1;
 	}
 
-	if (!loader.LoadExportedEntryPoints())
-		throw std::runtime_error("Could not load exported function !");
+	if (!loader.LoadExportedEntryPoints()) {
+		std::cout << "Could not load exported function !\n";
+		return -1;
+	}
 
-	if (!loader.LoadGlobalEntryPoints())
-		throw std::runtime_error("Could not load global level functions !");
+	if (!loader.LoadGlobalEntryPoints()) {
+		std::cout << "Could not load global level functions !\n";
+		return -1;
+	}
 
-
+	
 	// Get supported extensions
 	uint32_t extensionCount = 0;
 	vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
@@ -48,10 +52,10 @@ int main(int argc, char* argv[]) {
 	std::vector<VkExtensionProperties> extensions(extensionCount);
 	vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, extensions.data());
 
-	std::cout << "Available extensions:" << std::endl;
+	std::cout << "Available Instance extensions:\n";
 	int cpt = 0;
 	for (const auto& extension : extensions) {
-		std::cout << cpt++ << "\t" << extension.extensionName << std::endl;
+		std::cout << cpt++ << "\t" << extension.extensionName << "\n";
 	}
 
 	// Get supported layers
@@ -61,20 +65,41 @@ int main(int argc, char* argv[]) {
 	std::vector<VkLayerProperties> layers(layerCount);
 	vkEnumerateInstanceLayerProperties(&layerCount, layers.data());
 
-	std::cout << "Available layers:" << std::endl;
+	std::cout << "Available Instance layers:\n";
 	cpt = 0;
 	for (const auto& layer : layers) {
-		std::cout << cpt++ << "\t" << layer.layerName << std::endl;
+		std::cout << cpt++ << "\t" << layer.layerName << "\n";
 	}
-
+	
 
 	VkInstance instance = VK_NULL_HANDLE;
 
-	//createInstance(instance);
+	createInstance(instance);
 
-	//loader.loadInstanceEntryPoints(instance);
+	loader.loadInstanceEntryPoints(instance);
 
-	//vkDestroyInstance(instance, nullptr);
+	// Enumerate Physical Devices 
+
+	uint32_t physicalDeviceCount = 0;
+	vkEnumeratePhysicalDevices(instance, &physicalDeviceCount, nullptr);
+
+	std::vector<VkPhysicalDevice> physicalDevices(physicalDeviceCount);
+	vkEnumeratePhysicalDevices(instance, &physicalDeviceCount, physicalDevices.data());
+
+	// For each, print informations
+
+	std::cout << "\nVulkan enabled physical devices :\n";
+	for (auto physicalDevice : physicalDevices) {
+		VkPhysicalDeviceProperties properties = {};
+		vkGetPhysicalDeviceProperties(physicalDevice, &properties);
+
+		VkPhysicalDeviceFeatures features = {};
+		vkGetPhysicalDeviceFeatures(physicalDevice, &features);
+
+		std::cout << properties.deviceName << "\n";
+	}
+
+	vkDestroyInstance(instance, nullptr);
 
 	return 0;
 		
