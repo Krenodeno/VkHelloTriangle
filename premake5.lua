@@ -71,3 +71,12 @@ project "printCapabilities"
 	files { "examples/printCapabilities.cpp" }
 
 	links "VkHelloTriangle"
+	
+project "ModelNoLighting"
+	kind "ConsoleApp"
+	language "C++"
+	
+	includedirs { LibDir .. "Include", sourceDir }
+	files { "examples/ModelNoLighting/*" }
+	
+	links "VkHelloTriangle"
