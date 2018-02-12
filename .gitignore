@@ -270,4 +270,4 @@ __pycache__/
 *.spv
 
 # Do not ignore .obj files in models folder
-!Hello\ triangle/models/*.obj
+!src/models/*.obj
