@@ -9,6 +9,8 @@ workspace "VkHelloTriangle"
 	targetdir "build/bin/%{cfg.buildcfg}"
 	objdir "build/"
 
+	cppdialect "C++11"
+
 	filter "configurations:Debug"
 		defines { "DEBUG" }
 		symbols "On"
@@ -28,6 +30,7 @@ workspace "VkHelloTriangle"
 
 	filter "system:Linux"
 		defines { "VK_USE_PLATFORM_XCB_KHR", "VK_USE_PLATFORM_XLIB_KHR" }
+		links { "dl" }
 
 	filter { "system:Windows", "platforms:x86" }
 		libdirs { LibDir .. "Lib32/*" }
