@@ -266,6 +266,10 @@ __pycache__/
 *.vcxproj
 *.filters
 
+# We don't need gmake files as we can generate them with premake
+Makefile
+*.make
+
 # SPIR-V generated shaders
 *.spv
 
