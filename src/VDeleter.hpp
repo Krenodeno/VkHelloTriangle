@@ -1,7 +1,7 @@
 #ifndef VDELETER_H
 #define VDELETER_H
 
-#include <vulkan\vulkan.h>
+#include <vulkan/vulkan.h>
 #include <functional>
 
 /* Declaration */
