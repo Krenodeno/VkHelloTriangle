@@ -11,7 +11,12 @@ VulkanLoader::VulkanLoader() : vkLibHandle(nullptr)
 VulkanLoader::~VulkanLoader()
 {
 	if (!unload())
-		std::cout << "Error unloading Vulkan library : " << GetLastError() << "\n";
+		std::cout << "Error unloading Vulkan library : ";
+		#if defined(VK_USE_PLATFORM_WIN32_KHR)
+		std::cout << GetLastError() << "\n";
+		#elif defined(VK_USE_PLATFORM_XCB_KHR) || defined(VK_USE_PLATFORM_XLIB_KHR)
+		std::cout << dlerror() << "\n";
+		#endif
 }
 
 bool VulkanLoader::load()
