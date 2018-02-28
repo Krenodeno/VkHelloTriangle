@@ -29,11 +29,18 @@ workspace "VkHelloTriangle"
 	filter "system:Linux"
 		defines { "VK_USE_PLATFORM_XCB_KHR", "VK_USE_PLATFORM_XLIB_KHR" }
 
+	filter { "system:Windows", "platforms:x86" }
+		libdirs { LibDir .. "Lib32/*" }
+	
+	filter { "system:Windows", "platforms:x64" }
+		libdirs { LibDir .. "Lib/*" }
+
 	filter {}
 	
 	vpaths {
 		["Headers"] = { "**.hpp", "**.inl" },
-		["Sources"] = "**.cpp"
+		["Sources"] = { "**.cpp" },
+		["Shaders"] = { "**.vert", "**.frag" }
 	}
 	
 	defines { "VK_NO_PROTOTYPES" }
@@ -48,17 +55,9 @@ project "VkHelloTriangle"
 	}
 
 	files { sourceDir .. "**.hpp", sourceDir .. "**.inl", sourceDir .. "**.cpp" }
-	
-	--links { "glfw3" }
 
 	filter "system:Linux"
 		links { "dl" }
-
-	filter { "system:Windows", "platforms:x86" }
-		libdirs { LibDir .. "Lib32/*" }
-	
-	filter { "system:Windows", "platforms:x64" }
-		libdirs { LibDir .. "Lib/*" }
 
 	filter {}
 
@@ -79,4 +78,7 @@ project "ModelNoLighting"
 	includedirs { LibDir .. "Include", sourceDir }
 	files { "examples/ModelNoLighting/*" }
 	
-	links "VkHelloTriangle"
+	links { "glfw3" }
+	
+	links { "VkHelloTriangle" }
+	
