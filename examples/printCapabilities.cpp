@@ -24,6 +24,14 @@ void createInstance(VkInstance& instance) {
 		throw std::runtime_error("Failed to create instance !");
 }
 
+
+void createDevice(VkPhysicalDevice& physicalDevice, VkDevice& device) {
+	VkDeviceCreateInfo createInfo = {};
+	createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+
+	//vkGetPhysicalDeviceQueueFamilyProperties();
+}
+
 int main(int argc, char* argv[]) {
 	VulkanLoader loader;
 
@@ -88,6 +96,7 @@ int main(int argc, char* argv[]) {
 
 	// For each, print informations
 
+	cpt = 0;
 	std::cout << "\nVulkan enabled physical devices :\n";
 	for (auto physicalDevice : physicalDevices) {
 		VkPhysicalDeviceProperties properties = {};
@@ -96,8 +105,32 @@ int main(int argc, char* argv[]) {
 		VkPhysicalDeviceFeatures features = {};
 		vkGetPhysicalDeviceFeatures(physicalDevice, &features);
 
-		std::cout << properties.deviceName << "\n";
+		uint32_t queueFamilyPropertiesCount = 0;
+		vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyPropertiesCount, nullptr);
+
+		std::vector<VkQueueFamilyProperties> queueFamilyProperties(queueFamilyPropertiesCount);
+		vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyPropertiesCount, queueFamilyProperties.data());
+
+		std::cout << cpt << "\t" << properties.deviceName << "\n";
+		std::cout << "\tQueue family properties count : " << queueFamilyPropertiesCount << "\n";
+		int cpt2 = 0;
+		for (auto queueFamilyProperty : queueFamilyProperties) {
+			std::cout << "\t" << cpt2++ << "\tQueue count : " << queueFamilyProperty.queueCount << "\n\t\tQueue flags :";
+			if (queueFamilyProperty.queueFlags & VK_QUEUE_GRAPHICS_BIT)
+				std::cout << " GRAPHICS ";
+			if (queueFamilyProperty.queueFlags & VK_QUEUE_COMPUTE_BIT)
+				std::cout << " COMPUTE ";
+			if (queueFamilyProperty.queueFlags & VK_QUEUE_TRANSFER_BIT)
+				std::cout << " TRANSFER ";
+			if (queueFamilyProperty.queueFlags & VK_QUEUE_SPARSE_BINDING_BIT)
+				std::cout << " SPARSE ";
+			std::cout << "\n";
+		}
 	}
+
+	// Take first physical device for device creation
+	
+	
 
 	vkDestroyInstance(instance, nullptr);
 
