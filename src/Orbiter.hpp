@@ -6,6 +6,9 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#undef near
+#undef far
+
 /* An orbiter camera is placed on a sphere whose center is where the camera is looking at */
 class Orbiter
 {

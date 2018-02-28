@@ -6,6 +6,9 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#undef near
+#undef far
+
 /* A free fly camera is flying around at will */
 class FlyCamera
 {
