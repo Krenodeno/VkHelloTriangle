@@ -1,9 +1,6 @@
 #ifndef VULKAN_LOADER_H
 #define VULKAN_LOADER_H
 
-#include <Windows.h>
-#include <iostream>
-
 #include <vulkan/vulkan.h>
 
 #include "VulkanFunctions.hpp"
@@ -24,11 +21,7 @@ public:
 	bool loadDeviceEntryPoints(VkDevice device);
 
 private:
-#if defined(VK_USE_PLATFORM_WIN32_KHR)
-	HMODULE vkLibHandle;
-#elif defined(VK_USE_PLATFORM_XCB_KHR) || defined(VK_USE_PLATFORM_XLIB_KHR)
 	void* vkLibHandle;
-#endif
 
 };
 

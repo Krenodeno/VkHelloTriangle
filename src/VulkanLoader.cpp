@@ -1,5 +1,9 @@
 #include "VulkanLoader.hpp"
 
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
+#include <iostream>
+
 VulkanLoader::VulkanLoader() : vkLibHandle(nullptr)
 {
 }
@@ -29,7 +33,7 @@ bool VulkanLoader::unload()
 	bool freeResult = true;
 	if (vkLibHandle != nullptr)
 #if defined(VK_USE_PLATFORM_WIN32_KHR)
-		freeResult = FreeLibrary(vkLibHandle);
+		freeResult = FreeLibrary(reinterpret_cast<HMODULE>(vkLibHandle));
 #elif defined(VK_USE_PLATFORM_XCB_KHR) || defined(VK_USE_PLATFORM_XLIB_KHR)
 		freeResult = dlclose(vkLibHandle);
 #endif
@@ -45,7 +49,7 @@ bool VulkanLoader::isLoaded() const
 bool VulkanLoader::LoadExportedEntryPoints()
 {
 	#if defined(VK_USE_PLATFORM_WIN32_KHR)
-		#define LoadProcAddr GetProcAddress
+		#define LoadProcAddr(handle, fun) GetProcAddress(reinterpret_cast<HMODULE>(handle), fun)
 	#elif defined(VK_USE_PLATFORM_XCB_KHR) || defined(VK_USE_PLATFORM_XLIB_KHR)
 		#define LoadProcAddr dlsym
 	#endif
