@@ -12,6 +12,10 @@ VK_INSTANCE_LEVEL_FUNCTION(vkGetPhysicalDeviceFeatures)
 
 VK_INSTANCE_LEVEL_FUNCTION(vkGetPhysicalDeviceQueueFamilyProperties)
 
+VK_INSTANCE_LEVEL_FUNCTION(vkGetPhysicalDeviceFormatProperties)
+
+VK_INSTANCE_LEVEL_FUNCTION(vkGetPhysicalDeviceMemoryProperties)
+
 VK_INSTANCE_LEVEL_FUNCTION(vkCreateDevice)
 
 VK_INSTANCE_LEVEL_FUNCTION(vkEnumerateDeviceExtensionProperties)
@@ -19,5 +23,28 @@ VK_INSTANCE_LEVEL_FUNCTION(vkEnumerateDeviceExtensionProperties)
 VK_INSTANCE_LEVEL_FUNCTION(vkEnumerateDeviceLayerProperties)
 
 VK_INSTANCE_LEVEL_FUNCTION(vkGetDeviceProcAddr)
+
+/* Debug report callback extension */
+
+VK_INSTANCE_LEVEL_FUNCTION(vkCreateDebugReportCallbackEXT)
+
+VK_INSTANCE_LEVEL_FUNCTION(vkDestroyDebugReportCallbackEXT)
+
+/* Surface extensions */
+
+VK_INSTANCE_LEVEL_FUNCTION(vkGetPhysicalDeviceSurfaceCapabilitiesKHR)
+
+VK_INSTANCE_LEVEL_FUNCTION(vkGetPhysicalDeviceSurfaceFormatsKHR)
+
+VK_INSTANCE_LEVEL_FUNCTION(vkGetPhysicalDeviceSurfaceSupportKHR)
+
+VK_INSTANCE_LEVEL_FUNCTION(vkGetPhysicalDeviceSurfacePresentModesKHR)
+
+VK_INSTANCE_LEVEL_FUNCTION(vkDestroySurfaceKHR)
+
+#ifdef VK_USE_PLATFORM_WIN32_KHR
+VK_INSTANCE_LEVEL_FUNCTION(vkCreateWin32SurfaceKHR)
+#endif // VK_USE_PLATFORM_WIN32_KHR
+
 
 #undef VK_INSTANCE_LEVEL_FUNCTION
