@@ -1,7 +1,10 @@
 #include "VulkanLoader.hpp"
 
-#define WIN32_LEAN_AND_MEAN
+#ifdef VK_USE_PLATFORM_WIN32_KHR
 #include <Windows.h>
+#elif defined(VK_USE_PLATFORM_XCB_KHR) || defined(VK_USE_PLATFORM_XLIB_KHR)
+#include <dlfcn.h>
+#endif
 #include <iostream>
 
 VulkanLoader::VulkanLoader() : vkLibHandle(nullptr)

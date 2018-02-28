@@ -59,9 +59,6 @@ project "VkHelloTriangle"
 
 	files { sourceDir .. "**.hpp", sourceDir .. "**.inl", sourceDir .. "**.cpp" }
 
-	filter "system:Linux"
-		links { "dl" }
-
 	filter {}
 
 
