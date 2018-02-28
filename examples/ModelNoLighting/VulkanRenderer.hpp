@@ -5,7 +5,9 @@
 #include "Orbiter.hpp"
 #include "FlyCamera.hpp"
 
-#define GLFW_INCLUDE_VULKAN
+#include <VulkanLoader.hpp>
+
+#define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 
 #define GLM_FORCE_RADIANS
@@ -59,16 +61,6 @@ const bool enableValidationLayers = true;
 #endif
 
 /* Callback Helper functions*/
-VkResult CreateDebugReportCallbackEXT(
-	VkInstance instance,
-	const VkDebugReportCallbackCreateInfoEXT* pCreateInfo,
-	const VkAllocationCallbacks* pAllocator,
-	VkDebugReportCallbackEXT* pCallback);
-
-void DestroyDebugReportCallbackEXT(
-	VkInstance instance,
-	VkDebugReportCallbackEXT callback,
-	const VkAllocationCallbacks* pAllocator);
 
 VKAPI_ATTR VkBool32 VKAPI_CALL debugCallBack(
 	VkDebugReportFlagsEXT flags,
@@ -126,14 +118,14 @@ private:
 	// TODO : suppr this 
 	GLFWwindow * window;
 
-	std::unique_ptr<void> vulkanLibrary;
+	VulkanLoader loader;
 
 	std::vector<Vertex> vertices;
 	std::vector<uint32_t> indices;
 
 	/** Instance and Surface */
 	VDeleter<VkInstance> instance{ vkDestroyInstance };
-	VDeleter<VkDebugReportCallbackEXT> callback{ instance, DestroyDebugReportCallbackEXT };
+	VDeleter<VkDebugReportCallbackEXT> callback{ instance, vkDestroyDebugReportCallbackEXT };
 	VDeleter<VkSurfaceKHR> surface{ instance, vkDestroySurfaceKHR };
 
 	VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
@@ -190,6 +182,7 @@ private:
 	void createSurface();
 	void pickPhysicalDevice();
 	void createLogicalDevice();
+	void getQueues();
 	void createSwapChain();
 	void createImageViews();
 	void createRenderPass();

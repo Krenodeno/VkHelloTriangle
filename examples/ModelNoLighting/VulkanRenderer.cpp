@@ -21,10 +21,15 @@ void VulkanRenderer::init(GLFWwindow* window)
 	initiateVulkanLib();
 	this->window = window;
 	createInstance();
+	if (!loader.loadInstanceEntryPoints(instance))
+		throw std::runtime_error("Cannot load vulkan instance entry points !");
 	setupDebugCallback();
 	createSurface();
 	pickPhysicalDevice();
 	createLogicalDevice();
+	if (!loader.loadDeviceEntryPoints(device))
+		throw std::runtime_error("Cannot load vulkan device entry points !");
+	getQueues();
 	createSwapChain();
 	createImageViews();
 	createRenderPass();
@@ -166,28 +171,16 @@ void VulkanRenderer::waitIdle()
 	vkDeviceWaitIdle(device);
 }
 
-VkResult CreateDebugReportCallbackEXT(VkInstance instance, const VkDebugReportCallbackCreateInfoEXT * pCreateInfo, const VkAllocationCallbacks * pAllocator, VkDebugReportCallbackEXT * pCallback)
-{
-	auto func = (PFN_vkCreateDebugReportCallbackEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugReportCallbackEXT");
-	if (func != nullptr) {
-		return func(instance, pCreateInfo, pAllocator, pCallback);
-	}
-	else {
-		return VK_ERROR_EXTENSION_NOT_PRESENT;
-	}
-}
-
-void DestroyDebugReportCallbackEXT(VkInstance instance, VkDebugReportCallbackEXT callback, const VkAllocationCallbacks * pAllocator)
-{
-	auto func = (PFN_vkDestroyDebugReportCallbackEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugReportCallbackEXT");
-	if (func != nullptr) {
-		func(instance, callback, pAllocator);
-	}
-}
-
 void VulkanRenderer::initiateVulkanLib()
 {
+	if (!loader.load())
+		throw std::runtime_error("Cannot load vulkan library !");
 
+	if (!loader.LoadExportedEntryPoints())
+		throw std::runtime_error("Cannot load vulkan exported entry point !");
+
+	if (!loader.LoadGlobalEntryPoints())
+		throw std::runtime_error("Cannot load vulkan global entry points !");
 }
 
 void VulkanRenderer::createInstance() {
@@ -256,7 +249,7 @@ void VulkanRenderer::setupDebugCallback() {
 	createInfo.flags = VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT;
 	createInfo.pfnCallback = debugCallBack;
 
-	if (CreateDebugReportCallbackEXT(instance, &createInfo, nullptr, callback.replace()) != VK_SUCCESS) {
+	if (vkCreateDebugReportCallbackEXT(instance, &createInfo, nullptr, callback.replace()) != VK_SUCCESS) {
 		throw std::runtime_error("Failed to set up debug callback !");
 	}
 }
@@ -328,6 +321,11 @@ void VulkanRenderer::createLogicalDevice() {
 	if (vkCreateDevice(physicalDevice, &createInfo, nullptr, device.replace()) != VK_SUCCESS) {
 		throw std::runtime_error("Failed to create logical device !");
 	}
+}
+
+void VulkanRenderer::getQueues()
+{
+	QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
 
 	vkGetDeviceQueue(device, indices.graphicsFamily, 0, &graphicsQueue);
 	vkGetDeviceQueue(device, indices.presentFamily, 0, &presentQueue);
