@@ -62,7 +62,7 @@ project "VkHelloTriangle"
 	filter {}
 
 
-project "printCapabilities"
+project "printVulkanInfos"
 	kind "ConsoleApp"
 	language "C++"
 
