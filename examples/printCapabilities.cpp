@@ -1,9 +1,54 @@
+#include <iomanip>
 #include <iostream>
 #include <stdexcept>
 #include <vector>
 #include "VulkanLoader.hpp"
 
-void createInstance(VkInstance& instance) {
+void printVulkanVersion() {
+	std::cout << "===========\n";
+	std::cout << "VULKAN INFO\n";
+	std::cout << "===========\n";
+
+	std::cout << "\nVulkan API Version: " << VK_VERSION_MAJOR(VK_API_VERSION_1_0) << "." << VK_VERSION_MINOR(VK_API_VERSION_1_0) << "." << VK_HEADER_VERSION << "\n";
+	std::cout << "\n\n";
+}
+
+void printInstanceExtensions() {
+	// Get supported extensions
+	uint32_t extensionCount = 0;
+	vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
+
+	std::vector<VkExtensionProperties> extensions(extensionCount);
+	vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, extensions.data());
+
+	std::cout << "Instance Extensions:\n";
+	std::cout << "====================\n";
+	std::cout << "Instance Extensions\tcount = " << extensionCount << "\n";
+	for (const auto& extension : extensions) {
+		std::cout << "\t" << extension.extensionName << std::setw(32) << ": exension revision " << extension.specVersion << "\n";
+	}
+	std::cout << "\n\n";
+}
+
+void printInstanceLayers() {
+	// Get supported layers
+	uint32_t layerCount = 0;
+	vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
+
+	std::vector<VkLayerProperties> layers(layerCount);
+	vkEnumerateInstanceLayerProperties(&layerCount, layers.data());
+
+	std::cout << "Layers: count = " << layerCount << "\n";
+	std::cout << "=======\n";
+	for (const auto& layer : layers) {
+		std::cout << layer.layerName << " (" << layer.description << ") ";
+		std::cout << "Vulkan version " << VK_VERSION_MAJOR(layer.specVersion) << "." << VK_VERSION_MINOR(layer.specVersion) << "." << VK_VERSION_PATCH(layer.specVersion);
+		std::cout << ", layer version " << layer.implementationVersion << "\n\n";
+		
+	}
+}
+
+void createInstance(VkInstance& instance, const std::vector<char*>& layerNames) {
 
 	// Construct Vulkan structs needed to create instance
 	VkApplicationInfo appInfo = {};
@@ -17,6 +62,8 @@ void createInstance(VkInstance& instance) {
 	VkInstanceCreateInfo createInfo = {};
 	createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
 	createInfo.pApplicationInfo = &appInfo;
+	createInfo.enabledLayerCount = layerNames.size();
+	createInfo.ppEnabledLayerNames = layerNames.data();
 
 	VkResult result = vkCreateInstance(&createInfo, nullptr, &instance);
 
@@ -38,53 +85,36 @@ int main(int argc, char* argv[]) {
 	loader.load();
 
 	if (!loader.isLoaded()) {
-		std::cout << "Could not load Vulkan library !";
+		std::cerr << "Could not load Vulkan library !";
 		return -1;
 	}
 
 	if (!loader.LoadExportedEntryPoints()) {
-		std::cout << "Could not load exported function !\n";
+		std::cerr << "Could not load exported function !\n";
 		return -1;
 	}
 
 	if (!loader.LoadGlobalEntryPoints()) {
-		std::cout << "Could not load global level functions !\n";
+		std::cerr << "Could not load global level functions !\n";
 		return -1;
 	}
 
+	printVulkanVersion();
 	
-	// Get supported extensions
-	uint32_t extensionCount = 0;
-	vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
+	printInstanceExtensions();
 
-	std::vector<VkExtensionProperties> extensions(extensionCount);
-	vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, extensions.data());
-
-	std::cout << "Available Instance extensions:\n";
-	int cpt = 0;
-	for (const auto& extension : extensions) {
-		std::cout << cpt++ << "\t" << extension.extensionName << "\n";
-	}
-
-	// Get supported layers
-	uint32_t layerCount = 0;
-	vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
-
-	std::vector<VkLayerProperties> layers(layerCount);
-	vkEnumerateInstanceLayerProperties(&layerCount, layers.data());
-
-	std::cout << "Available Instance layers:\n";
-	cpt = 0;
-	for (const auto& layer : layers) {
-		std::cout << cpt++ << "\t" << layer.layerName << "\n";
-	}
+	printInstanceLayers();
 	
+	std::vector<char*> validationLayer = { "VK_LAYER_LUNARG_standard_validation" };
 
 	VkInstance instance = VK_NULL_HANDLE;
 
-	createInstance(instance);
+	createInstance(instance, validationLayer);
 
-	loader.loadInstanceEntryPoints(instance);
+	if (!loader.loadInstanceEntryPoints(instance)) {
+		std::cerr << "Could not load instance level functions !\n";
+		return -1;
+	}
 
 	// Enumerate Physical Devices 
 
@@ -96,7 +126,7 @@ int main(int argc, char* argv[]) {
 
 	// For each, print informations
 
-	cpt = 0;
+	int cpt = 0;
 	std::cout << "\nVulkan enabled physical devices :\n";
 	for (auto physicalDevice : physicalDevices) {
 		VkPhysicalDeviceProperties properties = {};
