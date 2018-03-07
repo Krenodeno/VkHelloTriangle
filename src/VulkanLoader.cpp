@@ -101,10 +101,13 @@ bool VulkanLoader::loadInstanceEntryPoints(VkInstance instance)
 
 bool VulkanLoader::loadDeviceEntryPoints(VkDevice device)
 {
-#define VK_DEVICE_LEVEL_FUNCTION( fun ) \
+	#define VK_DEVICE_LEVEL_FUNCTION( fun ) \
 	if ( !(fun = (PFN_##fun) vkGetDeviceProcAddr(device, #fun))) {\
 		std::cout << "Could not load device level function: " << #fun << "!\n";\
 		return false;\
 	}
+
+	#include "DeviceLevelFunctionList.inl"
+
 	return true;
 }
