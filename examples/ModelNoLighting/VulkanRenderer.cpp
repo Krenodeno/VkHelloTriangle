@@ -38,10 +38,10 @@ void VulkanRenderer::init(GLFWwindow* window)
 	createCommandPool();
 	createDepthResources();
 	createFramebuffers();
-	createTextureImage("textures/chalet.jpg");
+	createTextureImage("ressources/textures/chalet.jpg");
 	createTextureImageView();
 	createTextureSampler();
-	loadModel("models/chalet.obj");
+	loadModel("ressources/models/chalet.obj");
 	createVertexBuffer();
 	createIndexBuffer();
 	createUniformBuffer();
@@ -106,8 +106,8 @@ void VulkanRenderer::updateUniformBuffer()
 
 	UniformBufferObject ubo = {};
 	auto up = glm::vec3(0.0f, 0.0f, 1.0f);
-	//ubo.model = glm::rotate(glm::mat4(), time * glm::radians(90.0f), up);
-	ubo.model = glm::mat4();
+	ubo.model = glm::rotate(glm::mat4(), time * glm::radians(90.0f), up);
+	//ubo.model = glm::mat4();
 	ubo.view = fly.view();
 	ubo.proj = fly.perspective();
 	ubo.proj[1][1] *= -1;	// Fix image upside down because of OpenGL
@@ -432,8 +432,8 @@ void VulkanRenderer::createDescriptorSetLayout() {
 }
 
 void VulkanRenderer::createGraphicsPipeline() {
-	auto vertShaderCode = readFile("shaders/vert.spv");
-	auto fragShaderCode = readFile("shaders/frag.spv");
+	auto vertShaderCode = readFile("ressources/shaders/vert.spv");
+	auto fragShaderCode = readFile("ressources/shaders/frag.spv");
 
 	VDeleter<VkShaderModule> vertShaderModule{ device, vkDestroyShaderModule };
 	VDeleter<VkShaderModule> fragShaderModule{ device, vkDestroyShaderModule };
