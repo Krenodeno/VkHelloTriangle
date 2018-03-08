@@ -6,14 +6,16 @@ workspace "VkHelloTriangle"
 	local sourceDir = "src/"
 	local LibDir = "Libraries/"
 
-	targetdir "build/bin/%{cfg.buildcfg}"
-	objdir "build/"
+	targetdir "build/bin/%{cfg.platform}/%{cfg.buildcfg}"
+	objdir "build/obj/"
+	debugdir "./"
 
 	cppdialect "C++11"
 
 	filter "configurations:Debug"
 		defines { "DEBUG" }
 		symbols "On"
+		targetsuffix "-d"
 
 	filter "configurations:Release"
 		defines { "NDEBUG" }
