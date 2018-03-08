@@ -73,12 +73,12 @@ project "printVulkanInfos"
 
 	links "VkHelloTriangle"
 	
-project "ModelNoLighting"
+project "vulkan-tutorial"
 	kind "ConsoleApp"
 	language "C++"
 	
 	includedirs { LibDir .. "Include", sourceDir }
-	files { "examples/ModelNoLighting/*" }
+	files { "examples/vulkan-tutorial/*" }
 	
 	links { "glfw3" }
 	
