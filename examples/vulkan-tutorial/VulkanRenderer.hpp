@@ -1,5 +1,4 @@
 #pragma once
-#include "Renderer.hpp"
 #include "VDeleter.hpp"
 #include "Vertex.hpp"
 #include "Orbiter.hpp"
@@ -80,8 +79,7 @@ void scrollCallback(GLFWwindow* window, double xoffset, double yoffset);
 
 /******************** APP CLASS ********************/
 
-class VulkanRenderer :
-	public Renderer
+class VulkanRenderer
 {
 public:
 
