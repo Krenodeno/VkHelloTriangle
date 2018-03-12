@@ -15,6 +15,8 @@ public:
 
 	void run();
 
+	void createRendererSurface(VkInstance instance, VkSurfaceKHR* surface);
+
 private:
 
 	void mainLoop();
@@ -27,7 +29,9 @@ private:
 
 	void initWindow();
 
-	void createRendererSurface();
+	std::vector<const char*> getGLFWRequiredExtensions();
 
 };
+
+void createSurface(VulkanApplication* app, VkInstance instance, VkSurfaceKHR* surface);
 

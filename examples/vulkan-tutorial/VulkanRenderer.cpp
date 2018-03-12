@@ -171,6 +171,26 @@ void VulkanRenderer::waitIdle()
 	vkDeviceWaitIdle(device);
 }
 
+void VulkanRenderer::addExtension(const char * extensionName)
+{
+	requiredExtensions.push_back(extensionName);
+}
+
+void VulkanRenderer::addExtensions(std::vector<const char*> extensionNames)
+{
+	requiredExtensions = std::move(extensionNames);
+}
+
+void VulkanRenderer::setCreateSurfaceFunction(std::function<void(VulkanApplication*, VkInstance, VkSurfaceKHR*)> createSurface)
+{
+	createSurfaceFunction = createSurface;
+}
+
+void VulkanRenderer::setParentApplication(VulkanApplication* application)
+{
+	app = application;
+}
+
 void VulkanRenderer::initiateVulkanLib()
 {
 	if (!loader.load())
@@ -202,7 +222,7 @@ void VulkanRenderer::createInstance() {
 	createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
 	createInfo.pApplicationInfo = &appInfo;
 
-	// Get GLFW Extensions
+	// Get Extensions
 	auto enabledExtensions = getRequiredExtensions();
 	createInfo.enabledExtensionCount = enabledExtensions.size();
 	createInfo.ppEnabledExtensionNames = enabledExtensions.data();
@@ -229,8 +249,8 @@ void VulkanRenderer::createInstance() {
 	std::cout << cpt++ << "\t" << extension.extensionName << std::endl;
 	}*/
 
-	if (!checkGLFWExtensionSupport()) {
-		throw std::runtime_error("GLFW Required extensions not supported !");
+	if (!checkExtensionSupport()) {
+		throw std::runtime_error("Required extensions not supported !");
 	}
 
 	// Create the instance
@@ -255,9 +275,7 @@ void VulkanRenderer::setupDebugCallback() {
 }
 
 void VulkanRenderer::createSurface() {
-	if (glfwCreateWindowSurface(instance, window, nullptr, surface.replace()) != VK_SUCCESS) {
-		throw std::runtime_error("Failed to create window surface !");
-	}
+	createSurfaceFunction(app, instance, surface.replace());
 }
 
 void VulkanRenderer::pickPhysicalDevice() {
@@ -1012,12 +1030,8 @@ void VulkanRenderer::createShaderModule(const std::vector<char>& code, VDeleter<
 	}
 }
 
-bool VulkanRenderer::checkGLFWExtensionSupport()
+bool VulkanRenderer::checkExtensionSupport()
 {
-	// Get GLFW extensions
-	unsigned int glfwExtensionCount = 0;
-	const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
-
 	// Get supported extensions
 	uint32_t extensionCount = 0;
 	vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
@@ -1026,10 +1040,10 @@ bool VulkanRenderer::checkGLFWExtensionSupport()
 	vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, extensions.data());
 
 	// Check support
-	for (unsigned int i = 0; i < glfwExtensionCount; i++) {
+	for (auto requiredExtension : requiredExtensions) {
 		bool supported = false;
 		for (const auto& extension : extensions) {
-			if (strcmp(glfwExtensions[i], extension.extensionName) == 0) {
+			if (strcmp(requiredExtension, extension.extensionName) == 0) {
 				supported = true;
 				break;
 			}
@@ -1069,15 +1083,7 @@ bool VulkanRenderer::checkValidationLayerSupport()
 
 std::vector<const char*> VulkanRenderer::getRequiredExtensions()
 {
-	std::vector<const char*> extensions;
-
-	unsigned int glfwExtensionCount = 0;
-	const char** glfwExtensions;
-	glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
-
-	for (unsigned int i = 0; i < glfwExtensionCount; i++) {
-		extensions.push_back(glfwExtensions[i]);
-	}
+	std::vector<const char*> extensions(requiredExtensions);
 
 	if (enableValidationLayers) {
 		extensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);	// same as "VK_EXT_debug_report"
@@ -1135,6 +1141,7 @@ bool VulkanRenderer::checkDeviceExtensionSupport(VkPhysicalDevice device)
 		requiredExtensions.erase(extension.extensionName);
 	}
 
+	// Return true only if all the requested extensions in deviceExtensions are supported by the device
 	return requiredExtensions.empty();
 }
 
@@ -1590,32 +1597,4 @@ void VulkanRenderer::translate(glm::vec3 translation)
 void VulkanRenderer::rotate(glm::vec2 rotation)
 {
 	cam.rotate(rotation);
-}
-
-void mouseCallBack(GLFWwindow* window, int button, int action, int mode)
-{
-	static double lastX, lastY;
-	static bool pressLeft;
-
-	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
-		pressLeft = true;
-
-	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE)
-		pressLeft = false;
-
-	double currentX, currentY;
-	glfwGetCursorPos(window, &currentX, &currentY);
-
-	if (pressLeft)
-	{
-		
-	}
-
-	lastX = currentX;
-	lastY = currentY;
-}
-
-void scrollCallback(GLFWwindow * window, double xoffset, double yoffset)
-{
-	
 }

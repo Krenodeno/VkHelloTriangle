@@ -14,9 +14,13 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include <functional>
 #include <memory>
 #include <stdexcept>
 #include <vector>
+
+class VulkanApplication;
+void createSurface(VulkanApplication* app, VkInstance instance, VkSurfaceKHR * surface);
 
 /******************** UNIFORM BUFFER OBJECT STRUCT ********************/
 
@@ -71,12 +75,6 @@ VKAPI_ATTR VkBool32 VKAPI_CALL debugCallBack(
 	const char* msg,
 	void* userData);
 
-/* GLFW CallBack */
-
-void mouseCallBack(GLFWwindow* window, int button, int action, int mode);
-
-void scrollCallback(GLFWwindow* window, double xoffset, double yoffset);
-
 /******************** APP CLASS ********************/
 
 class VulkanRenderer
@@ -90,6 +88,12 @@ public:
 	void waitIdle();
 
 	VulkanRenderer() : cam(Orbiter(8.0f, glm::radians(45.0f), glm::radians(45.0f), glm::radians(50.0f), 4.0f / 3.0f)) {}
+
+	void addExtension(const char* extensionName);
+	void addExtensions(std::vector<const char*> extensionNames);
+
+	void setCreateSurfaceFunction(std::function<void(VulkanApplication*, VkInstance, VkSurfaceKHR*)> createSurface);
+	void setParentApplication(VulkanApplication* application);
 
 	/** Getter */
 
@@ -107,9 +111,6 @@ private:
 
 	Orbiter cam;
 	FlyCamera fly;
-	bool leftMouseButtonPressed;
-	bool middleMouseButtonPressed;
-	double relativeScrolling;
 
 	int test = 0, res = 0;
 
@@ -117,6 +118,12 @@ private:
 	GLFWwindow * window;
 
 	VulkanLoader loader;
+	
+	std::vector<const char*> requiredExtensions;
+
+	std::function<void(VulkanApplication*, VkInstance, VkSurfaceKHR*)> createSurfaceFunction;
+
+	VulkanApplication* app;
 
 	std::vector<Vertex> vertices;
 	std::vector<uint32_t> indices;
@@ -204,7 +211,7 @@ private:
 	/** Helper functions */
 	void createShaderModule(const std::vector<char>& code, VDeleter<VkShaderModule>& shaderModule);
 
-	bool checkGLFWExtensionSupport();
+	bool checkExtensionSupport();
 
 	bool checkValidationLayerSupport();
 

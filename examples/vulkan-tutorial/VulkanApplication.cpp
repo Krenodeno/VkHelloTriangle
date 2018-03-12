@@ -7,7 +7,9 @@ VulkanApplication::VulkanApplication() : width(800), height(600)
 void VulkanApplication::run()
 {
 	initWindow();
-	//createRendererSurface();
+	renderer.addExtensions(getGLFWRequiredExtensions());
+	renderer.setCreateSurfaceFunction(createSurface);
+	renderer.setParentApplication(this);
 	renderer.init(window);
 	mainLoop();
 }
@@ -38,18 +40,23 @@ void VulkanApplication::initWindow()
 	glfwSetWindowSizeCallback(window, onWindowResized);
 }
 
-void VulkanApplication::createRendererSurface()
+void VulkanApplication::createRendererSurface(VkInstance instance, VkSurfaceKHR* surface)
 {
-	auto instance = renderer.getInstance();
-	auto surface = renderer.getSurface();
-
-	if (surface != VK_NULL_HANDLE) {
-		vkDestroySurfaceKHR(instance, surface, nullptr);
-		surface = VK_NULL_HANDLE;
-	}
-
-	if (glfwCreateWindowSurface(instance, window, nullptr, &surface) != VK_SUCCESS)
+	if (glfwCreateWindowSurface(instance, window, nullptr, surface) != VK_SUCCESS)
 		throw std::runtime_error("Failed to create window surface !");
+}
+
+std::vector<const char*> VulkanApplication::getGLFWRequiredExtensions()
+{
+	// Get GLFW extensions
+	unsigned int glfwExtensionCount = 0;
+	const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+
+	std::vector<const char*> extensionNames(glfwExtensionCount);
+	for (uint32_t i = 0; i < glfwExtensionCount; ++i)
+		extensionNames[i] = glfwExtensions[i];
+
+	return extensionNames;
 }
 
 void onWindowResized(GLFWwindow* window, int width, int height) {
@@ -57,4 +64,9 @@ void onWindowResized(GLFWwindow* window, int width, int height) {
 
 	VulkanRenderer* render = reinterpret_cast<VulkanRenderer*>(glfwGetWindowUserPointer(window));
 	render->recreateSwapChain();
+}
+
+void createSurface(VulkanApplication* app, VkInstance instance, VkSurfaceKHR * surface)
+{
+	app->createRendererSurface(instance, surface);
 }
