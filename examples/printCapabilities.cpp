@@ -77,7 +77,7 @@ void printLayersProperties(std::vector<VkLayerProperties> layers, std::vector<Vk
 			std::vector<VkExtensionProperties> extensions(extensionCount);
 			vkEnumerateDeviceExtensionProperties(device, layer.layerName, &extensionCount, extensions.data());
 
-			cout << "\t\tLayer-Device Extensions count = 2\n";
+			cout << "\t\tLayer-Device Extensions count = " << extensionCount << "\n";
 			for (auto extension : extensions) {
 				std::string extName = extension.extensionName;
 				cout << "\t\t\t" << extName << std::setw(64 - extName.size()) << ": extension revision " << extension.specVersion << "\n";
