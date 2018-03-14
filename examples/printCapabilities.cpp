@@ -16,8 +16,10 @@ void printVulkanVersion() {
 	cout << "\n\n";
 }
 
+/**
+ * get available extensions
+ */
 std::vector<VkExtensionProperties> getInstanceExtensions(const char* layerName) {
-	// Get supported extensions
 	uint32_t extensionCount = 0;
 	vkEnumerateInstanceExtensionProperties(layerName, &extensionCount, nullptr);
 
@@ -38,8 +40,10 @@ void printExtensionsProperties(std::vector<VkExtensionProperties> extensions) {
 	cout << "\n\n";
 }
 
+/**
+* get available layers
+*/
 std::vector<VkLayerProperties> getInstanceLayers() {
-	// Get supported layers
 	uint32_t layerCount = 0;
 	vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
 
@@ -65,11 +69,12 @@ void printLayersProperties(std::vector<VkLayerProperties> layers, std::vector<Vk
 		}
 
 		// Devices
+		unsigned int deviceId = 0;
 		cout << "\tDevices\tcount = " << physicalDevices.size() << "\n";
 		for (auto device : physicalDevices) {
 			VkPhysicalDeviceProperties properties = {};
 			vkGetPhysicalDeviceProperties(device, &properties);
-			cout << "\t\tGPU id\t: " << properties.deviceID << " (" << properties.deviceName << ")\n";
+			cout << "\t\tGPU id\t: " << deviceId++ << " (" << properties.deviceName << ")\n";
 
 			uint32_t extensionCount = 0;
 			vkEnumerateDeviceExtensionProperties(device, layer.layerName, &extensionCount, nullptr);
@@ -113,10 +118,10 @@ void createInstance(VkInstance& instance, const std::vector<char*>& layerNames, 
 	// Construct Vulkan structs needed to create instance
 	VkApplicationInfo appInfo = {};
 	appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-	appInfo.pApplicationName = "Hello Triangle";
-	appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
+	appInfo.pApplicationName = "vulkaninfo";
+	appInfo.applicationVersion = VK_MAKE_VERSION(0, 0, 1);
 	appInfo.pEngineName = "No Engine";
-	appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
+	appInfo.engineVersion = VK_MAKE_VERSION(0, 0, 0);
 	appInfo.apiVersion = VK_API_VERSION_1_0;
 
 	VkInstanceCreateInfo createInfo = {};
@@ -145,6 +150,9 @@ void createDevice(VkPhysicalDevice& physicalDevice, VkDevice& device) {
 }
 
 int main(int argc, char* argv[]) {
+
+	// Load vulkan dynamic lib and then load all functions needed for instance query and creation
+
 	VulkanLoader loader;
 
 	loader.load();
@@ -164,8 +172,10 @@ int main(int argc, char* argv[]) {
 		return -1;
 	}
 
+	// Print header version
 	printVulkanVersion();
 	
+	// Query Instance about available extensions and print them
 	std::vector<VkExtensionProperties> extensions = getInstanceExtensions(nullptr);
 	printExtensionsProperties(extensions);
 
@@ -174,6 +184,7 @@ int main(int argc, char* argv[]) {
 		extensionNames[i] = extensions[i].extensionName;
 	}
 
+	// Query Instance about available layers
 	std::vector<VkLayerProperties> layers = getInstanceLayers();
 
 	std::vector<char*> layerNames(layers.size());
@@ -181,30 +192,29 @@ int main(int argc, char* argv[]) {
 		layerNames[i] = layers[i].layerName;
 	}
 	
+	// Validation layer from LUNARG
 	std::vector<char*> validationLayer = { "VK_LAYER_LUNARG_standard_validation" };
 
-	std::vector<char*> debugExtension = { "VK_EXT_debug_report" };
-
+	// Create Instance with validation layer and all available extensions
 	VkInstance instance = VK_NULL_HANDLE;
-
 	createInstance(instance, validationLayer, extensionNames);
 
+	// Load functions only available with an active Instance
 	if (!loader.loadInstanceEntryPoints(instance)) {
 		std::cerr << "Could not load instance level functions !\n";
+		vkDestroyInstance(instance, nullptr);
 		return -1;
 	}
 
 	// Enumerate Physical Devices 
-
 	uint32_t physicalDeviceCount = 0;
 	vkEnumeratePhysicalDevices(instance, &physicalDeviceCount, nullptr);
 
 	std::vector<VkPhysicalDevice> physicalDevices(physicalDeviceCount);
 	vkEnumeratePhysicalDevices(instance, &physicalDeviceCount, physicalDevices.data());
 
+	// Print Instance Layers properties and associated Device extensions
 	printLayersProperties(layers , physicalDevices);
-
-	// For each, print informations
 
 	int cpt = 0;
 	cout << "\nVulkan enabled physical devices :\n";
@@ -241,7 +251,7 @@ int main(int argc, char* argv[]) {
 	// Take first physical device for device creation
 	
 	
-
+	// End of the program, destroy Vulkan objects
 	vkDestroyInstance(instance, nullptr);
 
 	return 0;
