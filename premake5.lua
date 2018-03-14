@@ -6,6 +6,7 @@ workspace "VkHelloTriangle"
 	local sourceDir = "src/"
 	local LibDir = "Libraries/"
 
+	location ( "build/" .. _ACTION )
 	targetdir "build/bin/%{cfg.platform}/%{cfg.buildcfg}"
 	objdir "build/obj/"
 	debugdir "./"
