@@ -5,7 +5,7 @@
 .idea/
 
 # build directory where all premake generated files and build files are stored
-build/ 
+build/
 
 # SPIR-V generated shaders
 *.spv
