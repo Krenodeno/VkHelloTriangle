@@ -1085,9 +1085,9 @@ std::vector<const char*> VulkanRenderer::getRequiredExtensions()
 {
 	std::vector<const char*> extensions(requiredExtensions);
 
-	if (enableValidationLayers) {
+	//if (enableValidationLayers) {
 		extensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);	// same as "VK_EXT_debug_report"
-	}
+	//}
 
 	return extensions;
 }
