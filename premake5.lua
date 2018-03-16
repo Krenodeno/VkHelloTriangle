@@ -79,7 +79,7 @@ project "vulkan-tutorial"
 	language "C++"
 	
 	includedirs { LibDir .. "Include", sourceDir }
-	files { "examples/vulkan-tutorial/*" }
+	files { "examples/vulkan-tutorial/*", "ressources/shaders/*.frag", "ressources/shaders/*.vert" }
 	
 	links { "glfw3" }
 	
