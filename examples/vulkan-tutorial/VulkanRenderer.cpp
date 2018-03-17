@@ -16,10 +16,9 @@
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <tiny_obj_loader.h>
 
-void VulkanRenderer::init(GLFWwindow* window)
+void VulkanRenderer::init()
 {
 	initiateVulkanLib();
-	this->window = window;
 	createInstance();
 	if (!loader.loadInstanceEntryPoints(instance))
 		throw std::runtime_error("Cannot load vulkan instance entry points !");
@@ -189,6 +188,16 @@ void VulkanRenderer::setCreateSurfaceFunction(std::function<void(VulkanApplicati
 void VulkanRenderer::setParentApplication(VulkanApplication* application)
 {
 	app = application;
+}
+
+void VulkanRenderer::setWidth(int w)
+{
+	width = w;
+}
+
+void VulkanRenderer::setHeight(int h)
+{
+	height = h;
 }
 
 void VulkanRenderer::initiateVulkanLib()
@@ -1233,9 +1242,6 @@ VkPresentModeKHR VulkanRenderer::chooseSwapPresentMode(const std::vector<VkPrese
 
 VkExtent2D VulkanRenderer::chooseSwapExtent(const VkSurfaceCapabilitiesKHR & capabilities)
 {
-	int width, height;
-	glfwGetWindowSize(window, &width, &height);
-
 	if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
 		return capabilities.currentExtent;
 	}

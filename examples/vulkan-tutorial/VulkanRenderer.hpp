@@ -6,9 +6,6 @@
 
 #include <VulkanLoader.hpp>
 
-#define GLFW_INCLUDE_NONE
-#include <GLFW/glfw3.h>
-
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
@@ -81,7 +78,7 @@ class VulkanRenderer
 {
 public:
 
-	void init(GLFWwindow* window);
+	void init();
 	void recreateSwapChain();
 	void updateUniformBuffer();
 	void drawFrame();
@@ -94,6 +91,9 @@ public:
 
 	void setCreateSurfaceFunction(std::function<void(VulkanApplication*, VkInstance, VkSurfaceKHR*)> createSurface);
 	void setParentApplication(VulkanApplication* application);
+
+	void setWidth(int w);
+	void setHeight(int h);
 
 	/** Getter */
 
@@ -114,8 +114,7 @@ private:
 
 	int test = 0, res = 0;
 
-	// TODO : suppr this 
-	GLFWwindow * window;
+	int width, height;
 
 	VulkanLoader loader;
 	

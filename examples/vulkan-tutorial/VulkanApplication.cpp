@@ -10,7 +10,9 @@ void VulkanApplication::run()
 	renderer.addExtensions(getGLFWRequiredExtensions());
 	renderer.setCreateSurfaceFunction(createSurface);
 	renderer.setParentApplication(this);
-	renderer.init(window);
+	renderer.setWidth(width);
+	renderer.setHeight(height);
+	renderer.init();
 	mainLoop();
 }
 
@@ -63,6 +65,8 @@ void onWindowResized(GLFWwindow* window, int width, int height) {
 	if (width == 0 || height == 0) return;
 
 	VulkanRenderer* render = reinterpret_cast<VulkanRenderer*>(glfwGetWindowUserPointer(window));
+	render->setWidth(width);
+	render->setHeight(height);
 	render->recreateSwapChain();
 }
 

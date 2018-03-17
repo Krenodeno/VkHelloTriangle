@@ -5,6 +5,8 @@
 
 #include "VulkanRenderer.hpp"
 
+#include <vector>
+
 void onWindowResized(GLFWwindow* window, int width, int height);
 
 class VulkanApplication
