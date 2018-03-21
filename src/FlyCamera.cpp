@@ -51,3 +51,8 @@ glm::mat4 FlyCamera::ortho() const
 {
 	return glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 0.1f, 100.0f);
 }
+
+glm::vec3 FlyCamera::position() const
+{
+	return eye;
+}

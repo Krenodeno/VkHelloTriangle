@@ -27,6 +27,8 @@ public:
 	glm::mat4 perspective() const;
 	glm::mat4 ortho() const;
 
+	glm::vec3 position() const;
+
 private:
 	float pitch,	// how much you are looking up or down
 		yaw,		// how much you are looking left or right

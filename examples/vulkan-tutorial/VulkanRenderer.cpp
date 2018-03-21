@@ -40,7 +40,7 @@ void VulkanRenderer::init()
 	createTextureImage("ressources/textures/chalet.jpg");
 	createTextureImageView();
 	createTextureSampler();
-	loadModel("ressources/models/chalet.obj");
+	loadModel("ressources/models/bigguy.obj");
 	createVertexBuffer();
 	createIndexBuffer();
 	createUniformBuffer();
@@ -106,10 +106,12 @@ void VulkanRenderer::updateUniformBuffer()
 	UniformBufferObject ubo = {};
 	auto up = glm::vec3(0.0f, 0.0f, 1.0f);
 	ubo.model = glm::rotate(glm::mat4(), time * glm::radians(90.0f), up);
+	ubo.model = glm::scale(ubo.model, glm::vec3(0.1f));
 	//ubo.model = glm::mat4();
 	ubo.view = fly.view();
 	ubo.proj = fly.perspective();
 	ubo.proj[1][1] *= -1;	// Fix image upside down because of OpenGL
+	ubo.source = fly.position();
 
 	void* data;
 	vkMapMemory(device, uniformStagingBufferMemory, 0, sizeof(ubo), 0, &data);
@@ -459,8 +461,8 @@ void VulkanRenderer::createDescriptorSetLayout() {
 }
 
 void VulkanRenderer::createGraphicsPipeline() {
-	auto vertShaderCode = readFile("ressources/shaders/vert.spv");
-	auto fragShaderCode = readFile("ressources/shaders/frag.spv");
+	auto vertShaderCode = readFile("ressources/shaders/diffuse.vert.spv");
+	auto fragShaderCode = readFile("ressources/shaders/diffuse.frag.spv");
 
 	VDeleter<VkShaderModule> vertShaderModule{ device, vkDestroyShaderModule };
 	VDeleter<VkShaderModule> fragShaderModule{ device, vkDestroyShaderModule };
@@ -835,6 +837,14 @@ void VulkanRenderer::loadModel(const std::string modelPath)
 
 			vertex.color = { 1.0f, 1.0f, 1.0f };
 
+			if (!attrib.normals.empty())
+				vertex.normal = {
+					attrib.normals[3 * index.normal_index + 0],
+					attrib.normals[3 * index.normal_index + 1],
+					attrib.normals[3 * index.normal_index + 2]
+				};
+
+
 			if (uniqueVertices.count(vertex) == 0) {
 				uniqueVertices[vertex] = vertices.size();
 				vertices.push_back(vertex);
@@ -987,7 +997,7 @@ void VulkanRenderer::createCommandBuffers() {
 		renderPassInfo.renderArea.extent = swapChainExtent;
 
 		std::array<VkClearValue, 2> clearValues = {};
-		clearValues[0].color = { 0.0f, 0.0f, 0.0f, 1.0f };
+		clearValues[0].color = { 0.2f, 0.2f, 0.2f, 1.0f };
 		clearValues[1].depthStencil = { 1.0f, 0 };
 
 		renderPassInfo.clearValueCount = clearValues.size();
