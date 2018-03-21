@@ -104,8 +104,9 @@ void VulkanRenderer::updateUniformBuffer()
 	//std::cout << "Cam pos : " << camPos.x << ", " << cam.pos().y << ", " << cam.pos().z << "\n";
 
 	UniformBufferObject ubo = {};
-	auto up = glm::vec3(0.0f, 0.0f, 1.0f);
-	ubo.model = glm::rotate(glm::mat4(), time * glm::radians(90.0f), up);
+	auto up = glm::vec3(0.f, 0.f, 1.f);
+	//ubo.model = glm::rotate(glm::mat4(), glm::radians(90.f), glm::vec3(1.f, 0.f, 1.f));
+	ubo.model = glm::rotate(ubo.model, time * glm::radians(90.f), up);
 	ubo.model = glm::scale(ubo.model, glm::vec3(0.1f));
 	//ubo.model = glm::mat4();
 	ubo.view = fly.view();

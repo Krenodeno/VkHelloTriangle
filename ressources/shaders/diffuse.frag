@@ -20,7 +20,7 @@ void main() {
 	float cos_theta = dot(inNormal, light);
 
     // utiliser la couleur
-    fragment_color = vec4(1) * max(0, cos_theta);
+    fragment_color = vec4(1) * max(0, floor(cos_theta * 5) / 5);
 
     // utiliser la texture
     //fragment_color = texture(texture0, inTexcoord) * max(0, cos_theta);
