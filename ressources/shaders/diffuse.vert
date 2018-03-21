@@ -31,7 +31,7 @@ void main() {
 
 	gl_Position = mvp * vec4(inPosition, 1);
 
-	outNormal = vec3(ubo.model * vec4(normal, 1)); // Normaliser ou pas ?
+	outNormal = normalize(vec3(ubo.model * vec4(normal, 1)));
 
 	// source de lumière 
 	outSource = ubo.source;
