@@ -55,20 +55,16 @@ project "VkHelloTriangle"
 	kind "StaticLib"
 	language "C++"
 
-	-- Includes
-	includedirs { 
-		LibDir .. "Include"
-	}
+	include( "Libraries/findVulkan.lua" )
 
 	files { sourceDir .. "**.hpp", sourceDir .. "**.inl", sourceDir .. "**.cpp" }
-
-	filter {}
 
 
 project "printVulkanInfos"
 	kind "ConsoleApp"
 	language "C++"
 
+	include( "Libraries/findVulkan.lua" )
 	includedirs { LibDir .. "Include", sourceDir }
 	files { "examples/printCapabilities.cpp" }
 
@@ -78,6 +74,7 @@ project "vulkan-tutorial"
 	kind "ConsoleApp"
 	language "C++"
 	
+	include( "Libraries/findVulkan.lua" )
 	includedirs { LibDir .. "Include", sourceDir }
 	files { "examples/vulkan-tutorial/*", "ressources/shaders/*.frag", "ressources/shaders/*.vert" }
 	

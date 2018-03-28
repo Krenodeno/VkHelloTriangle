@@ -20,16 +20,20 @@ My goal is to have a general comprehension of the API, and to learn commons grap
 	* Free fly camera
 	
 ## How to build
+### Dependencies
+
+* Vulkan : [Download LunarG's SDK](https://vulkan.lunarg.com) or install vulkan packages for your Linux ditribution.
+
+### Generate workspace
 
 I use premake 5 to generate build files used by tools like Microsoft Visual Studio or GNU Make.
---> [Premake Wiki](https://github.com/premake/premake-core/wiki)
+--> [Premake Wiki](https://github.com/premake/premake-core/wiki/Using-Premake)
 
-Simply run premake5 in the root directory (premake5.exe for Windows, and premake5 for Linux)
-It will create a "build" directory where you will find a directory named after your tool (like vs2017 for Visual Studio 2017).
+Simply run `premake5 [action]` in the root directory (premake5.exe for Windows, and premake5 for Linux).
+It will create a "build" directory where you will find a directory named after selected action (like vs2017 for Visual Studio 2017).
 
-## Used Libraries
+## Shipped Libraries
 
-* Vulkan 1.0.65.1
 * GLFW 3.2.1
 * GLM 0.9.8.5
 * STB_image
