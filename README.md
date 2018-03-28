@@ -24,7 +24,7 @@ My goal is to have a general comprehension of the API, and to learn commons grap
 I use premake 5 to generate build files used by tools like Microsoft Visual Studio or GNU Make.
 --> [Premake Wiki](https://github.com/premake/premake-core/wiki)
 
-Simply run premake5 in the root directory (premake5.exe for Windows, ans premake5 for Linux)
+Simply run premake5 in the root directory (premake5.exe for Windows, and premake5 for Linux)
 It will create a "build" directory where you will find a directory named after your tool (like vs2017 for Visual Studio 2017).
 
 ## Used Libraries
