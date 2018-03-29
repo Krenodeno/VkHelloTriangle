@@ -22,8 +22,8 @@ My goal is to have a general comprehension of the API, and to learn commons grap
 ## How to build
 ### Dependencies
 
-* Vulkan : [Download LunarG's SDK](https://vulkan.lunarg.com) or install vulkan packages for your Linux ditribution.
-* GLFW : install GLFW dev and regular packages for your Linux distribution.
+* Vulkan >= 1.0.3 : [Download LunarG's SDK](https://vulkan.lunarg.com) or install vulkan packages for your Linux ditribution.
+* GLFW >= 3.2.1 : install GLFW dev and regular packages for your Linux distribution.
 
 ### Generate workspace
 
