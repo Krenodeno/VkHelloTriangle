@@ -23,6 +23,7 @@ My goal is to have a general comprehension of the API, and to learn commons grap
 ### Dependencies
 
 * Vulkan : [Download LunarG's SDK](https://vulkan.lunarg.com) or install vulkan packages for your Linux ditribution.
+* GLFW : install GLFW dev and regular packages for your Linux distribution.
 
 ### Generate workspace
 
@@ -34,7 +35,7 @@ It will create a "build" directory where you will find a directory named after s
 
 ## Shipped Libraries
 
-* GLFW 3.2.1
+* GLFW 3.2.1 (only Windows binaries are shipped)
 * GLM 0.9.8.5
 * STB_image
 * Tiny_Obj_Loader

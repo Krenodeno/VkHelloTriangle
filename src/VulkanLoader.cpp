@@ -1,9 +1,9 @@
 #include "VulkanLoader.hpp"
 
-#ifdef VK_USE_PLATFORM_WIN32_KHR
-#include <Windows.h>
-#elif defined(VK_USE_PLATFORM_XCB_KHR) || defined(VK_USE_PLATFORM_XLIB_KHR)
-#include <dlfcn.h>
+#ifdef USE_WINDOWS_OPERATING_SYSTEM
+#	include <Windows.h>
+#elif defined(USE_LINUX_OPERATING_SYSTEM)
+#	include <dlfcn.h>
 #endif
 #include <iostream>
 
@@ -15,18 +15,18 @@ VulkanLoader::~VulkanLoader()
 {
 	if (!unload())
 		std::cout << "Error unloading Vulkan library : ";
-		#if defined(VK_USE_PLATFORM_WIN32_KHR)
+#if defined(USE_WINDOWS_OPERATING_SYSTEM)
 		std::cout << GetLastError() << "\n";
-		#elif defined(VK_USE_PLATFORM_XCB_KHR) || defined(VK_USE_PLATFORM_XLIB_KHR)
+#elif defined(USE_LINUX_OPERATING_SYSTEM)
 		std::cout << dlerror() << "\n";
-		#endif
+#endif
 }
 
 bool VulkanLoader::load()
 {
-#if defined(VK_USE_PLATFORM_WIN32_KHR)
+#if defined(USE_WINDOWS_OPERATING_SYSTEM)
 	vkLibHandle = LoadLibrary(TEXT("vulkan-1.dll"));
-#elif defined(VK_USE_PLATFORM_XCB_KHR) || defined(VK_USE_PLATFORM_XLIB_KHR)
+#elif defined(USE_LINUX_OPERATING_SYSTEM)
 	vkLibHandle = dlopen("libvulkan.so.1", RTLD_NOW);
 #endif
 
@@ -40,9 +40,9 @@ bool VulkanLoader::unload()
 {
 	bool freeResult = true;
 	if (vkLibHandle != nullptr)
-#if defined(VK_USE_PLATFORM_WIN32_KHR)
+#if defined(USE_WINDOWS_OPERATING_SYSTEM)
 		freeResult = FreeLibrary(reinterpret_cast<HMODULE>(vkLibHandle));
-#elif defined(VK_USE_PLATFORM_XCB_KHR) || defined(VK_USE_PLATFORM_XLIB_KHR)
+#elif defined(USE_LINUX_OPERATING_SYSTEM)
 		freeResult = dlclose(vkLibHandle);
 #endif
 	vkLibHandle = nullptr;
@@ -56,11 +56,11 @@ bool VulkanLoader::isLoaded() const
 
 bool VulkanLoader::LoadExportedEntryPoints()
 {
-	#if defined(VK_USE_PLATFORM_WIN32_KHR)
-		#define LoadProcAddr(handle, fun) GetProcAddress(reinterpret_cast<HMODULE>(handle), fun)
-	#elif defined(VK_USE_PLATFORM_XCB_KHR) || defined(VK_USE_PLATFORM_XLIB_KHR)
-		#define LoadProcAddr dlsym
-	#endif
+#if defined(USE_WINDOWS_OPERATING_SYSTEM)
+#	define LoadProcAddr(handle, fun) GetProcAddress(reinterpret_cast<HMODULE>(handle), fun)
+#elif defined(USE_LINUX_OPERATING_SYSTEM)
+#	define LoadProcAddr dlsym
+#endif
 
 	#define VK_EXPORTED_FUNCTION( fun ) \
 	if ( !(fun = (PFN_##fun) LoadProcAddr(vkLibHandle, #fun)) ) {\

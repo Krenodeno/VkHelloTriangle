@@ -1,10 +1,11 @@
 -- findVulkan.lua
+function includeVulkan()
+	-- LunarG's Vulkan SDK set a Windows environment variable, so use it
+	local envVulkanSDKPath = os.getenv("VK_SDK_PATH")
 
--- Lunarg's Vulkan SDK set Windows environment variables, so use it
-envVulkanSDKPath = os.getenv("VK_SDK_PATH")
-print(envVulkanSDKPath)
-vulkanSDKPath = envVulkanSDKPath:gsub("\\", "/")
-
-if (vulkanSDKPath) then
-	includedirs { vulkanSDKPath .. "" }
+	if (envVulkanSDKPath) then
+		local vulkanSDKPath = envVulkanSDKPath:gsub("\\", "/")
+		print("Found Vulkan librarie : " .. vulkanSDKPath)
+		includedirs { vulkanSDKPath .. "/Include" }
+	end
 end

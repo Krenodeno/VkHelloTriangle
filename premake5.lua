@@ -2,7 +2,7 @@
 workspace "VkHelloTriangle"
 	configurations { "Debug", "Release" }
 	platforms { "x64", "x86" }
-	
+
 	local sourceDir = "src/"
 	local LibDir = "Libraries/"
 
@@ -29,33 +29,36 @@ workspace "VkHelloTriangle"
 		architecture "x86_64"
 
 	filter "system:Windows"
-		defines { "VK_USE_PLATFORM_WIN32_KHR" }
+		defines { "USE_WINDOWS_OPERATING_SYSTEM" }
 
 	filter "system:Linux"
-		defines { "VK_USE_PLATFORM_XCB_KHR", "VK_USE_PLATFORM_XLIB_KHR" }
+		defines { "USE_LINUX_OPERATING_SYSTEM" }
 		links { "dl" }
 
 	filter { "system:Windows", "platforms:x86" }
 		libdirs { LibDir .. "Lib32/*" }
-	
+
 	filter { "system:Windows", "platforms:x64" }
 		libdirs { LibDir .. "Lib/*" }
 
 	filter {}
-	
+
 	vpaths {
 		["Headers"] = { "**.hpp", "**.inl" },
 		["Sources"] = { "**.cpp" },
 		["Shaders"] = { "**.vert", "**.frag" }
 	}
-	
+
 	defines { "VK_NO_PROTOTYPES" }
+
+	include( "Libraries/findVulkan.lua" )
 
 project "VkHelloTriangle"
 	kind "StaticLib"
 	language "C++"
 
-	include( "Libraries/findVulkan.lua" )
+	includedirs { LibDir .. "Include" }
+	includeVulkan()
 
 	files { sourceDir .. "**.hpp", sourceDir .. "**.inl", sourceDir .. "**.cpp" }
 
@@ -63,22 +66,26 @@ project "VkHelloTriangle"
 project "printVulkanInfos"
 	kind "ConsoleApp"
 	language "C++"
-
-	include( "Libraries/findVulkan.lua" )
 	includedirs { LibDir .. "Include", sourceDir }
+	includeVulkan()
 	files { "examples/printCapabilities.cpp" }
 
 	links "VkHelloTriangle"
-	
+
 project "vulkan-tutorial"
 	kind "ConsoleApp"
 	language "C++"
-	
-	include( "Libraries/findVulkan.lua" )
-	includedirs { LibDir .. "Include", sourceDir }
+	includedirs { LibDir .. "Include", sourceDir  }
+	includeVulkan()
 	files { "examples/vulkan-tutorial/*", "ressources/shaders/*.frag", "ressources/shaders/*.vert" }
-	
-	links { "glfw3" }
-	
+
+	filter "system:Windows"
+		links "glfw3"
+
+	filter { "system:Linux" , "action:gmake2" }
+		buildoptions { "`pkg-config --cflags glfw3`" }
+		linkoptions { "`pkg-config --static --libs glfw3`" }
+
+	filter {}
+
 	links { "VkHelloTriangle" }
-	
