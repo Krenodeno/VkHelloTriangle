@@ -5,6 +5,7 @@ My goal is to have a general comprehension of the API, and to learn commons grap
 
 ## TODO LIST
 
+* Do the surface creation instead of asking GLFW doing it
 * Library loading
 	* load extension functions only if activated at Instance/Device creation time
 
