@@ -1,4 +1,5 @@
-#pragma once
+#ifndef VULKAN_APPLICATION_H
+#define VULKAN_APPLICATION_H
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -37,3 +38,4 @@ private:
 
 void createSurface(VulkanApplication* app, VkInstance instance, VkSurfaceKHR* surface);
 
+#endif // !VULKAN_APPLICATION_H

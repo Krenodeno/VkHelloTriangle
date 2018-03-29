@@ -1,4 +1,6 @@
-#pragma once
+#ifndef VULKAN_RENDERER_H
+#define VULKAN_RENDERER_H
+
 #include "VDeleter.hpp"
 #include "Vertex.hpp"
 #include "Orbiter.hpp"
@@ -259,3 +261,4 @@ private:
 	static std::vector<char> readFile(const std::string& filename);
 };
 
+#endif // !VULKAN_RENDERER_H

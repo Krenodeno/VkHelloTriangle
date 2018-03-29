@@ -1,4 +1,5 @@
-#pragma once
+#ifndef VERTEX_H
+#define VERTEX_H
 
 #include <glm/glm.hpp>
 #include <glm/gtx/hash.hpp>
@@ -57,3 +58,5 @@ namespace std {
 		}
 	};
 }
+
+#endif	// VERTEX_H
