@@ -12,6 +12,8 @@ workspace "VkHelloTriangle"
 	debugdir "./"
 
 	cppdialect "C++11"
+	
+	flags { "MultiProcessorCompile" }
 
 	filter "configurations:Debug"
 		defines { "DEBUG" }
