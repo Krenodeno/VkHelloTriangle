@@ -10,7 +10,8 @@ workspace "VkHelloTriangle"
 	targetdir "build/bin/%{cfg.platform}/%{cfg.buildcfg}"
 	objdir "build/obj/"
 	debugdir "./"
-
+	
+	language "C++"
 	cppdialect "C++11"
 	
 	flags { "MultiProcessorCompile" }
@@ -57,7 +58,6 @@ workspace "VkHelloTriangle"
 
 project "VkHelloTriangle"
 	kind "StaticLib"
-	language "C++"
 
 	includedirs { LibDir .. "Include" }
 	includeVulkan()
@@ -67,7 +67,6 @@ project "VkHelloTriangle"
 
 project "printVulkanInfos"
 	kind "ConsoleApp"
-	language "C++"
 	includedirs { LibDir .. "Include", sourceDir }
 	includeVulkan()
 	files { "examples/printCapabilities.cpp" }
@@ -76,7 +75,6 @@ project "printVulkanInfos"
 
 project "vulkan-tutorial"
 	kind "ConsoleApp"
-	language "C++"
 	includedirs { LibDir .. "Include", sourceDir  }
 	includeVulkan()
 	files { "examples/vulkan-tutorial/*", "ressources/shaders/*.frag", "ressources/shaders/*.vert" }
