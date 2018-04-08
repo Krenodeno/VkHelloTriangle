@@ -284,6 +284,9 @@ void VulkanRenderer::setupDebugCallback() {
 }
 
 void VulkanRenderer::createSurface() {
+#ifdef USE_WINDOWS_OPERATING_SYSTEM
+
+#endif // USE_WINDOWS_OPERATING_SYSTEM
 	createSurfaceFunction(app, instance, surface.replace());
 }
 

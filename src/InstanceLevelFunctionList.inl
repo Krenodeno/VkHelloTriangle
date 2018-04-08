@@ -1,5 +1,5 @@
 #ifndef VK_INSTANCE_LEVEL_FUNCTION
-#define VK_INSTANCE_LEVEL_FUNCTION( fun )
+#	define VK_INSTANCE_LEVEL_FUNCTION( fun )
 #endif // !VK_INSTANCE_LEVEL_FUNCTION
 
 VK_INSTANCE_LEVEL_FUNCTION(vkDestroyInstance)
@@ -43,11 +43,29 @@ VK_INSTANCE_LEVEL_FUNCTION(vkGetPhysicalDeviceSurfacePresentModesKHR)
 VK_INSTANCE_LEVEL_FUNCTION(vkDestroySurfaceKHR)
 
 #if defined(VK_USE_PLATFORM_WIN32_KHR)
+
+/* WIN32 Surface extension */
+
 VK_INSTANCE_LEVEL_FUNCTION(vkCreateWin32SurfaceKHR)
+
+VK_INSTANCE_LEVEL_FUNCTION(vkGetPhysicalDeviceWin32PresentationSupportKHR)
+
 #elif defined(VK_USE_PLATFORM_WAYLAND_KHR)
+
+/* Wayland Surface extension */
+
 VK_INSTANCE_LEVEL_FUNCTION(vkCreateWaylandSurfaceKHR)
+
+VK_INSTANCE_LEVEL_FUNCTION(vkGetPhysicalDeviceWaylandPresentationSupportKHR)
+
 #elif defined(VK_USE_PLATFORM_XLIB_KHR)
+
+/* Xorg Surface extension */
+
 VK_INSTANCE_LEVEL_FUNCTION(vkCreateXlibSurfaceKHR)
+
+VK_INSTANCE_LEVEL_FUNCTION(vkGetPhysicalDeviceXlibPresentationSupportKHR)
+
 #endif
 
 
