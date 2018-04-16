@@ -1,7 +1,6 @@
 -- premake5.lua
 workspace "VkHelloTriangle"
 	configurations { "Debug", "Release" }
-	platforms { "x64", "x86" }
 
 	local sourceDir = "src/"
 	local LibDir = "Libraries/"
@@ -13,6 +12,7 @@ workspace "VkHelloTriangle"
 	
 	language "C++"
 	cppdialect "C++11"
+	architecture "x86_64"
 	
 	flags { "MultiProcessorCompile" }
 
@@ -25,21 +25,12 @@ workspace "VkHelloTriangle"
 		defines { "NDEBUG" }
 		optimize "On"
 
-	filter "platforms:x86"
-		architecture "x86"
-
-	filter "platforms:x64"
-		architecture "x86_64"
-
 	filter "system:Windows"
 		defines { "USE_WINDOWS_OPERATING_SYSTEM" }
 
 	filter "system:Linux"
 		defines { "USE_LINUX_OPERATING_SYSTEM" }
 		links { "dl" }
-
-	filter { "system:Windows", "platforms:x86" }
-		libdirs { LibDir .. "Lib32/*" }
 
 	filter { "system:Windows", "platforms:x64" }
 		libdirs { LibDir .. "Lib/*" }
