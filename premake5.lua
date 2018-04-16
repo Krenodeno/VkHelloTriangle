@@ -27,13 +27,11 @@ workspace "VkHelloTriangle"
 
 	filter "system:Windows"
 		defines { "USE_WINDOWS_OPERATING_SYSTEM" }
+		libdirs { LibDir .. "Lib/*" }
 
 	filter "system:Linux"
 		defines { "USE_LINUX_OPERATING_SYSTEM" }
 		links { "dl" }
-
-	filter { "system:Windows", "platforms:x64" }
-		libdirs { LibDir .. "Lib/*" }
 
 	filter {}
 
