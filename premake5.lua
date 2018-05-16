@@ -26,11 +26,11 @@ workspace "VkHelloTriangle"
 		optimize "On"
 
 	filter "system:Windows"
-		defines { "USE_WINDOWS_OPERATING_SYSTEM" }
+		defines { "USE_WINDOWS_OPERATING_SYSTEM", "VK_USE_PLATFORM_WIN32_KHR" }
 		libdirs { LibDir .. "Lib/*" }
 
 	filter "system:Linux"
-		defines { "USE_LINUX_OPERATING_SYSTEM" }
+		defines { "USE_LINUX_OPERATING_SYSTEM", "VK_USE_PLATFORM_WAYLAND_KHR", "VK_USE_PLATFORM_XCB_KHR", "VK_USE_PLATFORM_XLIB_KHR" }
 		links { "dl" }
 
 	filter {}
