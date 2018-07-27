@@ -1,11 +1,24 @@
-# Visual Studio 2015 cache/options directory
+# Visual Studio 201x cache/options directory
 .vs/
+
+# Visual Studio Code cache/options directory
+.vscode/
 
 # JetBrains Rider
 .idea/
+
+# Atom build config file
+.atom-build.*
+
+# Atom debug config file
+.atom-dbg.*
 
 # build directory where all premake generated files and build files are stored
 build/
 
 # SPIR-V generated shaders
 *.spv
+
+# Precompiled headers
+**.pch
+**.gch
