@@ -9,11 +9,11 @@ workspace "VkHelloTriangle"
 	targetdir "build/bin/%{cfg.platform}/%{cfg.buildcfg}"
 	objdir "build/obj/"
 	debugdir "./"
-	
+
 	language "C++"
 	cppdialect "C++11"
 	architecture "x86_64"
-	
+
 	flags { "MultiProcessorCompile" }
 
 	filter "configurations:Debug"
@@ -26,11 +26,19 @@ workspace "VkHelloTriangle"
 		optimize "On"
 
 	filter "system:Windows"
-		defines { "USE_WINDOWS_OPERATING_SYSTEM", "VK_USE_PLATFORM_WIN32_KHR" }
+		defines {
+			"USE_WINDOWS_OPERATING_SYSTEM",
+			"VK_USE_PLATFORM_WIN32_KHR"
+		}
 		libdirs { LibDir .. "Lib/*" }
 
 	filter "system:Linux"
-		defines { "USE_LINUX_OPERATING_SYSTEM", "VK_USE_PLATFORM_WAYLAND_KHR", "VK_USE_PLATFORM_XCB_KHR", "VK_USE_PLATFORM_XLIB_KHR" }
+		defines {
+			"USE_LINUX_OPERATING_SYSTEM",
+			"VK_USE_PLATFORM_WAYLAND_KHR",
+			"VK_USE_PLATFORM_XCB_KHR",
+			"VK_USE_PLATFORM_XLIB_KHR"
+		}
 		links { "dl" }
 
 	filter {}
@@ -40,8 +48,6 @@ workspace "VkHelloTriangle"
 		["Sources"] = { "**.cpp" },
 		["Shaders"] = { "**.vert", "**.frag" }
 	}
-
-	defines { "VK_NO_PROTOTYPES" }
 
 	include( "Libraries/findVulkan.lua" )
 
@@ -62,7 +68,7 @@ project "printVulkanInfos"
 
 	links "VkHelloTriangle"
 
-project "vulkan-tutorial"
+project ""
 	kind "ConsoleApp"
 	includedirs { LibDir .. "Include", sourceDir  }
 	files { "examples/vulkan-tutorial/*", "ressources/shaders/*.frag", "ressources/shaders/*.vert" }
