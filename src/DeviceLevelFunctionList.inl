@@ -36,7 +36,7 @@ VK_DEVICE_LEVEL_FUNCTION(vkGetImageMemoryRequirements)
 
 VK_DEVICE_LEVEL_FUNCTION(vkGetImageSparseMemoryRequirements)
 
-VK_DEVICE_LEVEL_FUNCTION(vkGetPhysicalDeviceSparseImageFormatProperties)
+//VK_DEVICE_LEVEL_FUNCTION(vkGetPhysicalDeviceSparseImageFormatProperties)
 
 VK_DEVICE_LEVEL_FUNCTION(vkQueueBindSparse)
 
