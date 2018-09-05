@@ -5,8 +5,14 @@
 
 #include <vulkan/vulkan.hpp>
 
+#include "RenderWindow.hpp"
+
 class Application {
 public:
+
+	Application();
+	~Application();
+
 	void run() {
 		init();
 		mainLoop();
@@ -14,17 +20,12 @@ public:
 	}
 
 private:
-	void init() {
+	void init();
+	void initWindow();
+	void mainLoop();
+	void cleanup();
 
-	}
-
-	void mainLoop() {
-
-	}
-
-	void cleanup() {
-
-	}
+	RenderWindow window;
 };
 
 #endif
