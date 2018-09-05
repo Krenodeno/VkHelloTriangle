@@ -68,7 +68,7 @@ project "printVulkanInfos"
 
 	links "VkHelloTriangle"
 
-project ""
+project "vulkan-tutorial"
 	kind "ConsoleApp"
 	includedirs { LibDir .. "Include", sourceDir  }
 	files { "examples/vulkan-tutorial/*", "ressources/shaders/*.frag", "ressources/shaders/*.vert" }
