@@ -53,6 +53,8 @@ workspace "VkHelloTriangle"
 
 	includeVulkan()
 
+	linkVulkan()
+
 project "VkHelloTriangle"
 	kind "StaticLib"
 
