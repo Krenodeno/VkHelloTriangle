@@ -2,10 +2,10 @@
 #define APPLICATION_HPP
 
 #include <functional>
-
-#include <vulkan/vulkan.hpp>
+#include <string>
 
 #include "RenderWindow.hpp"
+#include "Render.hpp"
 
 class Application {
 public:
@@ -16,16 +16,18 @@ public:
 	void run() {
 		init();
 		mainLoop();
-		cleanup();
 	}
 
 private:
 	void init();
 	void initWindow();
 	void mainLoop();
-	void cleanup();
 
 	RenderWindow window;
+	Render render;
+	std::string name;
+	int version;		// au format vulkan
+
 };
 
 #endif
