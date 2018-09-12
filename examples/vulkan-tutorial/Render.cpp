@@ -40,10 +40,18 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 void Render::init() {
 	createInstance();
 	setupDebugCallback();
+	createSurface();
+	pickPhysicalDevice();
+	createLogicalDevice();
 }
 
 void Render::cleanup() {
-	// Destroy instance realted objects
+	// Destroy device related objects
+
+	// Destroy Device
+	device.destroy(nullptr, dispatchLoader);
+	// Destroy instance related objects
+	instance.destroySurfaceKHR(surface, nullptr, dispatchLoader);
 	vk::DispatchLoaderDynamic didy(instance);
 	instance.destroyDebugUtilsMessengerEXT(callback, nullptr, didy);
 	// Then destroy the instance
@@ -62,6 +70,14 @@ void Render::enableValidationLayer() {
 	validationLayerEnabled = true;
 	layers.push_back("VK_LAYER_LUNARG_standard_validation");
 	extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+}
+
+void Render::setParentApplication(Application* app) {
+	parentApp = app;
+}
+
+void Render::setSurfaceCreationFunction(createSurfaceFoncter functer) {
+	surfaceCreation = functer;
 }
 
 void Render::createInstance() {
@@ -120,6 +136,63 @@ void Render::setupDebugCallback() {
 	callback = instance.createDebugUtilsMessengerEXT(createInfo, nullptr, didy);
 }
 
+void Render::pickPhysicalDevice() {
+	auto devices = instance.enumeratePhysicalDevices(dispatchLoader);
+
+	if (devices.empty())
+		throw std::runtime_error("Failed to find GPUs with Vulkan suport!");
+
+	for (const auto& device: devices) {
+		if (isDeviceSuitable(device)) {
+			physicalDevice = device;
+			break;
+		}
+	}
+
+	if (!physicalDevice)
+		throw std::runtime_error("Failed to find a suitable GPU!");
+}
+
+void Render::createLogicalDevice() {
+	QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
+
+	// Queues infos
+	vk::DeviceQueueCreateInfo queueCreateInfo;
+	queueCreateInfo.queueFamilyIndex = indices.graphicsFamily;
+	queueCreateInfo.queueCount = 1;
+	float queuePriority = 1.f;
+	queueCreateInfo.pQueuePriorities = &queuePriority;
+
+	// Features
+	vk::PhysicalDeviceFeatures deviceFeatures;
+
+	// Device creation
+	vk::DeviceCreateInfo createInfo;
+	createInfo.queueCreateInfoCount = 1;
+	createInfo.pQueueCreateInfos = &queueCreateInfo;
+
+	createInfo.pEnabledFeatures = &deviceFeatures;
+
+	createInfo.enabledExtensionCount = 0;
+
+	if (validationLayerEnabled) {
+		createInfo.enabledLayerCount = layers.size();
+		createInfo.ppEnabledLayerNames = layers.data();
+	}
+	else
+		createInfo.enabledLayerCount = 0;
+
+	device = physicalDevice.createDevice(createInfo, nullptr, dispatchLoader);
+
+	device.getQueue(indices.graphicsFamily, 0, dispatchLoader);
+}
+
+void Render::createSurface() {
+	surface = surfaceCreation(parentApp, instance);
+}
+
+/** HELPER FUNCTIONS */
+
 bool Render::checkExtensionSupport(const char* extensionName) {
 	bool result = false;
 	for (auto extension : vk::enumerateInstanceExtensionProperties(std::string(), dispatchLoader)) {
@@ -140,4 +213,30 @@ bool Render::checkLayerSupport(const char* layerName) {
 		}
 	}
 	return result;
+}
+
+bool Render::isDeviceSuitable(vk::PhysicalDevice device) {
+	QueueFamilyIndices indices = findQueueFamilies(device);
+
+	return indices.isComplete();
+}
+
+QueueFamilyIndices Render::findQueueFamilies(vk::PhysicalDevice device) {
+	QueueFamilyIndices indices;
+
+	auto queueFamilyProperties = device.getQueueFamilyProperties(dispatchLoader);
+
+	int i = 0;
+	for (const auto& queueFamily : queueFamilyProperties) {
+		if (queueFamily.queueCount > 0 && queueFamily.queueFlags & vk::QueueFlagBits::eGraphics) {
+			indices.graphicsFamily = i;
+		}
+
+		if (indices.isComplete())
+			break;
+
+		++i;
+	}
+
+	return indices;
 }

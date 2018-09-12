@@ -18,6 +18,8 @@ public:
 		mainLoop();
 	}
 
+	vk::SurfaceKHR createRenderSurface(vk::Instance);
+
 private:
 	void init();
 	void initWindow();
@@ -29,5 +31,7 @@ private:
 	int version;		// au format vulkan
 
 };
+
+vk::SurfaceKHR createSurface(Application*, vk::Instance);
 
 #endif
