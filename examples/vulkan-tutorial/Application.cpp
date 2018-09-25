@@ -15,7 +15,8 @@ vk::SurfaceKHR Application::createRenderSurface(vk::Instance instance) {
 void Application::init() {
 	auto extensions = window.getRequiredExtensions();
 	for (auto extensionName : extensions)
-		render.addExtension(extensionName);
+		render.addInstanceExtension(extensionName);
+	render.addDeviceExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
 	#if defined(DEBUG)
 	render.enableValidationLayer();
 	#endif
@@ -23,7 +24,13 @@ void Application::init() {
 	render.setParentApplication(this);
 	render.setSurfaceCreationFunction(createSurface);
 
+	render.setExtent(windowExtent());
+
 	render.init();
+}
+
+vk::Extent2D Application::windowExtent() {
+	return {window.getWidth(), window.getHeight()};
 }
 
 void Application::mainLoop() {

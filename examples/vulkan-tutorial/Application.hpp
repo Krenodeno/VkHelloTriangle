@@ -20,6 +20,8 @@ public:
 
 	vk::SurfaceKHR createRenderSurface(vk::Instance);
 
+	vk::Extent2D windowExtent();
+
 private:
 	void init();
 	void initWindow();

@@ -16,14 +16,21 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 	const VkDebugUtilsMessengerCallbackDataEXT*,
 	void*);
 
-/** struct */
+/** structs */
 
 struct QueueFamilyIndices {
 	int graphicsFamily = -1;
+	int presentFamily = -1;
 
 	bool isComplete() {
-		return graphicsFamily >= 0;
+		return graphicsFamily >= 0 && presentFamily >= 0;
 	}
+};
+
+struct SwapChainSupportDetails {
+	vk::SurfaceCapabilitiesKHR capabilities;
+	std::vector<vk::SurfaceFormatKHR> formats;
+	std::vector<vk::PresentModeKHR> presentModes;
 };
 
 /* forward declaration */
@@ -41,7 +48,8 @@ public:
 	void cleanup();
 
 	void addLayer(const char*);
-	void addExtension(const char*);
+	void addInstanceExtension(const char*);
+	void addDeviceExtension(const char*);
 
 	void enableValidationLayer();
 
@@ -49,15 +57,20 @@ public:
 
 	void setSurfaceCreationFunction(createSurfaceFoncter);
 
+	void setExtent(const vk::Extent2D&);
+
 private:
 
 	bool validationLayerEnabled;
 	std::vector<const char*> layers;
-	std::vector<const char*> extensions;
+	std::vector<const char*> instanceExtensions;
+	std::vector<const char*> deviceExtensions;
 
 	Application* parentApp;
 
 	createSurfaceFoncter surfaceCreation;
+
+	vk::Extent2D windowExtent;
 
 	vk::DispatchLoaderStatic dispatchLoader;
 
@@ -73,6 +86,15 @@ private:
 
 	vk::SurfaceKHR surface;
 
+	vk::Queue presentQueue;
+
+	vk::SwapchainKHR swapChain;
+	std::vector<vk::Image> swapChainImages;
+	vk::Format swapChainImageFormat;
+	vk::Extent2D swapChainExtent;
+
+	std::vector<vk::ImageView> swapChainImageViews;
+
 	// initialising functions
 
 	void createInstance();
@@ -85,6 +107,10 @@ private:
 
 	void createSurface();
 
+	void createSwapchain();
+
+	void createImageViews();
+
 	// Tools functions
 
 	bool checkExtensionSupport(const char*);
@@ -93,6 +119,16 @@ private:
 	bool isDeviceSuitable(vk::PhysicalDevice);
 
 	QueueFamilyIndices findQueueFamilies(vk::PhysicalDevice);
+
+	bool checkDeviceExtensionSupport(vk::PhysicalDevice);
+
+	SwapChainSupportDetails querySwapChainSupport(vk::PhysicalDevice);
+
+	vk::SurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<vk::SurfaceFormatKHR>&);
+
+	vk::PresentModeKHR chooseSwapPresentMode(const std::vector<vk::PresentModeKHR>&);
+
+	vk::Extent2D chooseSwapExtent(const vk::SurfaceCapabilitiesKHR&);
 };
 
 #endif

@@ -1,6 +1,7 @@
 #include "Render.hpp"
 
 #include <ostream>
+#include <set>
 
 Render::Render() {
 
@@ -43,11 +44,16 @@ void Render::init() {
 	createSurface();
 	pickPhysicalDevice();
 	createLogicalDevice();
+	createSwapchain();
+	createImageViews();
 }
 
 void Render::cleanup() {
 	// Destroy device related objects
-
+	for (auto imageView : swapChainImageViews) {
+		device.destroyImageView(imageView, nullptr, dispatchLoader);
+	}
+	device.destroySwapchainKHR(swapChain, nullptr, dispatchLoader);
 	// Destroy Device
 	device.destroy(nullptr, dispatchLoader);
 	// Destroy instance related objects
@@ -62,14 +68,18 @@ void Render::addLayer(const char* layerName) {
 	layers.push_back(layerName);
 }
 
-void Render::addExtension(const char* extensionName) {
-	extensions.push_back(extensionName);
+void Render::addInstanceExtension(const char* extensionName) {
+	instanceExtensions.push_back(extensionName);
+}
+
+void Render::addDeviceExtension(const char* extensionName) {
+	deviceExtensions.push_back(extensionName);
 }
 
 void Render::enableValidationLayer() {
 	validationLayerEnabled = true;
 	layers.push_back("VK_LAYER_LUNARG_standard_validation");
-	extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+	instanceExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 }
 
 void Render::setParentApplication(Application* app) {
@@ -78,6 +88,10 @@ void Render::setParentApplication(Application* app) {
 
 void Render::setSurfaceCreationFunction(createSurfaceFoncter functer) {
 	surfaceCreation = functer;
+}
+
+void Render::setExtent(const vk::Extent2D& extent) {
+	windowExtent = extent;
 }
 
 void Render::createInstance() {
@@ -95,7 +109,7 @@ void Render::createInstance() {
 	}
 
 	std::cout << "Required extensions: \n";
-	for (auto extension: extensions) {
+	for (auto extension: instanceExtensions) {
 		std::cout << "\t" << extension << (checkExtensionSupport(extension)?"\tsupported":"\tnon supported") << "\n";
 	}
 
@@ -110,8 +124,8 @@ void Render::createInstance() {
 	instanceInfo.pApplicationInfo = &appInfo;
 	instanceInfo.enabledLayerCount = layers.size();
 	instanceInfo.ppEnabledLayerNames = layers.data();
-	instanceInfo.enabledExtensionCount = extensions.size();
-	instanceInfo.ppEnabledExtensionNames = extensions.data();
+	instanceInfo.enabledExtensionCount = instanceExtensions.size();
+	instanceInfo.ppEnabledExtensionNames = instanceExtensions.data();
 
 	instance = vk::createInstance(instanceInfo, nullptr, dispatchLoader);
 }
@@ -157,23 +171,30 @@ void Render::createLogicalDevice() {
 	QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
 
 	// Queues infos
-	vk::DeviceQueueCreateInfo queueCreateInfo;
-	queueCreateInfo.queueFamilyIndex = indices.graphicsFamily;
-	queueCreateInfo.queueCount = 1;
-	float queuePriority = 1.f;
-	queueCreateInfo.pQueuePriorities = &queuePriority;
+	std::vector<vk::DeviceQueueCreateInfo> queueCreateInfos;
+	std::set<int> uniqueFamilies = {indices.graphicsFamily, indices.presentFamily};
+
+	float queuePriority = 1.0f;
+	for (int queueFamily : uniqueFamilies) {
+		vk::DeviceQueueCreateInfo queueCreateInfo;
+		queueCreateInfo.queueFamilyIndex = queueFamily;
+		queueCreateInfo.queueCount = 1;
+		queueCreateInfo.pQueuePriorities = &queuePriority;
+		queueCreateInfos.push_back(queueCreateInfo);
+	}
 
 	// Features
 	vk::PhysicalDeviceFeatures deviceFeatures;
 
 	// Device creation
 	vk::DeviceCreateInfo createInfo;
-	createInfo.queueCreateInfoCount = 1;
-	createInfo.pQueueCreateInfos = &queueCreateInfo;
+	createInfo.queueCreateInfoCount = queueCreateInfos.size();
+	createInfo.pQueueCreateInfos = queueCreateInfos.data();
 
 	createInfo.pEnabledFeatures = &deviceFeatures;
 
-	createInfo.enabledExtensionCount = 0;
+	createInfo.enabledExtensionCount = deviceExtensions.size();
+	createInfo.ppEnabledExtensionNames = deviceExtensions.data();
 
 	if (validationLayerEnabled) {
 		createInfo.enabledLayerCount = layers.size();
@@ -184,14 +205,96 @@ void Render::createLogicalDevice() {
 
 	device = physicalDevice.createDevice(createInfo, nullptr, dispatchLoader);
 
-	device.getQueue(indices.graphicsFamily, 0, dispatchLoader);
+	graphicsQueue = device.getQueue(indices.graphicsFamily, 0, dispatchLoader);
+	presentQueue = device.getQueue(indices.presentFamily, 0, dispatchLoader);
 }
 
 void Render::createSurface() {
 	surface = surfaceCreation(parentApp, instance);
 }
 
+void Render::createSwapchain() {
+	SwapChainSupportDetails swapChainSupport = querySwapChainSupport(physicalDevice);
+
+	vk::SurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
+	vk::PresentModeKHR presentMode = chooseSwapPresentMode(swapChainSupport.presentModes);
+	vk::Extent2D extent = chooseSwapExtent(swapChainSupport.capabilities);
+
+	// amount of image in the swapchain
+	uint32_t imageCount = swapChainSupport.capabilities.minImageCount + 1;
+	if (swapChainSupport.capabilities.maxImageCount > 0 && imageCount > swapChainSupport.capabilities.maxImageCount) {
+		imageCount = swapChainSupport.capabilities.maxImageCount;
+	}
+
+	vk::SwapchainCreateInfoKHR createInfo;
+	createInfo.surface = surface;
+	createInfo.minImageCount = imageCount;
+	createInfo.imageFormat = surfaceFormat.format;
+	createInfo.imageColorSpace = surfaceFormat.colorSpace;
+	createInfo.imageExtent = extent;
+	createInfo.imageArrayLayers = 1; // 2 if stereoscopic is wanted, 1 in others cases
+	createInfo.imageUsage = vk::ImageUsageFlagBits::eColorAttachment; // render image and present it directly
+
+	// Use the right queue
+	QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
+	uint32_t queueFamilyIndices[] = { indices.graphicsFamily, indices.presentFamily };
+	// We use Concurrent mode, but exclusive give more performance but require to be explicit about image sharing
+	if (indices.graphicsFamily != indices.presentFamily) {
+		createInfo.imageSharingMode = vk::SharingMode::eConcurrent;
+		createInfo.queueFamilyIndexCount = 2;
+		createInfo.pQueueFamilyIndices = queueFamilyIndices;
+	}
+	else {
+		createInfo.imageSharingMode = vk::SharingMode::eExclusive;
+	}
+
+	createInfo.preTransform = swapChainSupport.capabilities.currentTransform;
+	// opaque unless you want to blend background from other windows
+	createInfo.compositeAlpha = vk::CompositeAlphaFlagBitsKHR::eOpaque;
+	createInfo.presentMode = presentMode;
+	createInfo.clipped = VK_TRUE;
+
+	createInfo.oldSwapchain = nullptr;
+
+	swapChain = device.createSwapchainKHR(createInfo, nullptr, dispatchLoader);
+
+	// Retrieve swapchain images
+	swapChainImages = device.getSwapchainImagesKHR(swapChain, dispatchLoader);
+	swapChainImageFormat = surfaceFormat.format;
+	swapChainExtent = extent;
+}
+
+void Render::createImageViews() {
+	swapChainImageViews.resize(swapChainImages.size());
+
+	for (size_t i = 0; i < swapChainImageViews.size(); ++i) {
+		vk::ImageViewCreateInfo createInfo;
+		createInfo.image = swapChainImages[i];
+		createInfo.viewType = vk::ImageViewType::e2D;
+		createInfo.format = swapChainImageFormat;
+		// components swizzle
+		createInfo.components.r = vk::ComponentSwizzle::eIdentity;
+		createInfo.components.g = vk::ComponentSwizzle::eIdentity;
+		createInfo.components.b = vk::ComponentSwizzle::eIdentity;
+		//
+		createInfo.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
+		createInfo.subresourceRange.baseMipLevel = 0;
+		createInfo.subresourceRange.levelCount = 1;
+		createInfo.subresourceRange.baseArrayLayer = 0;
+		createInfo.subresourceRange.layerCount = 1;
+
+		swapChainImageViews[i] = device.createImageView(createInfo, nullptr, dispatchLoader);
+	}
+}
+
+
+void Render::createGraphicsPipeline() {
+
+}
+
+/*********************/
 /** HELPER FUNCTIONS */
+/*********************/
 
 bool Render::checkExtensionSupport(const char* extensionName) {
 	bool result = false;
@@ -218,7 +321,15 @@ bool Render::checkLayerSupport(const char* layerName) {
 bool Render::isDeviceSuitable(vk::PhysicalDevice device) {
 	QueueFamilyIndices indices = findQueueFamilies(device);
 
-	return indices.isComplete();
+	auto extensionsSupported = checkDeviceExtensionSupport(device);
+
+	bool swapChainAdequate = false;
+	if (extensionsSupported) {
+		SwapChainSupportDetails swapchainSupport = querySwapChainSupport(device);
+		swapChainAdequate = !swapchainSupport.formats.empty() && !swapchainSupport.presentModes.empty();
+	}
+
+	return indices.isComplete() && extensionsSupported && swapChainAdequate;
 }
 
 QueueFamilyIndices Render::findQueueFamilies(vk::PhysicalDevice device) {
@@ -232,6 +343,11 @@ QueueFamilyIndices Render::findQueueFamilies(vk::PhysicalDevice device) {
 			indices.graphicsFamily = i;
 		}
 
+		auto presentSupport = device.getSurfaceSupportKHR(i, surface, dispatchLoader);
+		if (queueFamily.queueCount > 0 && presentSupport) {
+			indices.presentFamily = i;
+		}
+
 		if (indices.isComplete())
 			break;
 
@@ -239,4 +355,79 @@ QueueFamilyIndices Render::findQueueFamilies(vk::PhysicalDevice device) {
 	}
 
 	return indices;
+}
+
+bool Render::checkDeviceExtensionSupport(vk::PhysicalDevice device) {
+	auto availableExtensions = device.enumerateDeviceExtensionProperties(nullptr, dispatchLoader);
+
+	std::set<std::string> requiredExtensions(deviceExtensions.begin(), deviceExtensions.end());
+
+	for (const auto& extension : availableExtensions) {
+		requiredExtensions.erase(extension.extensionName);
+	}
+
+	return requiredExtensions.empty();
+}
+
+SwapChainSupportDetails Render::querySwapChainSupport(vk::PhysicalDevice device) {
+	SwapChainSupportDetails details;
+
+	details.capabilities = device.getSurfaceCapabilitiesKHR(surface, dispatchLoader);
+
+	details.formats = device.getSurfaceFormatsKHR(surface, dispatchLoader);
+
+	details.presentModes = device.getSurfacePresentModesKHR(surface, dispatchLoader);
+
+	return details;
+}
+
+vk::SurfaceFormatKHR Render::chooseSwapSurfaceFormat(const std::vector<vk::SurfaceFormatKHR>& availableFormats) {
+	// Select format ourself as there is not prefered format from the surface
+	if (availableFormats.size() == 1 && availableFormats[0].format == vk::Format::eUndefined) {
+		return {vk::Format::eB8G8R8A8Unorm, vk::ColorSpaceKHR::eSrgbNonlinear};
+	}
+	// Let's try to see if the format we want is in the list
+	for (const auto& availableFormat : availableFormats) {
+		if (availableFormat.format == vk::Format::eB8G8R8A8Unorm && availableFormat.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear) {
+			return availableFormat;
+		}
+	}
+	// No choice, take the first format available
+	return availableFormats[0];
+}
+
+vk::PresentModeKHR Render::chooseSwapPresentMode(const std::vector<vk::PresentModeKHR>& availablePresentModes) {
+	// Guaranted to be present, but still not really the best
+	vk::PresentModeKHR bestMode = vk::PresentModeKHR::eFifo;
+	for (const auto& availablePresentMode : availablePresentModes) {
+		// Nice mode working as triple-buffering
+		if (availablePresentMode == vk::PresentModeKHR::eMailbox) {
+			return availablePresentMode;
+		}
+		// send image immediatly when available to the screen
+		else if (availablePresentMode == vk::PresentModeKHR::eImmediate) {
+			bestMode = availablePresentMode;
+		}
+	}
+	return bestMode;
+}
+
+vk::Extent2D Render::chooseSwapExtent(const vk::SurfaceCapabilitiesKHR& capabilities) {
+	// If current extent velue is set with uint32_t limit value, then the DM
+	// tells us that it accept different extent that the window
+	if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
+		return capabilities.currentExtent;
+	}
+	else {
+		// TODO get the actual window size
+		//vk::Extent2D actualExtent = parentApp->windowExtent();
+		vk::Extent2D actualExtent = windowExtent;
+
+		actualExtent.width = std::max(capabilities.minImageExtent.width,
+								std::min(capabilities.maxImageExtent.width, actualExtent.width));
+		actualExtent.height = std::max(capabilities.minImageExtent.height,
+								std::min(capabilities.maxImageExtent.height, actualExtent.height));
+
+		return actualExtent;
+	}
 }
