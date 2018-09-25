@@ -32,6 +32,7 @@ workspace "VkHelloTriangle"
 		}
 		libdirs { LibDir .. "Lib/*" }
 
+
 	filter "system:Linux"
 		defines {
 			"USE_LINUX_OPERATING_SYSTEM",
@@ -62,6 +63,22 @@ project "VkHelloTriangle"
 
 	files { sourceDir .. "**.hpp", sourceDir .. "**.inl", sourceDir .. "**.cpp" }
 
+
+project "CompileShaders"
+	kind "Utility"
+
+	files { "ressources/shaders/**.vert" , "ressources/shaders/**.frag" }
+
+	filter { "files:**.vert", "files:**.frag" }
+
+		-- A message to display while this build step is running (optional)
+		buildmessage 'Compiling %{file.relpath} to SPIR-V'
+
+		-- One or more commands to run (required)
+		buildcommands { 'glslangValidator -V "%{file.relpath}"' }
+
+		-- One or more outputs resulting from the build (required)
+		buildoutputs { '%{file.relpath}.spv' }
 
 project "printVulkanInfos"
 	kind "ConsoleApp"
