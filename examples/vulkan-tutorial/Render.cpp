@@ -1,5 +1,7 @@
 #include "Render.hpp"
 
+#include "fileUtils.hpp"
+
 #include <ostream>
 #include <set>
 
@@ -46,10 +48,15 @@ void Render::init() {
 	createLogicalDevice();
 	createSwapchain();
 	createImageViews();
+	createRenderPass();
+	createGraphicsPipeline();
 }
 
 void Render::cleanup() {
 	// Destroy device related objects
+	device.destroyPipeline(graphicsPipeline, nullptr, dispatchLoader);
+	device.destroyPipelineLayout(pipelineLayout, nullptr, dispatchLoader);
+	device.destroyRenderPass(renderPass, nullptr, dispatchLoader);
 	for (auto imageView : swapChainImageViews) {
 		device.destroyImageView(imageView, nullptr, dispatchLoader);
 	}
@@ -288,7 +295,169 @@ void Render::createImageViews() {
 }
 
 
+void Render::createRenderPass() {
+	vk::AttachmentDescription colorAttachment;
+	colorAttachment.format = swapChainImageFormat;
+	colorAttachment.samples = vk::SampleCountFlagBits::e1;
+	colorAttachment.loadOp = vk::AttachmentLoadOp::eClear;
+	colorAttachment.storeOp = vk::AttachmentStoreOp::eStore;
+	colorAttachment.stencilLoadOp = vk::AttachmentLoadOp::eDontCare;
+	colorAttachment.stencilStoreOp = vk::AttachmentStoreOp::eDontCare;
+	colorAttachment.initialLayout = vk::ImageLayout::eUndefined;
+	colorAttachment.finalLayout = vk::ImageLayout::ePresentSrcKHR;
+
+	vk::AttachmentReference colorAttachmentRef;
+	colorAttachmentRef.attachment = 0;
+	colorAttachmentRef.layout = vk::ImageLayout::eColorAttachmentOptimal;
+
+	vk::SubpassDescription subpass;
+	subpass.pipelineBindPoint = vk::PipelineBindPoint::eGraphics;
+	subpass.colorAttachmentCount = 1;
+	subpass.pColorAttachments = &colorAttachmentRef;
+	// index of colorAttachment is referenced in the fragment shader as layout(location = 0)
+
+	vk::RenderPassCreateInfo renderPassInfo;
+	renderPassInfo.attachmentCount = 1;
+	renderPassInfo.pAttachments = &colorAttachment;
+	renderPassInfo.subpassCount = 1;
+	renderPassInfo.pSubpasses = &subpass;
+
+	renderPass = device.createRenderPass(renderPassInfo, nullptr, dispatchLoader);
+}
+
 void Render::createGraphicsPipeline() {
+	// Get the bytecode
+	auto vertModule = vert.createShaderModule("ressources/shaders/vert.spv", device);
+	auto fragModule = frag.createShaderModule("ressources/shaders/frag.spv", device);
+
+	// Create the actuals shaders and link them
+	vk::PipelineShaderStageCreateInfo vertShaderStageInfo;
+	vertShaderStageInfo.stage = vk::ShaderStageFlagBits::eVertex;
+	vertShaderStageInfo.module = vertModule;
+	vertShaderStageInfo.pName = "main";			// entry point in the shader's code
+
+	vk::PipelineShaderStageCreateInfo fragShaderStageInfo;
+	fragShaderStageInfo.stage = vk::ShaderStageFlagBits::eFragment;
+	fragShaderStageInfo.module = fragModule;
+	fragShaderStageInfo.pName = "main";			// entry point in the shader's code
+
+	vk::PipelineShaderStageCreateInfo shaderStages[] = {vertShaderStageInfo, fragShaderStageInfo};
+
+	// input of the vertex buffer
+	vk::PipelineVertexInputStateCreateInfo vertexInputInfo;
+	vertexInputInfo.vertexBindingDescriptionCount = 0;
+	vertexInputInfo.pVertexBindingDescriptions = nullptr;
+	vertexInputInfo.vertexAttributeDescriptionCount = 0;
+	vertexInputInfo.pVertexAttributeDescriptions = nullptr;
+
+	// Primitive style
+	vk::PipelineInputAssemblyStateCreateInfo inputAssembly;
+	inputAssembly.topology = vk::PrimitiveTopology::eTriangleList;
+	inputAssembly.primitiveRestartEnable = VK_FALSE;
+
+	//Viewport
+	vk::Viewport viewport;
+	viewport.x = 0.f;
+	viewport.y = 0.f;
+	viewport.width = (float) swapChainExtent.width;
+	viewport.height = (float) swapChainExtent.height;
+	viewport.minDepth = 0.f;
+	viewport.maxDepth = 1.f;
+
+	// Scissor
+	vk::Rect2D scissor;
+	scissor.offset = vk::Offset2D(0, 0);
+	scissor.extent = swapChainExtent;
+
+	vk::PipelineViewportStateCreateInfo viewportState;
+	// Using multiple viewports require GPU feature
+	viewportState.viewportCount = 1;
+	viewportState.pViewports = &viewport;
+	viewportState.scissorCount = 1;
+	viewportState.pScissors = &scissor;
+
+	// Rasterization
+	vk::PipelineRasterizationStateCreateInfo rasterizer;
+	// If true, clamp fragments beyond near and far to them. Require GPU feature
+	rasterizer.depthClampEnable = VK_FALSE; // can be set to True for shadowmap
+	rasterizer.rasterizerDiscardEnable = VK_FALSE;
+	rasterizer.polygonMode = vk::PolygonMode::eFill; // any other than fill require a GPU feature
+	rasterizer.lineWidth = 1.0f; // require wideLines feature for lines thicker than 1 fragment
+	// Culling
+	rasterizer.cullMode = vk::CullModeFlagBits::eBack;
+	rasterizer.frontFace = vk::FrontFace::eClockwise;
+	// Depth bias (can be used for shadowmapping)
+	rasterizer.depthBiasEnable = VK_FALSE;
+	rasterizer.depthBiasConstantFactor = 0.f;
+	rasterizer.depthBiasClamp = 0.f;
+	rasterizer.depthBiasSlopeFactor = 0.f;
+	// Multisampling
+	vk::PipelineMultisampleStateCreateInfo multisampling;
+	multisampling.sampleShadingEnable = VK_FALSE;
+	multisampling.rasterizationSamples = vk::SampleCountFlagBits::e1;
+	multisampling.minSampleShading = 1.f;
+	multisampling.pSampleMask = nullptr;
+	multisampling.alphaToCoverageEnable = VK_FALSE;
+	multisampling.alphaToOneEnable = VK_FALSE;
+
+	// Depth test
+	// Stencil test
+
+	// Color blending
+	// One PipelineColorBlendAttachmentState per attached framebuffer
+	vk::PipelineColorBlendAttachmentState colorBlendAttachment;
+	colorBlendAttachment.colorWriteMask =
+		vk::ColorComponentFlagBits::eR |
+		vk::ColorComponentFlagBits::eG |
+		vk::ColorComponentFlagBits::eB |
+		vk::ColorComponentFlagBits::eA;
+	colorBlendAttachment.blendEnable = VK_FALSE;
+	colorBlendAttachment.srcColorBlendFactor = vk::BlendFactor::eOne;
+	colorBlendAttachment.dstColorBlendFactor = vk::BlendFactor::eZero;
+	colorBlendAttachment.colorBlendOp = vk::BlendOp::eAdd;
+	colorBlendAttachment.srcAlphaBlendFactor = vk::BlendFactor::eOne;
+	colorBlendAttachment.dstAlphaBlendFactor = vk::BlendFactor::eZero;
+	colorBlendAttachment.alphaBlendOp = vk::BlendOp::eAdd;
+
+	vk::PipelineColorBlendStateCreateInfo colorBlending;
+	colorBlending.logicOpEnable = VK_FALSE; // setting to TRUE automatically disable blendAttachment
+	colorBlending.logicOp = vk::LogicOp::eCopy;
+	colorBlending.attachmentCount = 1;
+	colorBlending.pAttachments = &colorBlendAttachment;
+
+	// Dynamic state
+	// Allows to change some parameters without recreating the whole pipeline
+	// See DynamicState to know the ones that can be dynamically set
+
+	// Pipeline Layout
+	vk::PipelineLayoutCreateInfo pipelineLayoutInfo;
+	pipelineLayoutInfo.setLayoutCount = 0;
+	pipelineLayoutInfo.pushConstantRangeCount = 0;
+
+	pipelineLayout = device.createPipelineLayout(pipelineLayoutInfo, nullptr, dispatchLoader);
+
+	// Graphics Pipeline
+	vk::GraphicsPipelineCreateInfo pipelineInfo;
+	pipelineInfo.stageCount = 2;
+	pipelineInfo.pStages = shaderStages;
+	pipelineInfo.pVertexInputState = &vertexInputInfo;
+	pipelineInfo.pInputAssemblyState = &inputAssembly;
+	pipelineInfo.pViewportState = &viewportState;
+	pipelineInfo.pRasterizationState = &rasterizer;
+	pipelineInfo.pMultisampleState = &multisampling;
+	pipelineInfo.pDepthStencilState = nullptr;
+	pipelineInfo.pColorBlendState = &colorBlending;
+	pipelineInfo.pDynamicState = nullptr;
+
+	pipelineInfo.layout = pipelineLayout;
+
+	pipelineInfo.renderPass = renderPass;
+	pipelineInfo.subpass = 0;
+
+	graphicsPipeline = device.createGraphicsPipeline(nullptr, pipelineInfo, nullptr, dispatchLoader);
+
+	device.destroyShaderModule(vertModule, nullptr, dispatchLoader);
+	device.destroyShaderModule(fragModule, nullptr, dispatchLoader);
 
 }
 

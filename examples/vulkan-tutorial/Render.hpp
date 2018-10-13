@@ -8,6 +8,8 @@
 
 #include <vulkan/vulkan.hpp>
 
+#include "Shader.hpp"
+
 /** Callback */
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
@@ -95,6 +97,15 @@ private:
 
 	std::vector<vk::ImageView> swapChainImageViews;
 
+
+	Shader vert, frag;
+
+	vk::RenderPass renderPass;
+	vk::PipelineLayout pipelineLayout;
+
+	vk::Pipeline graphicsPipeline;
+
+
 	// initialising functions
 
 	void createInstance();
@@ -110,6 +121,10 @@ private:
 	void createSwapchain();
 
 	void createImageViews();
+
+	void createRenderPass();
+
+	void createGraphicsPipeline();
 
 	// Tools functions
 

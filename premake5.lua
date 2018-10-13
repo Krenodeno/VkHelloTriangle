@@ -1,6 +1,6 @@
 -- premake5.lua
 workspace "VkHelloTriangle"
-	configurations { "Debug", "Release" }
+	configurations { "Debug", "DebugWSAN", "Release" }
 
 	local sourceDir = "src/"
 	local LibDir = "Libraries/"
@@ -14,12 +14,21 @@ workspace "VkHelloTriangle"
 	cppdialect "C++11"
 	architecture "x86_64"
 
+	startproject "vulkan-tutorial"
 	flags { "MultiProcessorCompile" }
 
 	filter "configurations:Debug"
 		defines { "DEBUG" }
 		symbols "On"
 		targetsuffix "-d"
+
+	filter "configurations:DebugWSAN"
+		defines { "DEBUG" }
+		symbols "On"
+		targetsuffix "-dsan"
+		buildoptions { "-fno-omit-frame-pointer" }
+		buildoptions { "-fsanitize=undefined,address" }
+		linkoptions { "-fsanitize=undefined,address" }
 
 	filter "configurations:Release"
 		defines { "NDEBUG" }
@@ -69,16 +78,26 @@ project "CompileShaders"
 
 	files { "ressources/shaders/**.vert" , "ressources/shaders/**.frag" }
 
-	filter { "files:**.vert", "files:**.frag" }
+	-- A message to display while this build step is running (optional)
+	buildmessage 'Compiling %{file.relpath} to SPIR-V'
 
-		-- A message to display while this build step is running (optional)
-		buildmessage 'Compiling %{file.relpath} to SPIR-V'
-
+	local glslangValidatorPath = getVulkanPath()
+	if (glslangValidatorPath) then
 		-- One or more commands to run (required)
-		buildcommands { 'glslangValidator -V "%{file.relpath}"' }
+		buildcommands({ glslangValidatorPath .. ' -V "%{file.relpath}"' })
+	else
+		-- One or more commands to run (required)
+		buildcommands{ 'glslangValidator -V "%{file.relpath}"' }
+	end
+	filter { "files:**.vert" }
 
 		-- One or more outputs resulting from the build (required)
-		buildoutputs { '%{file.relpath}.spv' }
+		buildoutputs { 'vert.spv' }
+
+	filter { "files:**.frag" }
+
+		-- One or more outputs resulting from the build (required)
+		buildoutputs { 'frag.spv' }
 
 project "printVulkanInfos"
 	kind "ConsoleApp"
@@ -101,4 +120,4 @@ project "vulkan-tutorial"
 
 	filter {}
 
-	links { "VkHelloTriangle" }
+	links { "VkHelloTriangle" , "CompileShaders" }
