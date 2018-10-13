@@ -1,41 +1,42 @@
--- findVulkan.lua
-function includeVulkan()
+function getVulkanPath()
 	-- LunarG's Vulkan SDK set an environment variable, so use it
 	local envVulkanSDKPath = os.getenv("VULKAN_SDK")
+	local vulkanPath = os.findlib("vulkan")
 	if (envVulkanSDKPath) then
-		filter "system:Windows"
-			-- get rid of the counter slash of Windows
-			includedirs { envVulkanSDKPath:gsub("\\", "/") .. "/Include" }
-		filter "system:Linux"
-			includedirs { envVulkanSDKPath .. "/include" }
-		filter {}
-	elseif (os.findlib("vulkan")) then
-		-- use the well known include paths
+		return envVulkanSDKPath
+	elseif (vulkanPath) then
+		print("Vulkan SDK found in system's libraries")
 	else
 		print ("Vulkan SDK not found !")
 	end
 end
 
-function linkVulkan()
--- LunarG's Vulkan SDK set an environment variable, so use it
-	local envVulkanSDKPath = os.getenv("VULKAN_SDK")
-	if (envVulkanSDKPath) then
+-- findVulkan.lua
+function includeVulkan()
+	local libPath = getVulkanPath();
+	if (libPath) then
 		filter "system:Windows"
 			-- get rid of the counter slash of Windows
-			libdirs { envVulkanSDKPath:gsub("\\", "/") .. "/Lib" }
-			links { "vulkan-1" }
+			includedirs { libPath:gsub("\\", "/") .. "/Include" }
 		filter "system:Linux"
-			libdirs { envVulkanSDKPath .. "/lib" }
-			links { "vulkan" }
+			includedirs { libPath .. "/include" }
 		filter {}
-	elseif (os.findlib("vulkan")) then
-		-- use the well known include paths
-		filter "system:Windows"
-			links { "vulkan-1" }
-		filter "system:Linux"
-			links { "vulkan" }
-		filter {}
-	else
-		print ("Vulkan SDK not found !")
 	end
+end
+
+function linkVulkan()
+	local libPath = getVulkanPath();
+	if (libPath) then
+		filter "system:Windows"
+			-- get rid of the counter slash of Windows
+			libdirs { libPath:gsub("\\", "/") .. "/Lib" }
+		filter "system:Linux"
+			libdirs { libPath .. "/lib" }
+		filter {}
+	end
+	filter "system:Windows"
+		links { "vulkan-1" }
+	filter "system:Linux"
+		links { "vulkan" }
+	filter {}
 end
