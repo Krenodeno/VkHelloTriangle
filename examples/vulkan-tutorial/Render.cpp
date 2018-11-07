@@ -50,10 +50,17 @@ void Render::init() {
 	createImageViews();
 	createRenderPass();
 	createGraphicsPipeline();
+	createFrameBuffers();
+	createCommandPool();
+	createCommandBuffers();
 }
 
 void Render::cleanup() {
 	// Destroy device related objects
+	device.destroyCommandPool(commandPool, nullptr, dispatchLoader);
+	for (auto framebuffer : swapChainFramebuffers) {
+		device.destroyFramebuffer(framebuffer, nullptr, dispatchLoader);
+	}
 	device.destroyPipeline(graphicsPipeline, nullptr, dispatchLoader);
 	device.destroyPipelineLayout(pipelineLayout, nullptr, dispatchLoader);
 	device.destroyRenderPass(renderPass, nullptr, dispatchLoader);
@@ -459,6 +466,46 @@ void Render::createGraphicsPipeline() {
 	device.destroyShaderModule(vertModule, nullptr, dispatchLoader);
 	device.destroyShaderModule(fragModule, nullptr, dispatchLoader);
 
+}
+
+void createFrameBuffers() {
+	swapChainFramebuffers.resize(swapChainImageViews.size());
+
+	for(size_t i = 0; i < swapChainImageViews.size(); ++i) {
+		VkImageView attachments[] = {
+			swapChainImageViews[i]
+		};
+
+		vk::FramebufferCreateInfo framebufferInfo;
+		framebufferInfo.renderPass = renderPass;
+		framebufferInfo.attachmentCount = 1;
+		framebufferInfo.pAttachments = attachments;
+		framebufferInfo.width = swapChainExtent.width;
+		framebufferInfo.height = swapChainExtent.height;
+		framebufferInfo.layer = 1;
+
+		swapChainFramebuffers[i] = device.createFrameBuffer(framebufferInfo, nullptr, dispatchLoader);
+	}
+}
+
+void Render::createCommandPool() {
+	QueueFamilyIndices queueFamilyIndices = findQueueFamilies(physical);
+
+	vk::CommandPoolCreateInfo poolInfo;
+	poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
+
+	poolInfo = device.createCommandPool(poolInfo, nullptr, dispatchLoader);
+}
+
+void Render::createCommandBuffers() {
+	commandBuffers.resize(swapChainFramebuffers.size());
+
+	vk::CommandBufferAllocateInfo allocInfo;
+	allocInfo.commandPool = commandPool;
+	allocInfo.level = vk::CommandBufferLevel::ePrimary;
+	allocInfo.commandBufferCount = (uint32_t)commandBuffers.size();
+
+	commandBuffers = device.allocateCommandBuffers(allocInfo, dispatchLoader);
 }
 
 /*********************/

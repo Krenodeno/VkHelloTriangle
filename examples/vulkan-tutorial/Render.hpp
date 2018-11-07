@@ -21,11 +21,11 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 /** structs */
 
 struct QueueFamilyIndices {
-	int graphicsFamily = -1;
-	int presentFamily = -1;
+	std::optionnal<uint32_t> graphicsFamily;
+	std::optionnal<uint32_t> presentFamily;
 
 	bool isComplete() {
-		return graphicsFamily >= 0 && presentFamily >= 0;
+		return graphicsFamily.has_value() && presentFamily.has_value();
 	}
 };
 
@@ -105,6 +105,12 @@ private:
 
 	vk::Pipeline graphicsPipeline;
 
+	std::vector<vk::Framebuffer> swapChainFramebuffers;
+
+	vk::CommandPool commandPool;
+
+	std::vector<vk::CommandBuffer> commandBuffers;
+
 
 	// initialising functions
 
@@ -125,6 +131,12 @@ private:
 	void createRenderPass();
 
 	void createGraphicsPipeline();
+
+	void createFrameBuffers();
+
+	void createCommandPool();
+
+	void createCommandBuffers();
 
 	// Tools functions
 
