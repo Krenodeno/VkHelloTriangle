@@ -78,6 +78,10 @@ void Render::cleanup() {
 	instance.destroy();
 }
 
+void Render::drawFrame() {
+
+}
+
 void Render::addLayer(const char* layerName) {
 	layers.push_back(layerName);
 }
@@ -506,6 +510,33 @@ void Render::createCommandBuffers() {
 	allocInfo.commandBufferCount = (uint32_t)commandBuffers.size();
 
 	commandBuffers = device.allocateCommandBuffers(allocInfo, dispatchLoader);
+
+	for (size_t i = 0; i < commandBuffers.size(); i++) {
+		vk::CommandBufferBeginInfo beginInfo;
+		beginInfo.flags = vk::CommandBufferUsageFlagBits::eSimultaneousUse;
+		beginInfo.pInheritanceInfo = nullptr;
+
+		commandBuffers[i].begin(beginInfo, dispatchLoader);
+
+		vk::RenderPassBeginInfo renderPassInfo;
+		renderPassInfo.renderPass = renderPass;
+		renderPassInfo.framebuffer = swapChainFramebuffers[i];
+		renderPassInfo.renderArea.offset = vk::Offset2D(0, 0);
+		renderPassInfo.renderArea.extent = swapChainExtent;
+		renderPassInfo.clearValueCount = 1;
+		vk::ClearColorValue clearColor = {0.2f, 0.2f, 0.2f, 1.f};
+		renderPassInfo.pClearValues = &clearColor;
+
+		commandBuffers[i].beginRenderPass(renderPassInfo, vk::SubpassContents::eInline, dispatchLoader);
+
+		commandBuffers[i].bindPipeline(vk::PipelineBindPoint::eGraphics, graphicsPipeline, dispatchLoader);
+
+		commandBuffers[i].draw(/*vertex count*/3, /*instance count*/1, /*first vertex*/0, /*firstInstance*/0, dispatchLoader);
+
+		commandBuffers[i].endRenderPass(dispatchLoader);
+
+		commandBuffers[i].end(dispatchLoader);
+	}
 }
 
 /*********************/

@@ -36,6 +36,7 @@ vk::Extent2D Application::windowExtent() {
 void Application::mainLoop() {
 	while(!window.isClosed()) {
 		window.pollEvents();
+		render.drawFrame();
 	}
 }
 

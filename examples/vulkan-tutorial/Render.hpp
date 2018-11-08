@@ -49,6 +49,8 @@ public:
 	void init();
 	void cleanup();
 
+	void drawFrame();
+
 	void addLayer(const char*);
 	void addInstanceExtension(const char*);
 	void addDeviceExtension(const char*);
