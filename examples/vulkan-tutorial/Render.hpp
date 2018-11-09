@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <iostream>
+#include <optional>
 #include <string>
 #include <functional>
 
@@ -21,8 +22,8 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 /** structs */
 
 struct QueueFamilyIndices {
-	std::optionnal<uint32_t> graphicsFamily;
-	std::optionnal<uint32_t> presentFamily;
+	std::optional<uint32_t> graphicsFamily;
+	std::optional<uint32_t> presentFamily;
 
 	bool isComplete() {
 		return graphicsFamily.has_value() && presentFamily.has_value();
@@ -113,6 +114,9 @@ private:
 
 	std::vector<vk::CommandBuffer> commandBuffers;
 
+	vk::Semaphore imageAvailableSemaphore;
+	vk::Semaphore renderFinishedSemaphore;
+
 
 	// initialising functions
 
@@ -139,6 +143,8 @@ private:
 	void createCommandPool();
 
 	void createCommandBuffers();
+
+	void createSemaphore();
 
 	// Tools functions
 

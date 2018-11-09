@@ -53,10 +53,14 @@ void Render::init() {
 	createFrameBuffers();
 	createCommandPool();
 	createCommandBuffers();
+	createSemaphore();
 }
 
 void Render::cleanup() {
 	// Destroy device related objects
+	device.destroySemaphore(renderFinishedSemaphore, nullptr, dispatchLoader);
+	device.destroySemaphore(imageAvailableSemaphore, nullptr, dispatchLoader);
+
 	device.destroyCommandPool(commandPool, nullptr, dispatchLoader);
 	for (auto framebuffer : swapChainFramebuffers) {
 		device.destroyFramebuffer(framebuffer, nullptr, dispatchLoader);
@@ -79,7 +83,33 @@ void Render::cleanup() {
 }
 
 void Render::drawFrame() {
+	auto imageIndex = device.acquireNextImageKHR(swapChain, std::numeric_limits<uint64_t>::max(), imageAvailableSemaphore, nullptr, dispatchLoader);
 
+	vk::SubmitInfo submitInfo;
+	vk::Semaphore waitSemaphores[] = { imageAvailableSemaphore };
+	vk::PipelineStageFlags waitStages[] = { vk::PipelineStageFlagBits::eColorAttachmentOutput };
+	submitInfo.waitSemaphoreCount = 1;
+	submitInfo.pWaitSemaphores = waitSemaphores;
+	submitInfo.pWaitDstStageMask = waitStages;
+
+	submitInfo.commandBufferCount = 1;
+	submitInfo.pCommandBuffers = &commandBuffers[imageIndex.value];
+
+	vk::Semaphore signalSemaphores[] = { renderFinishedSemaphore };
+	submitInfo.signalSemaphoreCount = 1;
+	submitInfo.pSignalSemaphores = signalSemaphores;
+
+	graphicsQueue.submit(submitInfo, nullptr, dispatchLoader);
+
+	vk::PresentInfoKHR presentInfo;
+	presentInfo.waitSemaphoreCount = 1;
+	presentInfo.pWaitSemaphores = signalSemaphores;
+	vk::SwapchainKHR swapChains[] = { swapChain };
+	presentInfo.swapchainCount = 1;
+	presentInfo.pSwapchains = swapChains;
+	presentInfo.pImageIndices = &imageIndex.value;
+
+	presentQueue.presentKHR(presentInfo, dispatchLoader);
 }
 
 void Render::addLayer(const char* layerName) {
@@ -190,7 +220,7 @@ void Render::createLogicalDevice() {
 
 	// Queues infos
 	std::vector<vk::DeviceQueueCreateInfo> queueCreateInfos;
-	std::set<int> uniqueFamilies = {indices.graphicsFamily, indices.presentFamily};
+	std::set<unsigned int> uniqueFamilies = { indices.graphicsFamily.value(), indices.presentFamily.value() };
 
 	float queuePriority = 1.0f;
 	for (int queueFamily : uniqueFamilies) {
@@ -206,7 +236,7 @@ void Render::createLogicalDevice() {
 
 	// Device creation
 	vk::DeviceCreateInfo createInfo;
-	createInfo.queueCreateInfoCount = queueCreateInfos.size();
+	createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
 	createInfo.pQueueCreateInfos = queueCreateInfos.data();
 
 	createInfo.pEnabledFeatures = &deviceFeatures;
@@ -223,8 +253,8 @@ void Render::createLogicalDevice() {
 
 	device = physicalDevice.createDevice(createInfo, nullptr, dispatchLoader);
 
-	graphicsQueue = device.getQueue(indices.graphicsFamily, 0, dispatchLoader);
-	presentQueue = device.getQueue(indices.presentFamily, 0, dispatchLoader);
+	graphicsQueue = device.getQueue(indices.graphicsFamily.value(), 0, dispatchLoader);
+	presentQueue = device.getQueue(indices.presentFamily.value(), 0, dispatchLoader);
 }
 
 void Render::createSurface() {
@@ -255,9 +285,9 @@ void Render::createSwapchain() {
 
 	// Use the right queue
 	QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
-	uint32_t queueFamilyIndices[] = { indices.graphicsFamily, indices.presentFamily };
+	uint32_t queueFamilyIndices[] = { indices.graphicsFamily.value(), indices.presentFamily.value() };
 	// We use Concurrent mode, but exclusive give more performance but require to be explicit about image sharing
-	if (indices.graphicsFamily != indices.presentFamily) {
+	if (indices.graphicsFamily.value() != indices.presentFamily.value()) {
 		createInfo.imageSharingMode = vk::SharingMode::eConcurrent;
 		createInfo.queueFamilyIndexCount = 2;
 		createInfo.pQueueFamilyIndices = queueFamilyIndices;
@@ -327,11 +357,20 @@ void Render::createRenderPass() {
 	subpass.pColorAttachments = &colorAttachmentRef;
 	// index of colorAttachment is referenced in the fragment shader as layout(location = 0)
 
+	vk::SubpassDependency dependency;
+	dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+	dependency.dstSubpass = 0;
+
+	dependency.dstStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput;
+	dependency.dstAccessMask = vk::AccessFlagBits::eColorAttachmentRead | vk::AccessFlagBits::eColorAttachmentWrite;
+
 	vk::RenderPassCreateInfo renderPassInfo;
 	renderPassInfo.attachmentCount = 1;
 	renderPassInfo.pAttachments = &colorAttachment;
 	renderPassInfo.subpassCount = 1;
 	renderPassInfo.pSubpasses = &subpass;
+	renderPassInfo.dependencyCount = 1;
+	renderPassInfo.pDependencies = &dependency;
 
 	renderPass = device.createRenderPass(renderPassInfo, nullptr, dispatchLoader);
 }
@@ -472,11 +511,11 @@ void Render::createGraphicsPipeline() {
 
 }
 
-void createFrameBuffers() {
+void Render::createFrameBuffers() {
 	swapChainFramebuffers.resize(swapChainImageViews.size());
 
 	for(size_t i = 0; i < swapChainImageViews.size(); ++i) {
-		VkImageView attachments[] = {
+		vk::ImageView attachments[] = {
 			swapChainImageViews[i]
 		};
 
@@ -486,19 +525,19 @@ void createFrameBuffers() {
 		framebufferInfo.pAttachments = attachments;
 		framebufferInfo.width = swapChainExtent.width;
 		framebufferInfo.height = swapChainExtent.height;
-		framebufferInfo.layer = 1;
+		framebufferInfo.layers = 1;
 
-		swapChainFramebuffers[i] = device.createFrameBuffer(framebufferInfo, nullptr, dispatchLoader);
+		swapChainFramebuffers[i] = device.createFramebuffer(framebufferInfo, nullptr, dispatchLoader);
 	}
 }
 
 void Render::createCommandPool() {
-	QueueFamilyIndices queueFamilyIndices = findQueueFamilies(physical);
+	QueueFamilyIndices queueFamilyIndices = findQueueFamilies(physicalDevice);
 
 	vk::CommandPoolCreateInfo poolInfo;
 	poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
 
-	poolInfo = device.createCommandPool(poolInfo, nullptr, dispatchLoader);
+	commandPool = device.createCommandPool(poolInfo, nullptr, dispatchLoader);
 }
 
 void Render::createCommandBuffers() {
@@ -524,7 +563,7 @@ void Render::createCommandBuffers() {
 		renderPassInfo.renderArea.offset = vk::Offset2D(0, 0);
 		renderPassInfo.renderArea.extent = swapChainExtent;
 		renderPassInfo.clearValueCount = 1;
-		vk::ClearColorValue clearColor = {0.2f, 0.2f, 0.2f, 1.f};
+		vk::ClearValue clearColor(vk::ClearColorValue(std::array<float, 4>({0.2f, 0.2f, 0.2f, 1.f})));
 		renderPassInfo.pClearValues = &clearColor;
 
 		commandBuffers[i].beginRenderPass(renderPassInfo, vk::SubpassContents::eInline, dispatchLoader);
@@ -537,6 +576,12 @@ void Render::createCommandBuffers() {
 
 		commandBuffers[i].end(dispatchLoader);
 	}
+}
+
+void Render::createSemaphore() {
+	vk::SemaphoreCreateInfo createInfo;
+	imageAvailableSemaphore = device.createSemaphore(createInfo, nullptr, dispatchLoader);
+	renderFinishedSemaphore = device.createSemaphore(createInfo, nullptr, dispatchLoader);
 }
 
 /*********************/
