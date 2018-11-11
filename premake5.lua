@@ -37,7 +37,8 @@ workspace "VkHelloTriangle"
 	filter "system:Windows"
 		defines {
 			"USE_WINDOWS_OPERATING_SYSTEM",
-			"VK_USE_PLATFORM_WIN32_KHR"
+			"VK_USE_PLATFORM_WIN32_KHR",
+			"NOMINMAX"
 		}
 		libdirs { LibDir .. "Lib/*" }
 
