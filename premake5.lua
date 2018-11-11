@@ -11,7 +11,7 @@ workspace "VkHelloTriangle"
 	debugdir "./"
 
 	language "C++"
-	cppdialect "C++11"
+	cppdialect "C++17"
 	architecture "x86_64"
 
 	startproject "vulkan-tutorial"

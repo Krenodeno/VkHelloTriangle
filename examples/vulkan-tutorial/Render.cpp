@@ -53,13 +53,17 @@ void Render::init() {
 	createFrameBuffers();
 	createCommandPool();
 	createCommandBuffers();
-	createSemaphore();
+	createSemaphores();
+	createFences();
 }
 
 void Render::cleanup() {
 	// Destroy device related objects
-	device.destroySemaphore(renderFinishedSemaphore, nullptr, dispatchLoader);
-	device.destroySemaphore(imageAvailableSemaphore, nullptr, dispatchLoader);
+	for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+		device.destroyFence(inFlightFences[i], nullptr, dispatchLoader);
+		device.destroySemaphore(renderFinishedSemaphores[i], nullptr, dispatchLoader);
+		device.destroySemaphore(imageAvailableSemaphores[i], nullptr, dispatchLoader);
+	}
 
 	device.destroyCommandPool(commandPool, nullptr, dispatchLoader);
 	for (auto framebuffer : swapChainFramebuffers) {
@@ -83,10 +87,13 @@ void Render::cleanup() {
 }
 
 void Render::drawFrame() {
-	auto imageIndex = device.acquireNextImageKHR(swapChain, std::numeric_limits<uint64_t>::max(), imageAvailableSemaphore, nullptr, dispatchLoader);
+	device.waitForFences(inFlightFences[currentFrame], VK_TRUE, std::numeric_limits<uint64_t>::max(), dispatchLoader);
+	device.resetFences(inFlightFences[currentFrame], dispatchLoader);
+
+	auto imageIndex = device.acquireNextImageKHR(swapChain, std::numeric_limits<uint64_t>::max(), imageAvailableSemaphores[currentFrame], nullptr, dispatchLoader);
 
 	vk::SubmitInfo submitInfo;
-	vk::Semaphore waitSemaphores[] = { imageAvailableSemaphore };
+	vk::Semaphore waitSemaphores[] = { imageAvailableSemaphores[currentFrame] };
 	vk::PipelineStageFlags waitStages[] = { vk::PipelineStageFlagBits::eColorAttachmentOutput };
 	submitInfo.waitSemaphoreCount = 1;
 	submitInfo.pWaitSemaphores = waitSemaphores;
@@ -95,11 +102,11 @@ void Render::drawFrame() {
 	submitInfo.commandBufferCount = 1;
 	submitInfo.pCommandBuffers = &commandBuffers[imageIndex.value];
 
-	vk::Semaphore signalSemaphores[] = { renderFinishedSemaphore };
+	vk::Semaphore signalSemaphores[] = { renderFinishedSemaphores[currentFrame] };
 	submitInfo.signalSemaphoreCount = 1;
 	submitInfo.pSignalSemaphores = signalSemaphores;
 
-	graphicsQueue.submit(submitInfo, nullptr, dispatchLoader);
+	graphicsQueue.submit(submitInfo, inFlightFences[currentFrame], dispatchLoader);
 
 	vk::PresentInfoKHR presentInfo;
 	presentInfo.waitSemaphoreCount = 1;
@@ -109,7 +116,11 @@ void Render::drawFrame() {
 	presentInfo.pSwapchains = swapChains;
 	presentInfo.pImageIndices = &imageIndex.value;
 
+	currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+
 	presentQueue.presentKHR(presentInfo, dispatchLoader);
+
+	presentQueue.waitIdle(dispatchLoader);
 }
 
 void Render::addLayer(const char* layerName) {
@@ -578,10 +589,25 @@ void Render::createCommandBuffers() {
 	}
 }
 
-void Render::createSemaphore() {
+void Render::createSemaphores() {
+	imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
+	renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
+
 	vk::SemaphoreCreateInfo createInfo;
-	imageAvailableSemaphore = device.createSemaphore(createInfo, nullptr, dispatchLoader);
-	renderFinishedSemaphore = device.createSemaphore(createInfo, nullptr, dispatchLoader);
+
+	for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+		imageAvailableSemaphores[i] = device.createSemaphore(createInfo, nullptr, dispatchLoader);
+		renderFinishedSemaphores[i] = device.createSemaphore(createInfo, nullptr, dispatchLoader);
+	}
+}
+
+void Render::createFences() {
+	inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
+
+	vk::FenceCreateInfo createInfo;
+	createInfo.flags = vk::FenceCreateFlagBits::eSignaled;
+	for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+		inFlightFences[i] = device.createFence(createInfo, nullptr, dispatchLoader);
 }
 
 /*********************/

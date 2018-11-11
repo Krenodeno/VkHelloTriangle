@@ -38,6 +38,7 @@ void Application::mainLoop() {
 		window.pollEvents();
 		render.drawFrame();
 	}
+	render.waitDeviceIdle();
 }
 
 vk::SurfaceKHR createSurface(Application* app, vk::Instance instance) {

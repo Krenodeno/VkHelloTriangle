@@ -64,12 +64,16 @@ public:
 
 	void setExtent(const vk::Extent2D&);
 
+	void waitDeviceIdle() { device.waitIdle(dispatchLoader); }
+
 private:
 
 	bool validationLayerEnabled;
 	std::vector<const char*> layers;
 	std::vector<const char*> instanceExtensions;
 	std::vector<const char*> deviceExtensions;
+
+	const int MAX_FRAMES_IN_FLIGHT = 2;
 
 	Application* parentApp;
 
@@ -114,8 +118,12 @@ private:
 
 	std::vector<vk::CommandBuffer> commandBuffers;
 
-	vk::Semaphore imageAvailableSemaphore;
-	vk::Semaphore renderFinishedSemaphore;
+	/* Semaphores sync GPU's operations */
+	std::vector<vk::Semaphore> imageAvailableSemaphores;
+	std::vector<vk::Semaphore> renderFinishedSemaphores;
+	/* Fences sync GPU with CPU */
+	std::vector<vk::Fence> inFlightFences;
+	size_t currentFrame = 0;
 
 
 	// initialising functions
@@ -144,7 +152,9 @@ private:
 
 	void createCommandBuffers();
 
-	void createSemaphore();
+	void createSemaphores();
+
+	void createFences();
 
 	// Tools functions
 
