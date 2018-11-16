@@ -74,32 +74,6 @@ project "VkHelloTriangle"
 	files { sourceDir .. "**.hpp", sourceDir .. "**.inl", sourceDir .. "**.cpp" }
 
 
-project "CompileShaders"
-	kind "Utility"
-
-	files { "ressources/shaders/**.vert" , "ressources/shaders/**.frag" }
-
-	-- A message to display while this build step is running (optional)
-	buildmessage 'Compiling %{file.relpath} to SPIR-V'
-
-	local glslangValidatorPath = getVulkanPath()
-	if (glslangValidatorPath) then
-		-- One or more commands to run (required)
-		buildcommands({ glslangValidatorPath .. ' -V "%{file.relpath}"' })
-	else
-		-- One or more commands to run (required)
-		buildcommands{ 'glslangValidator -V "%{file.relpath}"' }
-	end
-	filter { "files:**.vert" }
-
-		-- One or more outputs resulting from the build (required)
-		buildoutputs { 'vert.spv' }
-
-	filter { "files:**.frag" }
-
-		-- One or more outputs resulting from the build (required)
-		buildoutputs { 'frag.spv' }
-
 project "printVulkanInfos"
 	kind "ConsoleApp"
 	includedirs { LibDir .. "Include", sourceDir }
@@ -121,4 +95,9 @@ project "vulkan-tutorial"
 
 	filter {}
 
-	links { "VkHelloTriangle" , "CompileShaders" }
+	links { "VkHelloTriangle" }
+
+project "compute-fractal"
+	kind "ConsoleApp"
+	includedirs { LibDir .. "Include", sourceDir }
+	files { "examples/compute/*" }
