@@ -66,6 +66,15 @@ workspace "VkHelloTriangle"
 
 	linkVulkan()
 
+project "CompileShaders"
+	kind "Utility"
+	files { "ressources/shaders/*.comp", "ressources/shaders/*.frag", "ressources/shaders/*.vert"}
+
+	filter "files:ressources/shaders/*"
+		buildcommands 'glslangValidator -V -o "%{file.reldirectory}/%{file.name}.spv" "%{file.relpath}"'
+		buildoutputs "%{file.reldirectory}/%{file.name}.spv"
+
+
 project "VkHelloTriangle"
 	kind "StaticLib"
 
@@ -81,6 +90,7 @@ project "printVulkanInfos"
 
 	links "VkHelloTriangle"
 
+
 project "vulkan-tutorial"
 	kind "ConsoleApp"
 	includedirs { LibDir .. "Include", sourceDir  }
@@ -95,9 +105,12 @@ project "vulkan-tutorial"
 
 	filter {}
 
-	links { "VkHelloTriangle" }
+	links { "VkHelloTriangle", "CompileShaders" }
+
 
 project "compute-fractal"
 	kind "ConsoleApp"
 	includedirs { LibDir .. "Include", sourceDir }
 	files { "examples/compute/*" }
+
+	links { "CompileShaders" }

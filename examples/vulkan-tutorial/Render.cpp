@@ -391,8 +391,8 @@ void Render::createRenderPass() {
 
 void Render::createGraphicsPipeline() {
 	// Get the bytecode
-	auto vertModule = vert.createShaderModule("ressources/shaders/vert.spv", device);
-	auto fragModule = frag.createShaderModule("ressources/shaders/frag.spv", device);
+	auto vertModule = vert.createShaderModule("ressources/shaders/fixed.vert.spv", device);
+	auto fragModule = frag.createShaderModule("ressources/shaders/fixed.frag.spv", device);
 
 	// Create the actuals shaders and link them
 	vk::PipelineShaderStageCreateInfo vertShaderStageInfo;
