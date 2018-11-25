@@ -16,6 +16,7 @@ workspace "VkHelloTriangle"
 
 	startproject "vulkan-tutorial"
 	flags { "MultiProcessorCompile" }
+	warnings "Extra"
 
 	filter "configurations:Debug"
 		defines { "DEBUG" }

@@ -9,6 +9,8 @@
 
 #include <vulkan/vulkan.hpp>
 
+#include "RenderTarget.hpp"
+#include "RenderUtils.hpp"
 #include "Shader.hpp"
 
 /** Callback */
@@ -18,23 +20,6 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 	VkDebugUtilsMessageTypeFlagsEXT,
 	const VkDebugUtilsMessengerCallbackDataEXT*,
 	void*);
-
-/** structs */
-
-struct QueueFamilyIndices {
-	std::optional<uint32_t> graphicsFamily;
-	std::optional<uint32_t> presentFamily;
-
-	bool isComplete() {
-		return graphicsFamily.has_value() && presentFamily.has_value();
-	}
-};
-
-struct SwapChainSupportDetails {
-	vk::SurfaceCapabilitiesKHR capabilities;
-	std::vector<vk::SurfaceFormatKHR> formats;
-	std::vector<vk::PresentModeKHR> presentModes;
-};
 
 /* forward declaration */
 class Application;
@@ -77,6 +62,8 @@ private:
 
 	Application* parentApp;
 
+	RenderTarget swapchain;
+
 	createSurfaceFoncter surfaceCreation;
 
 	vk::Extent2D windowExtent;
@@ -97,12 +84,12 @@ private:
 
 	vk::Queue presentQueue;
 
-	vk::SwapchainKHR swapChain;
-	std::vector<vk::Image> swapChainImages;
-	vk::Format swapChainImageFormat;
-	vk::Extent2D swapChainExtent;
+	//vk::SwapchainKHR swapChain;
+	//std::vector<vk::Image> swapChainImages;
+	//vk::Format swapChainImageFormat;
+	//vk::Extent2D swapChainExtent;
 
-	std::vector<vk::ImageView> swapChainImageViews;
+	//std::vector<vk::ImageView> swapChainImageViews;
 
 
 	Shader vert, frag;
@@ -112,7 +99,7 @@ private:
 
 	vk::Pipeline graphicsPipeline;
 
-	std::vector<vk::Framebuffer> swapChainFramebuffers;
+	//std::vector<vk::Framebuffer> swapChainFramebuffers;
 
 	vk::CommandPool commandPool;
 
@@ -140,40 +127,23 @@ private:
 
 	void createSwapchain();
 
-	void createImageViews();
-
 	void createRenderPass();
 
 	void createGraphicsPipeline();
 
-	void createFrameBuffers();
+	void createFramebuffers();
 
 	void createCommandPool();
 
 	void createCommandBuffers();
 
+	void cleanupSwapchain();
+
+	void recreateSwapChain();
+
 	void createSemaphores();
 
 	void createFences();
-
-	// Tools functions
-
-	bool checkExtensionSupport(const char*);
-	bool checkLayerSupport(const char*);
-
-	bool isDeviceSuitable(vk::PhysicalDevice);
-
-	QueueFamilyIndices findQueueFamilies(vk::PhysicalDevice);
-
-	bool checkDeviceExtensionSupport(vk::PhysicalDevice);
-
-	SwapChainSupportDetails querySwapChainSupport(vk::PhysicalDevice);
-
-	vk::SurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<vk::SurfaceFormatKHR>&);
-
-	vk::PresentModeKHR chooseSwapPresentMode(const std::vector<vk::PresentModeKHR>&);
-
-	vk::Extent2D chooseSwapExtent(const vk::SurfaceCapabilitiesKHR&);
 };
 
 #endif
