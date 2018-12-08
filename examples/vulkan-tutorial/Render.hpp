@@ -125,7 +125,7 @@ private:
 
 	void createSurface();
 
-	void createSwapchain();
+	void createSwapchain(vk::SwapchainKHR = nullptr);
 
 	void createRenderPass();
 

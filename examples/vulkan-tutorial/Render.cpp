@@ -20,23 +20,19 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 	const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
 	void* pUserData) {
 
-	//if (messageSeverity == VkDebugUtilsMessageSeverityFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT)
+	vk::DebugUtilsMessageTypeFlagsEXT mType(messageType);
+
 	std::ostream& out = [&]() -> std::ostream& {
 		if (messageSeverity == VkDebugUtilsMessageSeverityFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT)
-			return (std::cout);
+			return (std::cerr);
 		if (messageSeverity == VkDebugUtilsMessageSeverityFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)
 			return (std::cerr);
 		return (std::clog);
 	}();
 
-	if (messageType & VkDebugUtilsMessageTypeFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT)
-		out << "[GENERAL]     ";
-	if (messageType & VkDebugUtilsMessageTypeFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT)
-		out << "[PERFORMANCE] ";
-	if (messageType & VkDebugUtilsMessageTypeFlagBitsEXT::VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT)
-		out << "[VALIDATION]  ";
+	out << vk::to_string(mType) << " ";
 
-	std::cerr << pCallbackData->pMessage << "\n";
+	out << pCallbackData->pMessage << "\n";
 
 	return VK_FALSE;
 }
@@ -65,13 +61,12 @@ void Render::cleanupSwapchain() {
 	device.destroyPipelineLayout(pipelineLayout, nullptr, dispatchLoader);
 	device.destroyRenderPass(renderPass, nullptr, dispatchLoader);
 
-	swapchain.cleanup();
-
 }
 
 void Render::cleanup() {
 	// Destroy device related objects
 	cleanupSwapchain();
+	swapchain.cleanup();
 	for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 		device.destroyFence(inFlightFences[i], nullptr, dispatchLoader);
 		device.destroySemaphore(renderFinishedSemaphores[i], nullptr, dispatchLoader);
@@ -93,9 +88,10 @@ void Render::cleanup() {
 void Render::recreateSwapChain() {
 	device.waitIdle();
 
+	cleanupSwapchain();
 
+	swapchain.recreate(surface, physicalDevice, windowExtent);
 
-	createSwapchain();
 	createRenderPass();
 	createGraphicsPipeline();
 	createFramebuffers();
@@ -228,7 +224,7 @@ void Render::setupDebugCallback() {
 		vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning |
 		vk::DebugUtilsMessageSeverityFlagBitsEXT::eError;
 	createInfo.messageType =
-		vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral |
+		//vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral |
 		vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation |
 		vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance;
 	createInfo.pfnUserCallback = debugCallback;
@@ -301,8 +297,8 @@ void Render::createSurface() {
 	surface = surfaceCreation(parentApp, instance);
 }
 
-void Render::createSwapchain() {
-	swapchain.init(surface, physicalDevice, device, windowExtent);
+void Render::createSwapchain(vk::SwapchainKHR oldSwapchain) {
+	swapchain.init(surface, physicalDevice, device, windowExtent, oldSwapchain);
 }
 
 

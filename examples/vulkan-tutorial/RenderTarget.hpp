@@ -13,8 +13,9 @@ public:
 	RenderTarget() {}
 	~RenderTarget() {}
 
-	void init(vk::SurfaceKHR, vk::PhysicalDevice, vk::Device, vk::Extent2D);
+	void init(vk::SurfaceKHR, vk::PhysicalDevice, vk::Device, vk::Extent2D, vk::SwapchainKHR = nullptr);
 	void cleanup();
+	void recreate(vk::SurfaceKHR, vk::PhysicalDevice, vk::Extent2D);
 
 	std::vector<const char*> getRequiredExtensions();
 

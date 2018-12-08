@@ -2,7 +2,7 @@
 
 #include <vector>
 
-void RenderTarget::init(vk::SurfaceKHR surface, vk::PhysicalDevice physicalDevice, vk::Device logicalDevice, vk::Extent2D windowExtent) {
+void RenderTarget::init(vk::SurfaceKHR surface, vk::PhysicalDevice physicalDevice, vk::Device logicalDevice, vk::Extent2D windowExtent, vk::SwapchainKHR oldSwapchain) {
 
 	device = logicalDevice;
 
@@ -50,7 +50,7 @@ void RenderTarget::init(vk::SurfaceKHR surface, vk::PhysicalDevice physicalDevic
 	createInfo.presentMode = presentMode;
 	createInfo.clipped = VK_TRUE;
 
-	createInfo.oldSwapchain = nullptr;
+	createInfo.oldSwapchain = oldSwapchain;
 
 	swapChain = device.createSwapchainKHR(createInfo);
 
@@ -72,6 +72,23 @@ void RenderTarget::cleanup() {
 		device.destroyImageView(imageView);
 	}
 	device.destroySwapchainKHR(swapChain);
+}
+
+void RenderTarget::recreate(vk::SurfaceKHR surface, vk::PhysicalDevice physicalDevice, vk::Extent2D windowExtent) {
+	// Destroy framebuffer and imageViews
+	for (auto framebuffer : swapChainFramebuffers) {
+		device.destroyFramebuffer(framebuffer);
+	}
+	for (auto imageView : swapChainImageViews) {
+		device.destroyImageView(imageView);
+	}
+
+	// Recreate swapchain with new extent
+	vk::SwapchainKHR oldSwapchain = swapChain;
+	init(surface, physicalDevice, device, windowExtent, oldSwapchain);
+
+	// Destroy old swapchain
+	device.destroySwapchainKHR(oldSwapchain);
 }
 
 std::vector<const char*> RenderTarget::getRequiredExtensions() {
