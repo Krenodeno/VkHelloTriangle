@@ -47,6 +47,8 @@ void Render::init() {
 	createGraphicsPipeline();
 	createFramebuffers();
 	createCommandPool();
+	createVertexBuffer();
+	createIndexBuffer();
 	createCommandBuffers();
 	createSemaphores();
 	createFences();
@@ -71,6 +73,12 @@ void Render::cleanup() {
 		device.destroySemaphore(renderFinishedSemaphores[i], nullptr, dispatchLoader);
 		device.destroySemaphore(imageAvailableSemaphores[i], nullptr, dispatchLoader);
 	}
+
+	device.destroyBuffer(vertexBuffer, nullptr, dispatchLoader);
+	device.free(vertexBufferMemory, nullptr, dispatchLoader);
+
+	device.destroyBuffer(indexBuffer, nullptr, dispatchLoader);
+	device.free(indexBufferMemory, nullptr, dispatchLoader);
 
 	device.destroyCommandPool(commandPool, nullptr, dispatchLoader);
 
@@ -374,12 +382,15 @@ void Render::createGraphicsPipeline() {
 
 	vk::PipelineShaderStageCreateInfo shaderStages[] = {vertShaderStageInfo, fragShaderStageInfo};
 
+	auto bindingDescription = Vertex::getBindingDescription();
+	auto attributeDescriptions = Vertex::getAttributeDescriptions();
+
 	// input of the vertex buffer
 	vk::PipelineVertexInputStateCreateInfo vertexInputInfo;
-	vertexInputInfo.vertexBindingDescriptionCount = 0;
-	vertexInputInfo.pVertexBindingDescriptions = nullptr;
-	vertexInputInfo.vertexAttributeDescriptionCount = 0;
-	vertexInputInfo.pVertexAttributeDescriptions = nullptr;
+	vertexInputInfo.vertexBindingDescriptionCount = 1;
+	vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
+	vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
+	vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
 
 	// Primitive style
 	vk::PipelineInputAssemblyStateCreateInfo inputAssembly;
@@ -505,6 +516,94 @@ void Render::createCommandPool() {
 	commandPool = device.createCommandPool(poolInfo, nullptr, dispatchLoader);
 }
 
+void Render::createBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties, vk::Buffer& buffer, vk::DeviceMemory& memory) {
+	vk::BufferCreateInfo bufferInfo;
+	bufferInfo.size = size;
+	bufferInfo.usage = usage;
+	bufferInfo.sharingMode = vk::SharingMode::eExclusive;
+
+	buffer = device.createBuffer(bufferInfo, nullptr, dispatchLoader);
+
+	auto memRequirements = device.getBufferMemoryRequirements(buffer, dispatchLoader);
+
+	vk::MemoryAllocateInfo allocInfo;
+	allocInfo.allocationSize = memRequirements.size;
+	allocInfo.memoryTypeIndex = findMemoryType(physicalDevice, memRequirements.memoryTypeBits, properties);
+
+	memory = device.allocateMemory(allocInfo, nullptr, dispatchLoader);
+
+	device.bindBufferMemory(buffer, memory, /*memoryOffset*/ 0, dispatchLoader);
+}
+
+void Render::fillBuffer(vk::DeviceMemory& memory, const void* dataToCopy, vk::DeviceSize size) {
+	auto data = device.mapMemory(memory, /*offset*/ 0, size, vk::MemoryMapFlags(), dispatchLoader);
+		std::memcpy(data, dataToCopy, static_cast<size_t>(size));
+	device.unmapMemory(memory, dispatchLoader);
+}
+
+void Render::createVertexBuffer() {
+	vk::DeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
+
+	vk::Buffer stagingBuffer;
+	vk::DeviceMemory stagingBufferMemory;
+	createBuffer(bufferSize, vk::BufferUsageFlagBits::eTransferSrc, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, stagingBuffer, stagingBufferMemory);
+	fillBuffer(stagingBufferMemory, vertices.data(), bufferSize);
+
+	createBuffer(bufferSize, vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eVertexBuffer, vk::MemoryPropertyFlagBits::eDeviceLocal, vertexBuffer, vertexBufferMemory);
+
+	copyBuffer(stagingBuffer, vertexBuffer, bufferSize);
+
+	device.freeMemory(stagingBufferMemory, nullptr, dispatchLoader);
+	device.destroyBuffer(stagingBuffer, nullptr, dispatchLoader);
+}
+
+void Render::createIndexBuffer() {
+	vk::DeviceSize bufferSize = sizeof(indices[0]) * indices.size();
+
+	vk::Buffer stagingBuffer;
+	vk::DeviceMemory stagingBufferMemory;
+	createBuffer(bufferSize, vk::BufferUsageFlagBits::eTransferSrc, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, stagingBuffer, stagingBufferMemory);
+	fillBuffer(stagingBufferMemory, indices.data(), bufferSize);
+
+	createBuffer(bufferSize, vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eIndexBuffer, vk::MemoryPropertyFlagBits::eDeviceLocal, indexBuffer, indexBufferMemory);
+
+	copyBuffer(stagingBuffer, indexBuffer, bufferSize);
+
+	device.freeMemory(stagingBufferMemory, nullptr, dispatchLoader);
+	device.destroyBuffer(stagingBuffer, nullptr, dispatchLoader);
+}
+
+void Render::copyBuffer(vk::Buffer src, vk::Buffer dst, vk::DeviceSize size) {
+	vk::CommandBufferAllocateInfo allocInfo;
+	allocInfo.commandBufferCount = 1;
+	allocInfo.commandPool = commandPool;
+	allocInfo.level = vk::CommandBufferLevel::ePrimary;
+
+	vk::CommandBuffer commandBuffer = device.allocateCommandBuffers(allocInfo, dispatchLoader)[0];
+
+	vk::CommandBufferBeginInfo beginInfo;
+	beginInfo.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
+
+	commandBuffer.begin(beginInfo, dispatchLoader);
+
+	vk::BufferCopy copyRegion;
+	copyRegion.srcOffset = 0;
+	copyRegion.dstOffset = 0;
+	copyRegion.size = size;
+	commandBuffer.copyBuffer(src, dst, copyRegion, dispatchLoader);
+
+	commandBuffer.end(dispatchLoader);
+
+	vk::SubmitInfo submitInfo;
+	submitInfo.commandBufferCount = 1;
+	submitInfo.pCommandBuffers = &commandBuffer;
+
+	graphicsQueue.submit(submitInfo, nullptr, dispatchLoader);
+	graphicsQueue.waitIdle(dispatchLoader);
+
+	device.freeCommandBuffers(commandPool, commandBuffer, dispatchLoader);
+}
+
 void Render::createCommandBuffers() {
 	commandBuffers.resize(swapchain.getSize());
 
@@ -535,7 +634,13 @@ void Render::createCommandBuffers() {
 
 		commandBuffers[i].bindPipeline(vk::PipelineBindPoint::eGraphics, graphicsPipeline, dispatchLoader);
 
-		commandBuffers[i].draw(/*vertex count*/3, /*instance count*/1, /*first vertex*/0, /*firstInstance*/0, dispatchLoader);
+		vk::Buffer vertexBuffers[] = {vertexBuffer};
+		vk::DeviceSize offsets[] = {0};
+
+		commandBuffers[i].bindVertexBuffers(0, 1, vertexBuffers, offsets, dispatchLoader);
+		commandBuffers[i].bindIndexBuffer(indexBuffer, 0, vk::IndexType::eUint16, dispatchLoader);
+
+		commandBuffers[i].drawIndexed(static_cast<uint32_t>(indices.size()), /*instance count*/1, 0, 0, 0, dispatchLoader);
 
 		commandBuffers[i].endRenderPass(dispatchLoader);
 

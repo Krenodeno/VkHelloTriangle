@@ -12,6 +12,7 @@
 #include "RenderTarget.hpp"
 #include "RenderUtils.hpp"
 #include "Shader.hpp"
+#include "Vertex.hpp"
 
 /** Callback */
 
@@ -98,6 +99,11 @@ private:
 
 	vk::CommandPool commandPool;
 
+	vk::Buffer vertexBuffer;
+	vk::DeviceMemory vertexBufferMemory;
+	vk::Buffer indexBuffer;
+	vk::DeviceMemory indexBufferMemory;
+
 	std::vector<vk::CommandBuffer> commandBuffers;
 
 	/* Semaphores sync GPU's operations */
@@ -107,6 +113,17 @@ private:
 	std::vector<vk::Fence> inFlightFences;
 	size_t currentFrame = 0;
 
+	// TODO to be removed
+	const std::vector<Vertex> vertices = {
+		{{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+		{{0.5f, -0.5f, 0.0f},  {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
+		{{0.5f, 0.5f, 0.0f},   {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f}},
+		{{-0.5f, 0.5f, 0.0f},  {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}}
+	};
+
+	const std::vector<uint16_t> indices = {
+		0, 1, 2, 2, 3, 0
+	};
 
 	// initialising functions
 
@@ -129,6 +146,16 @@ private:
 	void createFramebuffers();
 
 	void createCommandPool();
+
+	void createBuffer(vk::DeviceSize, vk::BufferUsageFlags, vk::MemoryPropertyFlags, vk::Buffer&, vk::DeviceMemory&);
+
+	void fillBuffer(vk::DeviceMemory&, const void*, vk::DeviceSize);
+
+	void createVertexBuffer();
+
+	void createIndexBuffer();
+
+	void copyBuffer(vk::Buffer src, vk::Buffer dst, vk::DeviceSize size);
 
 	void createCommandBuffers();
 
