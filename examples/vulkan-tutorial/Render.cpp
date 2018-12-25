@@ -5,9 +5,8 @@
 #include <ostream>
 #include <set>
 
-Render::Render() {
-	//createInstance();
-	//setupDebugCallback();
+Render::Render() : renderType(RenderTypeBits::eGraphics), validationLayerEnabled(false) {
+
 }
 
 Render::~Render() {
@@ -148,6 +147,10 @@ void Render::drawFrame() {
 	presentQueue.waitIdle(dispatchLoader);
 }
 
+void Render::setRenderType(RenderType newType) {
+	renderType = newType;
+}
+
 void Render::addLayer(const char* layerName) {
 	layers.push_back(layerName);
 }
@@ -219,8 +222,8 @@ void Render::setupDebugCallback() {
 
 	vk::DebugUtilsMessengerCreateInfoEXT createInfo;
 	createInfo.messageSeverity =
-		vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose |
-		vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo |
+		//vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose |
+		//vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo |
 		vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning |
 		vk::DebugUtilsMessageSeverityFlagBitsEXT::eError;
 	createInfo.messageType =
@@ -230,8 +233,7 @@ void Render::setupDebugCallback() {
 	createInfo.pfnUserCallback = debugCallback;
 	createInfo.pUserData = nullptr;
 
-	vk::DispatchLoaderDynamic didy(instance);
-	callback = instance.createDebugUtilsMessengerEXT(createInfo, nullptr, didy);
+	callback = instance.createDebugUtilsMessengerEXT(createInfo, nullptr, vk::DispatchLoaderDynamic(instance));
 }
 
 void Render::pickPhysicalDevice() {
@@ -256,7 +258,11 @@ void Render::createLogicalDevice() {
 
 	// Queues infos
 	std::vector<vk::DeviceQueueCreateInfo> queueCreateInfos;
-	std::set<unsigned int> uniqueFamilies = { indices.graphicsFamily.value(), indices.presentFamily.value() };
+	std::set<unsigned int> uniqueFamilies = { indices.presentFamily.value() };
+	if (renderType & RenderTypeBits::eGraphics)
+		uniqueFamilies.insert(indices.graphicsFamily.value());
+	if (renderType & RenderTypeBits::eCompute)
+		uniqueFamilies.insert(indices.computeFamily.value());
 
 	float queuePriority = 1.0f;
 	for (int queueFamily : uniqueFamilies) {
@@ -280,6 +286,7 @@ void Render::createLogicalDevice() {
 	createInfo.enabledExtensionCount = deviceExtensions.size();
 	createInfo.ppEnabledExtensionNames = deviceExtensions.data();
 
+	// For backward compatibility only (device layers have been deprecated)
 	if (validationLayerEnabled) {
 		createInfo.enabledLayerCount = layers.size();
 		createInfo.ppEnabledLayerNames = layers.data();
@@ -289,7 +296,12 @@ void Render::createLogicalDevice() {
 
 	device = physicalDevice.createDevice(createInfo, nullptr, dispatchLoader);
 
-	graphicsQueue = device.getQueue(indices.graphicsFamily.value(), 0, dispatchLoader);
+	if (renderType & RenderTypeBits::eGraphics)
+		graphicsQueue = device.getQueue(indices.graphicsFamily.value(), 0, dispatchLoader);
+
+	if (renderType & RenderTypeBits::eCompute)
+		computeQueue = device.getQueue(indices.computeFamily.value(), 0, dispatchLoader);
+
 	presentQueue = device.getQueue(indices.presentFamily.value(), 0, dispatchLoader);
 }
 

@@ -1,6 +1,6 @@
 #include "Application.hpp"
 
-Application::Application() : window(800, 600, "Vulkan"){
+Application::Application() : window(800, 600, "Vulkan") {
 
 }
 

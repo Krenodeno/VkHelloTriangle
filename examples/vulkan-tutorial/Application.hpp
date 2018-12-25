@@ -30,7 +30,7 @@ private:
 	RenderWindow window;
 	Render render;
 	std::string name;
-	int version;		// au format vulkan
+	int version;		// vulkan style
 
 };
 

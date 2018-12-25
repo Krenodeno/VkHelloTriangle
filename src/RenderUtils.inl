@@ -44,6 +44,10 @@ QueueFamilyIndices findQueueFamilies(vk::PhysicalDevice device, vk::SurfaceKHR s
 			indices.graphicsFamily = i;
 		}
 
+		if (queueFamily.queueCount > 0 && queueFamily.queueFlags & vk::QueueFlagBits::eCompute) {
+			indices.computeFamily = i;
+		}
+
 		auto presentSupport = device.getSurfaceSupportKHR(i, surface);
 		if (queueFamily.queueCount > 0 && presentSupport) {
 			indices.presentFamily = i;
@@ -127,10 +131,22 @@ vk::Extent2D chooseSwapExtent(const vk::SurfaceCapabilitiesKHR& capabilities, vk
 		vk::Extent2D actualExtent = windowExtent;
 
 		actualExtent.width = std::max(capabilities.minImageExtent.width,
-								std::min(capabilities.maxImageExtent.width, actualExtent.width));
+							 std::min(capabilities.maxImageExtent.width, actualExtent.width));
 		actualExtent.height = std::max(capabilities.minImageExtent.height,
-								std::min(capabilities.maxImageExtent.height, actualExtent.height));
+							  std::min(capabilities.maxImageExtent.height, actualExtent.height));
 
 		return actualExtent;
 	}
+}
+
+uint32_t findMemoryType(vk::PhysicalDevice device, uint32_t typeFilter, vk::MemoryPropertyFlags properties) {
+	auto memProperties = device.getMemoryProperties();
+
+	for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
+		if (typeFilter & (1 << i) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
+			return i;
+		}
+	}
+
+	throw std::runtime_error("failed to find suitable memory type!");
 }

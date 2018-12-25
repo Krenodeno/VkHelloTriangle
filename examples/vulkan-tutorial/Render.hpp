@@ -43,6 +43,8 @@ public:
 
 	void enableValidationLayer();
 
+	void setRenderType(RenderType);
+
 	void setParentApplication(Application*);
 
 	void setSurfaceCreationFunction(createSurfaceFoncter);
@@ -52,6 +54,8 @@ public:
 	void waitDeviceIdle() { device.waitIdle(dispatchLoader); }
 
 private:
+
+	RenderType renderType;
 
 	bool validationLayerEnabled;
 	std::vector<const char*> layers;
@@ -79,18 +83,11 @@ private:
 	vk::Device device;
 
 	vk::Queue graphicsQueue;
+	vk::Queue computeQueue;
 
 	vk::SurfaceKHR surface;
 
 	vk::Queue presentQueue;
-
-	//vk::SwapchainKHR swapChain;
-	//std::vector<vk::Image> swapChainImages;
-	//vk::Format swapChainImageFormat;
-	//vk::Extent2D swapChainExtent;
-
-	//std::vector<vk::ImageView> swapChainImageViews;
-
 
 	Shader vert, frag;
 
@@ -98,8 +95,6 @@ private:
 	vk::PipelineLayout pipelineLayout;
 
 	vk::Pipeline graphicsPipeline;
-
-	//std::vector<vk::Framebuffer> swapChainFramebuffers;
 
 	vk::CommandPool commandPool;
 
