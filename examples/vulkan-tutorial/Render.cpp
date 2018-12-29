@@ -5,6 +5,12 @@
 #include <ostream>
 #include <set>
 
+#define GLM_FORCE_RADIANS
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+
+#include <chrono>
+
 Render::Render() : renderType(RenderTypeBits::eGraphics), validationLayerEnabled(false) {
 
 }
@@ -44,11 +50,15 @@ void Render::init() {
 	createLogicalDevice();
 	createSwapchain();
 	createRenderPass();
+	createDescriptorSetLayout();
 	createGraphicsPipeline();
 	createFramebuffers();
 	createCommandPool();
 	createVertexBuffer();
 	createIndexBuffer();
+	createUniformBuffer();
+	createDescriptorPool();
+	createDescriptorSets();
 	createCommandBuffers();
 	createSemaphores();
 	createFences();
@@ -65,9 +75,19 @@ void Render::cleanupSwapchain() {
 }
 
 void Render::cleanup() {
+	size_t size = swapchain.getSize();
 	// Destroy device related objects
 	cleanupSwapchain();
 	swapchain.cleanup();
+
+	device.destroyDescriptorPool(descriptorPool, nullptr, dispatchLoader);
+	device.destroyDescriptorSetLayout(descriptorSetLayout, nullptr, dispatchLoader);
+
+	for (size_t i = 0; i < size; i++) {
+		device.destroyBuffer(uniformBuffers[i], nullptr, dispatchLoader);
+		device.free(uniformBuffersMemory[i], nullptr, dispatchLoader);
+	}
+
 	for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 		device.destroyFence(inFlightFences[i], nullptr, dispatchLoader);
 		device.destroySemaphore(renderFinishedSemaphores[i], nullptr, dispatchLoader);
@@ -105,6 +125,21 @@ void Render::recreateSwapChain() {
 	createCommandBuffers();
 }
 
+void Render::updateUniformBuffer(uint32_t currentImage) {
+	static auto startTime = std::chrono::high_resolution_clock::now();
+
+	auto currentTime = std::chrono::high_resolution_clock::now();
+	float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+
+	UniformBufferObject ubo = {};
+	ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+	ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+	ubo.proj = glm::perspective(glm::radians(45.0f), swapchain.getExtent().width / (float)swapchain.getExtent().height, 0.1f, 10.0f);
+	ubo.proj[1][1] *= -1;	// because of OpenGL
+
+	fillBuffer(uniformBuffersMemory[currentImage], &ubo, sizeof(ubo));
+}
+
 void Render::drawFrame() {
 	device.waitForFences(inFlightFences[currentFrame], VK_TRUE, std::numeric_limits<uint64_t>::max(), dispatchLoader);
 
@@ -116,6 +151,8 @@ void Render::drawFrame() {
 		recreateSwapChain();
 		return;
 	}
+
+	updateUniformBuffer(imageIndex);
 
 	vk::SubmitInfo submitInfo;
 	vk::Semaphore waitSemaphores[] = { imageAvailableSemaphores[currentFrame] };
@@ -364,10 +401,25 @@ void Render::createRenderPass() {
 	renderPass = device.createRenderPass(renderPassInfo, nullptr, dispatchLoader);
 }
 
+void Render::createDescriptorSetLayout() {
+	vk::DescriptorSetLayoutBinding uboLayoutBinding;
+	uboLayoutBinding.binding = 0;
+	uboLayoutBinding.descriptorType = vk::DescriptorType::eUniformBuffer;
+	uboLayoutBinding.descriptorCount = 1;
+	uboLayoutBinding.stageFlags = vk::ShaderStageFlagBits::eVertex;
+
+	vk::DescriptorSetLayoutCreateInfo layoutInfo;
+	layoutInfo.bindingCount = 1;
+	layoutInfo.pBindings = &uboLayoutBinding;
+
+	descriptorSetLayout = device.createDescriptorSetLayout(layoutInfo, nullptr, dispatchLoader);
+
+}
+
 void Render::createGraphicsPipeline() {
 	// Get the bytecode
-	auto vertModule = vert.createShaderModule("ressources/shaders/fixed.vert.spv", device);
-	auto fragModule = frag.createShaderModule("ressources/shaders/fixed.frag.spv", device);
+	auto vertModule = vert.createShaderModule("ressources/shaders/shader.vert.spv", device);
+	auto fragModule = frag.createShaderModule("ressources/shaders/shader.frag.spv", device);
 
 	// Create the actuals shaders and link them
 	vk::PipelineShaderStageCreateInfo vertShaderStageInfo;
@@ -385,7 +437,7 @@ void Render::createGraphicsPipeline() {
 	auto bindingDescription = Vertex::getBindingDescription();
 	auto attributeDescriptions = Vertex::getAttributeDescriptions();
 
-	// input of the vertex buffer
+	// Input of the vertex buffer
 	vk::PipelineVertexInputStateCreateInfo vertexInputInfo;
 	vertexInputInfo.vertexBindingDescriptionCount = 1;
 	vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
@@ -397,7 +449,7 @@ void Render::createGraphicsPipeline() {
 	inputAssembly.topology = vk::PrimitiveTopology::eTriangleList;
 	inputAssembly.primitiveRestartEnable = VK_FALSE;
 
-	//Viewport
+	// Viewport
 	vk::Viewport viewport;
 	viewport.x = 0.f;
 	viewport.y = 0.f;
@@ -427,7 +479,7 @@ void Render::createGraphicsPipeline() {
 	rasterizer.lineWidth = 1.0f; // require wideLines feature for lines thicker than 1 fragment
 	// Culling
 	rasterizer.cullMode = vk::CullModeFlagBits::eBack;
-	rasterizer.frontFace = vk::FrontFace::eClockwise;
+	rasterizer.frontFace = vk::FrontFace::eCounterClockwise;
 	// Depth bias (can be used for shadowmapping)
 	rasterizer.depthBiasEnable = VK_FALSE;
 	rasterizer.depthBiasConstantFactor = 0.f;
@@ -473,7 +525,8 @@ void Render::createGraphicsPipeline() {
 
 	// Pipeline Layout
 	vk::PipelineLayoutCreateInfo pipelineLayoutInfo;
-	pipelineLayoutInfo.setLayoutCount = 0;
+	pipelineLayoutInfo.setLayoutCount = 1;
+	pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
 	pipelineLayoutInfo.pushConstantRangeCount = 0;
 
 	pipelineLayout = device.createPipelineLayout(pipelineLayoutInfo, nullptr, dispatchLoader);
@@ -573,6 +626,61 @@ void Render::createIndexBuffer() {
 	device.destroyBuffer(stagingBuffer, nullptr, dispatchLoader);
 }
 
+void Render::createUniformBuffer() {
+	vk::DeviceSize bufferSize = sizeof(UniformBufferObject);
+
+	size_t size = swapchain.getSize();
+
+	uniformBuffers.resize(size);
+	uniformBuffersMemory.resize(size);
+
+	for (size_t i = 0; i < size; i++) {
+		createBuffer(bufferSize, vk::BufferUsageFlagBits::eUniformBuffer, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, uniformBuffers[i], uniformBuffersMemory[i]);
+	}
+}
+
+void Render::createDescriptorPool() {
+	vk::DescriptorPoolSize poolSize;
+	poolSize.type = vk::DescriptorType::eUniformBuffer;
+	poolSize.descriptorCount = static_cast<uint32_t>(swapchain.getSize());
+
+	vk::DescriptorPoolCreateInfo createInfo;
+	createInfo.poolSizeCount = 1;
+	createInfo.pPoolSizes = &poolSize;
+	createInfo.maxSets = static_cast<uint32_t>(swapchain.getSize());
+
+	descriptorPool = device.createDescriptorPool(createInfo, nullptr, dispatchLoader);
+}
+
+void Render::createDescriptorSets() {
+	std::vector<vk::DescriptorSetLayout> layouts(swapchain.getSize(), descriptorSetLayout);
+	vk::DescriptorSetAllocateInfo allocInfo;
+	allocInfo.descriptorPool = descriptorPool;
+	allocInfo.descriptorSetCount = static_cast<uint32_t>(swapchain.getSize());
+	allocInfo.pSetLayouts = layouts.data();
+
+	descriptorSets = device.allocateDescriptorSets(allocInfo, dispatchLoader);
+
+	for (size_t i = 0; i < swapchain.getSize(); i++) {
+		vk::DescriptorBufferInfo bufferInfo;
+		bufferInfo.buffer = uniformBuffers[i];
+		bufferInfo.offset = 0;
+		bufferInfo.range = sizeof(UniformBufferObject);
+
+		vk::WriteDescriptorSet descriptorWrite;
+		descriptorWrite.dstSet = descriptorSets[i];
+		descriptorWrite.dstBinding = 0;
+		descriptorWrite.dstArrayElement = 0;
+		descriptorWrite.descriptorType = vk::DescriptorType::eUniformBuffer;
+		descriptorWrite.descriptorCount = 1;
+		descriptorWrite.pBufferInfo = &bufferInfo;
+
+		device.updateDescriptorSets(descriptorWrite, nullptr, dispatchLoader);
+	}
+
+
+}
+
 void Render::copyBuffer(vk::Buffer src, vk::Buffer dst, vk::DeviceSize size) {
 	vk::CommandBufferAllocateInfo allocInfo;
 	allocInfo.commandBufferCount = 1;
@@ -640,7 +748,9 @@ void Render::createCommandBuffers() {
 		commandBuffers[i].bindVertexBuffers(0, 1, vertexBuffers, offsets, dispatchLoader);
 		commandBuffers[i].bindIndexBuffer(indexBuffer, 0, vk::IndexType::eUint16, dispatchLoader);
 
-		commandBuffers[i].drawIndexed(static_cast<uint32_t>(indices.size()), /*instance count*/1, 0, 0, 0, dispatchLoader);
+		commandBuffers[i].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, /**/0, descriptorSets[i], nullptr, dispatchLoader);
+
+		commandBuffers[i].drawIndexed(static_cast<uint32_t>(indices.size()), /*instance count*/1, /*index offset*/0, /**/0, /*instance offset*/0, dispatchLoader);
 
 		commandBuffers[i].endRenderPass(dispatchLoader);
 

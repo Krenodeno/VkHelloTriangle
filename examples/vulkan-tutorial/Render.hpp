@@ -28,6 +28,14 @@ class Application;
 /* used as callback function to delegate surface creation  */
 using createSurfaceFoncter = std::function<vk::SurfaceKHR(Application*, vk::Instance)>;
 
+/* Uniform struct to be removed later */
+struct UniformBufferObject {
+	glm::mat4 model;
+	glm::mat4 view;
+	glm::mat4 proj;
+};
+
+
 class Render {
 public:
 	Render();
@@ -93,9 +101,13 @@ private:
 	Shader vert, frag;
 
 	vk::RenderPass renderPass;
+	vk::DescriptorSetLayout descriptorSetLayout;
 	vk::PipelineLayout pipelineLayout;
 
 	vk::Pipeline graphicsPipeline;
+
+	vk::DescriptorPool descriptorPool;
+	std::vector<vk::DescriptorSet> descriptorSets;
 
 	vk::CommandPool commandPool;
 
@@ -103,6 +115,9 @@ private:
 	vk::DeviceMemory vertexBufferMemory;
 	vk::Buffer indexBuffer;
 	vk::DeviceMemory indexBufferMemory;
+
+	std::vector<vk::Buffer> uniformBuffers;
+	std::vector<vk::DeviceMemory> uniformBuffersMemory;
 
 	std::vector<vk::CommandBuffer> commandBuffers;
 
@@ -141,6 +156,12 @@ private:
 
 	void createRenderPass();
 
+	void createDescriptorSetLayout();
+
+	void createDescriptorPool();
+
+	void createDescriptorSets();
+
 	void createGraphicsPipeline();
 
 	void createFramebuffers();
@@ -155,7 +176,11 @@ private:
 
 	void createIndexBuffer();
 
-	void copyBuffer(vk::Buffer src, vk::Buffer dst, vk::DeviceSize size);
+	void createUniformBuffer();
+
+	void updateUniformBuffer(uint32_t);
+
+	void copyBuffer(vk::Buffer, vk::Buffer, vk::DeviceSize);
 
 	void createCommandBuffers();
 
