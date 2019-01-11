@@ -1,5 +1,7 @@
 #include "Application.hpp"
 
+#include <chrono>
+
 Application::Application() : window(800, 600, "Vulkan") {
 
 }
@@ -13,6 +15,9 @@ vk::SurfaceKHR Application::createRenderSurface(vk::Instance instance) {
 }
 
 void Application::init() {
+
+	auto start = std::chrono::steady_clock::now();
+
 	auto extensions = window.getRequiredExtensions();
 	for (auto extensionName : extensions)
 		render.addInstanceExtension(extensionName);
@@ -27,6 +32,12 @@ void Application::init() {
 	render.setExtent(windowExtent());
 
 	render.init();
+
+	auto end = std::chrono::steady_clock::now();
+
+	auto elapsedTime = end - start;
+
+	std::cout << "Vulkan Initialisation took " << std::chrono::duration_cast<std::chrono::milliseconds>(elapsedTime).count() << "ms\n";
 }
 
 vk::Extent2D Application::windowExtent() {
