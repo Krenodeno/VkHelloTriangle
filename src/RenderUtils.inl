@@ -148,5 +148,29 @@ uint32_t findMemoryType(vk::PhysicalDevice device, uint32_t typeFilter, vk::Memo
 		}
 	}
 
-	throw std::runtime_error("failed to find suitable memory type!");
+	throw std::runtime_error("Failed to find suitable memory type!");
+}
+
+vk::Format findSupportedFormat(vk::PhysicalDevice device, const std::vector<vk::Format>& candidates, vk::ImageTiling tiling, vk::FormatFeatureFlags features) {
+	for (auto format : candidates) {
+		vk::FormatProperties props = device.getFormatProperties(format);
+
+		if (tiling == vk::ImageTiling::eLinear && (props.linearTilingFeatures & features) == features)
+			return format;
+		else if (tiling == vk::ImageTiling::eOptimal && (props.optimalTilingFeatures & features) == features)
+			return format;
+	}
+
+	throw std::runtime_error("Failed to find supported format!");
+}
+
+vk::Format findDepthFormat(vk::PhysicalDevice device) {
+	return findSupportedFormat( device,
+								{vk::Format::eD32Sfloat, vk::Format::eD32SfloatS8Uint, vk::Format::eD24UnormS8Uint},
+								vk::ImageTiling::eOptimal,
+								vk::FormatFeatureFlagBits::eDepthStencilAttachment);
+}
+
+bool hasStencilComponent(vk::Format format) {
+	return format == vk::Format::eD32SfloatS8Uint || format == vk::Format::eD24UnormS8Uint;
 }

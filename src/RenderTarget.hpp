@@ -28,7 +28,7 @@ public:
 
 	unsigned long getSize();
 
-	void createFramebuffers(vk::RenderPass);
+	void createFramebuffers(vk::RenderPass, vk::ImageView);
 
 private:
 

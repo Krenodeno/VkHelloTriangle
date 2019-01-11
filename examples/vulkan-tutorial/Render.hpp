@@ -98,6 +98,10 @@ private:
 
 	vk::Queue presentQueue;
 
+	vk::Image depthImage;
+	vk::DeviceMemory depthImageMemory;
+	vk::ImageView depthImageView;
+
 	Shader vert, frag;
 
 	vk::RenderPass renderPass;
@@ -168,7 +172,15 @@ private:
 
 	void createCommandPool();
 
+	void createDepthResources();
+
 	void createBuffer(vk::DeviceSize, vk::BufferUsageFlags, vk::MemoryPropertyFlags, vk::Buffer&, vk::DeviceMemory&);
+
+	void createImage(uint32_t width, uint32_t height, vk::Format, vk::ImageTiling, vk::ImageUsageFlags, vk::MemoryPropertyFlags, vk::Image&, vk::DeviceMemory&);
+
+	vk::ImageView createImageView(vk::Image, vk::Format, vk::ImageAspectFlags);
+
+	void transitionImageLayout(vk::Image, vk::Format, vk::ImageLayout oldLayout, vk::ImageLayout newLayout);
 
 	void fillBuffer(vk::DeviceMemory&, const void*, vk::DeviceSize);
 
@@ -181,6 +193,10 @@ private:
 	void updateUniformBuffer(uint32_t);
 
 	void copyBuffer(vk::Buffer, vk::Buffer, vk::DeviceSize);
+
+	vk::CommandBuffer beginSingleTimeCommands();
+
+	void endSingleTimeCommands(vk::CommandBuffer);
 
 	void createCommandBuffers();
 

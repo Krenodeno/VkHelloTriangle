@@ -115,18 +115,19 @@ unsigned long RenderTarget::getSize() {
 	return swapChainImageViews.size();
 }
 
-void RenderTarget::createFramebuffers(vk::RenderPass renderPass) {
+void RenderTarget::createFramebuffers(vk::RenderPass renderPass, vk::ImageView depthImageView) {
 	swapChainFramebuffers.resize(swapChainImageViews.size());
 
 	for(size_t i = 0; i < swapChainImageViews.size(); ++i) {
-		vk::ImageView attachments[] = {
-			swapChainImageViews[i]
+		std::array<vk::ImageView, 2> attachments = {
+			swapChainImageViews[i],
+			depthImageView
 		};
 
 		vk::FramebufferCreateInfo framebufferInfo;
 		framebufferInfo.renderPass = renderPass;
-		framebufferInfo.attachmentCount = 1;
-		framebufferInfo.pAttachments = attachments;
+		framebufferInfo.attachmentCount = attachments.size();
+		framebufferInfo.pAttachments = attachments.data();
 		framebufferInfo.width = swapChainExtent.width;
 		framebufferInfo.height = swapChainExtent.height;
 		framebufferInfo.layers = 1;

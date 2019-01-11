@@ -53,8 +53,8 @@ struct SwapChainSupportDetails {
 	std::vector<vk::PresentModeKHR> presentModes;
 };
 
-inline bool checkExtensionSupport(const char*);
-inline bool checkLayerSupport(const char*);
+inline bool checkExtensionSupport(const char* extensions);
+inline bool checkLayerSupport(const char* layers);
 inline bool checkDeviceExtensionSupport(vk::PhysicalDevice, std::vector<const char*>);
 inline QueueFamilyIndices findQueueFamilies(vk::PhysicalDevice, vk::SurfaceKHR);
 inline bool isDeviceSuitable(vk::PhysicalDevice, vk::SurfaceKHR, std::vector<const char*>);
@@ -62,7 +62,10 @@ inline SwapChainSupportDetails querySwapChainSupport(vk::PhysicalDevice, vk::Sur
 inline vk::SurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<vk::SurfaceFormatKHR>&);
 inline vk::PresentModeKHR chooseSwapPresentMode(const std::vector<vk::PresentModeKHR>&);
 inline vk::Extent2D chooseSwapExtent(const vk::SurfaceCapabilitiesKHR&, vk::Extent2D);
-inline uint32_t findMemoryType(vk::PhysicalDevice device, uint32_t typeFilter, vk::MemoryPropertyFlags properties);
+inline uint32_t findMemoryType(vk::PhysicalDevice, uint32_t typeFilter, vk::MemoryPropertyFlags);
+inline vk::Format findSupportedFormat(vk::PhysicalDevice, const std::vector<vk::Format>&, vk::ImageTiling, vk::FormatFeatureFlags);
+inline vk::Format findDepthFormat(vk::PhysicalDevice);
+inline bool hasStencilComponent(vk::Format);
 
 
 #include "RenderUtils.inl"
