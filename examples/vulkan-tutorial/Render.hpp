@@ -182,8 +182,6 @@ private:
 
 	void transitionImageLayout(vk::Image, vk::Format, vk::ImageLayout oldLayout, vk::ImageLayout newLayout);
 
-	void fillBuffer(vk::DeviceMemory&, const void*, vk::DeviceSize);
-
 	void createVertexBuffer();
 
 	void createIndexBuffer();

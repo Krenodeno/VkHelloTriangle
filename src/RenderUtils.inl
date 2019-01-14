@@ -174,3 +174,15 @@ vk::Format findDepthFormat(vk::PhysicalDevice device) {
 bool hasStencilComponent(vk::Format format) {
 	return format == vk::Format::eD32SfloatS8Uint || format == vk::Format::eD24UnormS8Uint;
 }
+
+void fillBuffer(vk::Device device, vk::DeviceMemory& memory, const void* dataToCopy, vk::DeviceSize size) {
+	auto data = device.mapMemory(memory, /*offset*/ 0, size, vk::MemoryMapFlags());
+		std::memcpy(data, dataToCopy, static_cast<size_t>(size));
+	device.unmapMemory(memory);
+}
+
+template<typename T>
+void fillBuffer(vk::Device device, vk::DeviceMemory& memory, std::vector<T> v) {
+	vk::DeviceSize bufferSize = sizeof(v[0]) * v.size();
+	fillBuffer(device, memory, v.data(), bufferSize);
+}

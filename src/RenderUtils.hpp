@@ -66,7 +66,8 @@ inline uint32_t findMemoryType(vk::PhysicalDevice, uint32_t typeFilter, vk::Memo
 inline vk::Format findSupportedFormat(vk::PhysicalDevice, const std::vector<vk::Format>&, vk::ImageTiling, vk::FormatFeatureFlags);
 inline vk::Format findDepthFormat(vk::PhysicalDevice);
 inline bool hasStencilComponent(vk::Format);
-
+inline void fillBuffer(vk::Device, vk::DeviceMemory&, const void*, vk::DeviceSize);
+template<typename T> inline void fillBuffer(vk::Device, vk::DeviceMemory&, std::vector<T>);
 
 #include "RenderUtils.inl"
 

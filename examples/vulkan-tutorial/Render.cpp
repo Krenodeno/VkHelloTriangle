@@ -143,7 +143,7 @@ void Render::updateUniformBuffer(uint32_t currentImage) {
 	ubo.proj = glm::perspective(glm::radians(45.0f), swapchain.getExtent().width / (float)swapchain.getExtent().height, 0.1f, 10.0f);
 	ubo.proj[1][1] *= -1;	// because of OpenGL
 
-	fillBuffer(uniformBuffersMemory[currentImage], &ubo, sizeof(ubo));
+	fillBuffer(device, uniformBuffersMemory[currentImage], &ubo, sizeof(ubo));
 }
 
 void Render::drawFrame() {
@@ -723,19 +723,13 @@ void Render::transitionImageLayout(vk::Image image, vk::Format format, vk::Image
 	endSingleTimeCommands(commandBuffer);
 }
 
-void Render::fillBuffer(vk::DeviceMemory& memory, const void* dataToCopy, vk::DeviceSize size) {
-	auto data = device.mapMemory(memory, /*offset*/ 0, size, vk::MemoryMapFlags(), dispatchLoader);
-		std::memcpy(data, dataToCopy, static_cast<size_t>(size));
-	device.unmapMemory(memory, dispatchLoader);
-}
-
 void Render::createVertexBuffer() {
 	vk::DeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
 
 	vk::Buffer stagingBuffer;
 	vk::DeviceMemory stagingBufferMemory;
 	createBuffer(bufferSize, vk::BufferUsageFlagBits::eTransferSrc, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, stagingBuffer, stagingBufferMemory);
-	fillBuffer(stagingBufferMemory, vertices.data(), bufferSize);
+	fillBuffer(device, stagingBufferMemory, vertices);
 
 	createBuffer(bufferSize, vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eVertexBuffer, vk::MemoryPropertyFlagBits::eDeviceLocal, vertexBuffer, vertexBufferMemory);
 
@@ -751,7 +745,7 @@ void Render::createIndexBuffer() {
 	vk::Buffer stagingBuffer;
 	vk::DeviceMemory stagingBufferMemory;
 	createBuffer(bufferSize, vk::BufferUsageFlagBits::eTransferSrc, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, stagingBuffer, stagingBufferMemory);
-	fillBuffer(stagingBufferMemory, indices.data(), bufferSize);
+	fillBuffer(device, stagingBufferMemory, indices);
 
 	createBuffer(bufferSize, vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eIndexBuffer, vk::MemoryPropertyFlagBits::eDeviceLocal, indexBuffer, indexBufferMemory);
 
