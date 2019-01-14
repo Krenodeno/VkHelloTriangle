@@ -440,9 +440,12 @@ void Render::createDescriptorSetLayout() {
 }
 
 void Render::createGraphicsPipeline() {
+
+	Shader vert("ressources/shaders/shader.vert.spv", device);
+	Shader frag("ressources/shaders/shader.frag.spv", device);
 	// Get the bytecode
-	auto vertModule = vert.createShaderModule("ressources/shaders/shader.vert.spv", device);
-	auto fragModule = frag.createShaderModule("ressources/shaders/shader.frag.spv", device);
+	auto vertModule = vert.shaderModule;
+	auto fragModule = frag.shaderModule;
 
 	// Create the actuals shaders and link them
 	vk::PipelineShaderStageCreateInfo vertShaderStageInfo;
@@ -576,9 +579,6 @@ void Render::createGraphicsPipeline() {
 	pipelineInfo.subpass = 0;
 
 	graphicsPipeline = device.createGraphicsPipeline(nullptr, pipelineInfo, nullptr, dispatchLoader);
-
-	device.destroyShaderModule(vertModule, nullptr, dispatchLoader);
-	device.destroyShaderModule(fragModule, nullptr, dispatchLoader);
 
 }
 

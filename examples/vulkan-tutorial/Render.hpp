@@ -102,8 +102,6 @@ private:
 	vk::DeviceMemory depthImageMemory;
 	vk::ImageView depthImageView;
 
-	Shader vert, frag;
-
 	vk::RenderPass renderPass;
 	vk::DescriptorSetLayout descriptorSetLayout;
 	vk::PipelineLayout pipelineLayout;
