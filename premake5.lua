@@ -71,8 +71,15 @@ project "CompileShaders"
 	kind "Utility"
 	files { "ressources/shaders/*.comp", "ressources/shaders/*.frag", "ressources/shaders/*.vert"}
 
+	local vulkanSDK = getVulkanPath()
+	local glslCompiler = "glslangValidator"
+	if (vulkanSDK) then
+		glslCompiler = vulkanSDK .. '/bin/glslangValidator'
+	end
+
 	filter "files:ressources/shaders/*"
-		buildcommands 'glslangValidator -V -o "%{file.reldirectory}/%{file.name}.spv" "%{file.relpath}"'
+		buildcommands(glslCompiler .. ' -V -o "%{file.reldirectory}/%{file.name}.spv" "%{file.relpath}"')
+		--buildinputs "%{file.reldirectory}/%{file.name}"
 		buildoutputs "%{file.reldirectory}/%{file.name}.spv"
 
 
