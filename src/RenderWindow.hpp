@@ -7,6 +7,7 @@
 #if defined(USE_WINDOWS_OPERATING_SYSTEM)
 #define GLFW_EXPOSE_NATIVE_WIN32
 #elif defined(USE_LINUX_OPERATING_SYSTEM)
+#define GLFW_EXPOSE_NATIVE_WAYLAND
 #define GLFW_EXPOSE_NATIVE_X11
 #endif // USE_WINDOWS_OPERATING_SYSTEM
 #include <GLFW/glfw3.h>
@@ -33,10 +34,24 @@ public:
 		surfaceCreateInfo.hwnd = glfwGetWin32Window(window);
 		return instance.createWin32SurfaceKHRUnique(surfaceCreateInfo, nullptr, dispatch);
 #elif defined(USE_LINUX_OPERATING_SYSTEM)
-		vk::XlibSurfaceCreateInfoKHR surfaceCreateInfo;
-		surfaceCreateInfo.dpy = glfwGetX11Display();
-		surfaceCreateInfo.window = glfwGetX11Window(window);
-		return instance.createXlibSurfaceKHRUnique(surfaceCreateInfo, nullptr, dispatch);
+		vk::UniqueSurfaceKHR surface;
+		vk::WaylandSurfaceCreateInfoKHR WaylandSurfaceCreateInfo;
+		WaylandSurfaceCreateInfo.display = glfwGetWaylandDisplay();
+		WaylandSurfaceCreateInfo.surface = glfwGetWaylandWindow(window);
+		try {
+			surface = instance.createWaylandSurfaceKHRUnique(WaylandSurfaceCreateInfo, nullptr, dispatch);
+		} catch (vk::SystemError& e) {
+			std::cout << "Wayland not supported\n";
+		}
+		// No error, go for Wayland
+		if (surface)
+			return surface;
+
+		// Else try X11
+		//vk::XlibSurfaceCreateInfoKHR X11surfaceCreateInfo;
+		//X11surfaceCreateInfo.dpy = glfwGetX11Display();
+		//X11surfaceCreateInfo.window = glfwGetX11Window(window);
+		//return instance.createXlibSurfaceKHRUnique(X11surfaceCreateInfo, nullptr, dispatch);
 #endif // USE_WINDOWS_OPERATING_SYSTEM
 	}
 
@@ -48,10 +63,24 @@ public:
 		surfaceCreateInfo.hwnd = glfwGetWin32Window(window);
 		return instance.createWin32SurfaceKHR(surfaceCreateInfo, nullptr, dispatch);
 #elif defined(USE_LINUX_OPERATING_SYSTEM)
-		vk::XlibSurfaceCreateInfoKHR surfaceCreateInfo;
-		surfaceCreateInfo.dpy = glfwGetX11Display();
-		surfaceCreateInfo.window = glfwGetX11Window(window);
-		return instance.createXlibSurfaceKHR(surfaceCreateInfo, nullptr, dispatch);
+		vk::SurfaceKHR surface;
+		vk::WaylandSurfaceCreateInfoKHR WaylandSurfaceCreateInfo;
+		WaylandSurfaceCreateInfo.display = glfwGetWaylandDisplay();
+		WaylandSurfaceCreateInfo.surface = glfwGetWaylandWindow(window);
+		try {
+			surface = instance.createWaylandSurfaceKHR(WaylandSurfaceCreateInfo, nullptr, dispatch);
+		} catch (vk::SystemError& e) {
+			std::cout << "Wayland not supported\n";
+		}
+		// No error, go for Wayland
+		if (surface)
+			return surface;
+
+		// Else try X11
+		//vk::XlibSurfaceCreateInfoKHR surfaceCreateInfo;
+		//surfaceCreateInfo.dpy = glfwGetX11Display();
+		//surfaceCreateInfo.window = glfwGetX11Window(window);
+		//return instance.createXlibSurfaceKHR(surfaceCreateInfo, nullptr, dispatch);
 #endif // USE_WINDOWS_OPERATING_SYSTEM
 	}
 
