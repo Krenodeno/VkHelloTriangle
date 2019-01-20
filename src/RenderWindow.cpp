@@ -2,12 +2,15 @@
 
 RenderWindow::RenderWindow(int width, int height, std::string name) : width(width), height(height)
 {
-	glfwInit();
+	if (!glfwInit())
+		throw std::runtime_error("Can't initalize GLFW !");
 	glfwSetErrorCallback([](int error, const char* description) {
 		std::cerr << "GLFW Error[" << error << "]: " << description << "\n";
 	});
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 	window = glfwCreateWindow(width, height, name.data(), nullptr, nullptr);
+	if (window == nullptr)
+		throw std::runtime_error("Can't create Window !");
 }
 
 RenderWindow::~RenderWindow()
