@@ -120,14 +120,12 @@ vk::PresentModeKHR chooseSwapPresentMode(const std::vector<vk::PresentModeKHR>& 
 }
 
 vk::Extent2D chooseSwapExtent(const vk::SurfaceCapabilitiesKHR& capabilities, vk::Extent2D windowExtent) {
-	// If current extent velue is set with uint32_t limit value, then the DM
+	// If current extent value is set with uint32_t limit value, then the DM
 	// tells us that it accept different extent that the window
 	if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
 		return capabilities.currentExtent;
 	}
 	else {
-		// TODO get the actual window size
-		//vk::Extent2D actualExtent = parentApp->windowExtent();
 		vk::Extent2D actualExtent = windowExtent;
 
 		actualExtent.width = std::max(capabilities.minImageExtent.width,

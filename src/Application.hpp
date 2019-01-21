@@ -10,22 +10,22 @@
 class Application {
 public:
 
-	Application();
-	~Application();
+	Application(const int width, const int height, std::string appName);
+	virtual ~Application();
 
-	void run() {
-		init();
-		mainLoop();
-	}
+	virtual void init() = 0;
+	virtual void quit() = 0;
+	virtual void update() = 0;
+	virtual void draw() = 0;
+
+	void run();
 
 	vk::SurfaceKHR createRenderSurface(vk::Instance);
 
 	vk::Extent2D windowExtent();
 
-private:
-	void init();
+protected:
 	void initWindow();
-	void mainLoop();
 
 	RenderWindow window;
 	Render render;
