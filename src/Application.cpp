@@ -27,7 +27,7 @@ vk::SurfaceKHR Application::createRenderSurface(vk::Instance instance) {
 }
 
 vk::Extent2D Application::windowExtent() {
-	return {window.getWidth(), window.getHeight()};
+	return {static_cast<uint32_t>(window.getWidth()), static_cast<uint32_t>(window.getHeight())};
 }
 
 vk::SurfaceKHR createSurface(Application* app, vk::Instance instance) {
