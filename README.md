@@ -37,6 +37,6 @@ It will create a "build" directory where you will find a directory named after s
 ## Shipped Libraries
 
 * GLFW 3.2.1 (only Windows binaries are shipped)
-* GLM 0.9.8.5
+* GLM 0.9.9.3
 * STB_image
 * Tiny_Obj_Loader
