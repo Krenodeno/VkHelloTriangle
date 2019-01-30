@@ -3,7 +3,7 @@ function getVulkanPath()
 	local envVulkanSDKPath = os.getenv("VULKAN_SDK")
 	local vulkanPath = os.findlib("vulkan")
 	if (envVulkanSDKPath) then
-		return envVulkanSDKPath
+		return envVulkanSDKPath:gsub("\\", "/")
 	elseif (vulkanPath) then
 		print("Vulkan SDK found in system's libraries")
 	else
