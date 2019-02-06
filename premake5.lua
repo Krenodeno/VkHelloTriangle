@@ -58,7 +58,7 @@ workspace "VkHelloTriangle"
 	vpaths {
 		["Headers"] = { "**.hpp", "**.inl" },
 		["Sources"] = { "**.cpp" },
-		["Shaders"] = { "**.vert", "**.frag" }
+		["Shaders"] = { "**.vert", "**.frag", ".comp" }
 	}
 
 	include( "Libraries/findVulkan.lua" )
@@ -119,6 +119,6 @@ project "vulkan-tutorial"
 project "compute-fractal"
 	kind "ConsoleApp"
 	includedirs { LibDir .. "Include", sourceDir }
-	files { "examples/compute/*" }
+	files { "examples/compute/*", "ressources/shaders/*.comp" }
 
 	links { "CompileShaders" }
