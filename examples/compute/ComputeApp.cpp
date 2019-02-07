@@ -1,5 +1,7 @@
 #include "ComputeApp.hpp"
 
+#include "Shader.hpp"
+
 #include <cassert>
 #include <fstream>
 #include <iostream>
@@ -286,18 +288,12 @@ void ComputeApp::createDescriptorSet() {
 void ComputeApp::createComputePipeline() {
 
 	// Create Shader
-	uint32_t filelength;
-	std::vector<uint32_t> code = readFile(filelength, "ressources/shaders/shader.comp.spv");
-	vk::ShaderModuleCreateInfo shaderCreateInfo;
-	shaderCreateInfo.codeSize = filelength;
-	shaderCreateInfo.pCode = code.data();
-
-	computeShaderModule = device.createShaderModule(shaderCreateInfo);
+	Shader computeShader("ressources/shaders/shader.comp.spv", device);
 
 	// Specify compute shader stage
 	vk::PipelineShaderStageCreateInfo shaderStageCreateInfo;
 	shaderStageCreateInfo.stage = vk::ShaderStageFlagBits::eCompute;
-	shaderStageCreateInfo.module = computeShaderModule;
+	shaderStageCreateInfo.module = computeShader.shaderModule;
 	shaderStageCreateInfo.pName = "main";
 
 	// Create PipelineLayout
