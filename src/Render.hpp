@@ -184,7 +184,7 @@ private:
 
 	void createIndexBuffer();
 
-	void createUniformBuffer();
+	void createUniformBuffers();
 
 	void updateUniformBuffer(uint32_t);
 

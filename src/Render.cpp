@@ -57,7 +57,7 @@ void Render::init() {
 	createFramebuffers();
 	createVertexBuffer();
 	createIndexBuffer();
-	createUniformBuffer();
+	createUniformBuffers();
 	createDescriptorPool();
 	createDescriptorSets();
 	createCommandBuffers();
@@ -755,7 +755,7 @@ void Render::createIndexBuffer() {
 	device.destroyBuffer(stagingBuffer, nullptr, dispatchLoader);
 }
 
-void Render::createUniformBuffer() {
+void Render::createUniformBuffers() {
 	vk::DeviceSize bufferSize = sizeof(UniformBufferObject);
 
 	size_t size = swapchain.getSize();
