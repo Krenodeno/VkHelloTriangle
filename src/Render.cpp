@@ -11,7 +11,7 @@
 
 #include <chrono>
 
-Render::Render() : renderType(RenderTypeBits::eGraphics), validationLayerEnabled(false) {
+Render::Render(std::string appName, uint32_t appVersion) : appName(appName), appVersion(appVersion), renderType(RenderTypeBits::eGraphics), validationLayerEnabled(false) {
 
 }
 
@@ -252,8 +252,8 @@ void Render::createInstance() {
 	}
 
 	vk::ApplicationInfo appInfo;
-	appInfo.pApplicationName = "vulkan-tutorial";
-	appInfo.applicationVersion = VK_MAKE_VERSION(0, 0, 0);
+	appInfo.pApplicationName = appName.c_str();
+	appInfo.applicationVersion = appVersion;
 	appInfo.pEngineName = "HelloTriangle";
 	appInfo.engineVersion = VK_MAKE_VERSION(0, 1, 0);
 	appInfo.apiVersion = VK_API_VERSION_1_0;

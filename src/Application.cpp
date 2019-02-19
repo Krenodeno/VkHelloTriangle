@@ -1,8 +1,10 @@
 #include "Application.hpp"
 
-Application::Application(const int width, const int height, std::string appName)
-	: window(width, height, appName), name(appName) {
-
+Application::Application(const int width, const int height, std::string appName, uint32_t appVersion)
+		: window(width, height, appName), name(appName), version(appVersion) {
+	render.setParentApplication(this);
+	render.setSurfaceCreationFunction(createSurface);
+	render.setExtent(windowExtent());
 }
 
 Application::~Application() {

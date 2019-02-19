@@ -38,7 +38,7 @@ struct UniformBufferObject {
 
 class Render {
 public:
-	Render();
+	Render(std::string appName = "", uint32_t appVersion = 0);
 	~Render();
 
 	void init();
@@ -60,9 +60,16 @@ public:
 
 	void setExtent(const vk::Extent2D&);
 
+	void setAppName(std::string name) { appName = name; }
+	void setAppVersion(uint32_t version) { appVersion = version; }
+
 	void waitDeviceIdle() { device.waitIdle(dispatchLoader); }
 
-private:
+protected:
+
+	std::string appName;
+
+	uint32_t appVersion;
 
 	RenderType renderType;
 
