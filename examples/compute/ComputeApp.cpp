@@ -121,7 +121,8 @@ void ComputeApp::cleanup() {
 	// Then destroy Device
 	device.destroy();
 	// destroy debug utils
-	instance.destroyDebugUtilsMessengerEXT(callback, nullptr, vk::DispatchLoaderDynamic(instance));
+	auto func = (PFN_vkGetInstanceProcAddr)instance.getProcAddr("vkGetInstanceProcAddr");
+	instance.destroyDebugUtilsMessengerEXT(callback, nullptr, vk::DispatchLoaderDynamic(instance, func));
 	// Finally destroy the instance
 	instance.destroy();
 }
@@ -161,7 +162,8 @@ void ComputeApp::setupDebugCallback() {
 	createInfo.pfnUserCallback = debugCallback;
 	createInfo.pUserData = nullptr;
 
-	vk::DispatchLoaderDynamic didy(instance);
+	auto func = (PFN_vkGetInstanceProcAddr)instance.getProcAddr("vkGetInstanceProcAddr");
+	vk::DispatchLoaderDynamic didy(instance, func);
 	callback = instance.createDebugUtilsMessengerEXT(createInfo, nullptr, didy);
 }
 
