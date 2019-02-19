@@ -1,5 +1,7 @@
 #include "ComputeApp.hpp"
 
+#include "RenderUtils.hpp"
+
 #include <cassert>
 #include <fstream>
 #include <iostream>
@@ -175,7 +177,7 @@ void ComputeApp::pickPhysicalDevice() {
 		throw std::runtime_error("Failed to find GPUs with Vulkan suport!");
 
 	for (const auto& device: devices) {
-		if (isDeviceSuitable(device)) {
+		if (isDeviceSuitable(device, {}, vk::QueueFlagBits::eCompute)) {
 			physicalDevice = device;
 			break;
 		}
@@ -191,7 +193,7 @@ void ComputeApp::createDevice() {
 	// Queues
 	float priority = 1.f;
 	vk::DeviceQueueCreateInfo queueCreateInfo;
-	queueCreateInfo.queueFamilyIndex = indices.computeFamily;
+	queueCreateInfo.queueFamilyIndex = indices.computeFamily.value();
 	queueCreateInfo.queueCount = 1;
 	queueCreateInfo.pQueuePriorities = &priority;
 
@@ -211,7 +213,7 @@ void ComputeApp::createDevice() {
 	device = physicalDevice.createDevice(createInfo);
 
 	// get Queue
-	computeQueue = device.getQueue(indices.computeFamily, 0);
+	computeQueue = device.getQueue(indices.computeFamily.value(), 0);
 
 }
 
@@ -227,7 +229,7 @@ void ComputeApp::createBuffer() {
 
 	vk::MemoryAllocateInfo allocateInfo;
 	allocateInfo.allocationSize = memoryRequirements.size;
-	allocateInfo.memoryTypeIndex = findMemoryType(memoryRequirements.memoryTypeBits, vk::MemoryPropertyFlagBits::eHostCoherent | vk::MemoryPropertyFlagBits::eHostVisible);
+	allocateInfo.memoryTypeIndex = findMemoryType(physicalDevice, memoryRequirements.memoryTypeBits, vk::MemoryPropertyFlagBits::eHostCoherent | vk::MemoryPropertyFlagBits::eHostVisible);
 
 	bufferMemory = device.allocateMemory(allocateInfo);
 
@@ -323,7 +325,7 @@ void ComputeApp::createCommandeBuffer() {
 
 	// Create Command Pool
 	vk::CommandPoolCreateInfo poolCreateInfo;
-	poolCreateInfo.queueFamilyIndex = static_cast<uint32_t>(queueFamilyIndex.computeFamily);
+	poolCreateInfo.queueFamilyIndex = queueFamilyIndex.computeFamily.value();
 	commandPool = device.createCommandPool(poolCreateInfo);
 
 	// Create Command buffer
@@ -350,43 +352,4 @@ void ComputeApp::createCommandeBuffer() {
 	commandBuffer.dispatch(dx, dy, 1);
 
 	commandBuffer.end();
-}
-
-bool ComputeApp::isDeviceSuitable(vk::PhysicalDevice device) {
-	QueueFamilyIndices indices = findQueueFamilies(device);
-
-	return indices.isComplete();
-}
-
-ComputeApp::QueueFamilyIndices ComputeApp::findQueueFamilies(vk::PhysicalDevice physDevice) {
-	QueueFamilyIndices indices;
-
-	auto queueFamilyProperties = physDevice.getQueueFamilyProperties();
-
-	int i = 0;
-	for (const auto& queueFamily : queueFamilyProperties) {
-		if (queueFamily.queueCount > 0 && queueFamily.queueFlags & vk::QueueFlagBits::eCompute) {
-			indices.computeFamily = i;
-		}
-
-		if (indices.isComplete())
-			break;
-
-		++i;
-	}
-
-	return indices;
-}
-
-uint32_t ComputeApp::findMemoryType(uint32_t memoryTypeBits, vk::MemoryPropertyFlags properties) {
-	auto memoryProperties = physicalDevice.getMemoryProperties();
-
-	for (uint32_t i = 0; i < memoryProperties.memoryTypeCount; i++) {
-		if (
-			(memoryTypeBits & (i << 1)) &&
-			((memoryProperties.memoryTypes[i].propertyFlags & properties) == properties)
-		)
-			return i;
-	}
-	return -1;
 }

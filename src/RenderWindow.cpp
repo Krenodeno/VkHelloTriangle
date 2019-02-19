@@ -38,6 +38,7 @@ std::vector<const char*> RenderWindow::getRequiredExtensions() {
 	extensions.push_back(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
 #elif defined(USE_LINUX_OPERATING_SYSTEM)
 	extensions.push_back(VK_KHR_XLIB_SURFACE_EXTENSION_NAME);
+	extensions.push_back(VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME);
 #endif
 	return extensions;
 }

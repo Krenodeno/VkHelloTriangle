@@ -53,11 +53,11 @@ struct SwapChainSupportDetails {
 	std::vector<vk::PresentModeKHR> presentModes;
 };
 
-inline bool checkExtensionSupport(const char* extensions);
-inline bool checkLayerSupport(const char* layers);
+inline bool checkExtensionSupport(const char* extension);
+inline bool checkLayerSupport(const char* layer);
 inline bool checkDeviceExtensionSupport(vk::PhysicalDevice, std::vector<const char*>);
 inline QueueFamilyIndices findQueueFamilies(vk::PhysicalDevice, vk::SurfaceKHR);
-inline bool isDeviceSuitable(vk::PhysicalDevice, vk::SurfaceKHR, std::vector<const char*>);
+inline bool isDeviceSuitable(vk::PhysicalDevice, std::vector<const char*> extensions, vk::QueueFlags, vk::SurfaceKHR);
 inline SwapChainSupportDetails querySwapChainSupport(vk::PhysicalDevice, vk::SurfaceKHR);
 inline vk::SurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<vk::SurfaceFormatKHR>&);
 inline vk::PresentModeKHR chooseSwapPresentMode(const std::vector<vk::PresentModeKHR>&);

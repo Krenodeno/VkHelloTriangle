@@ -33,7 +33,7 @@ bool checkDeviceExtensionSupport(vk::PhysicalDevice device, std::vector<const ch
 	return requiredExtensions.empty();
 }
 
-QueueFamilyIndices findQueueFamilies(vk::PhysicalDevice device, vk::SurfaceKHR surface) {
+QueueFamilyIndices findQueueFamilies(vk::PhysicalDevice device, vk::SurfaceKHR surface = nullptr) {
 	QueueFamilyIndices indices;
 
 	auto queueFamilyProperties = device.getQueueFamilyProperties();
@@ -48,9 +48,11 @@ QueueFamilyIndices findQueueFamilies(vk::PhysicalDevice device, vk::SurfaceKHR s
 			indices.computeFamily = i;
 		}
 
-		auto presentSupport = device.getSurfaceSupportKHR(i, surface);
-		if (queueFamily.queueCount > 0 && presentSupport) {
-			indices.presentFamily = i;
+		if (surface) {
+			auto presentSupport = device.getSurfaceSupportKHR(i, surface);
+			if (queueFamily.queueCount > 0 && presentSupport) {
+				indices.presentFamily = i;
+			}
 		}
 
 		if (indices.isComplete())
@@ -58,7 +60,7 @@ QueueFamilyIndices findQueueFamilies(vk::PhysicalDevice device, vk::SurfaceKHR s
 
 		++i;
 	}
-
+	// return lastly found indices for each families if one is not found
 	return indices;
 }
 
@@ -74,18 +76,31 @@ SwapChainSupportDetails querySwapChainSupport(vk::PhysicalDevice device, vk::Sur
 	return details;
 }
 
-bool isDeviceSuitable(vk::PhysicalDevice device, vk::SurfaceKHR surface, std::vector<const char*> extensions) {
+bool isDeviceSuitable(vk::PhysicalDevice device, std::vector<const char*> extensions, vk::QueueFlags wantedQueues, vk::SurfaceKHR surface = nullptr) {
 	QueueFamilyIndices indices = findQueueFamilies(device, surface);
 
 	bool extensionsSupported = checkDeviceExtensionSupport(device, extensions);
 
-	bool swapChainAdequate = false;
+	bool swapChainAdequate = true;
 	if (extensionsSupported) {
-		SwapChainSupportDetails swapchainSupport = querySwapChainSupport(device, surface);
-		swapChainAdequate = !swapchainSupport.formats.empty() && !swapchainSupport.presentModes.empty();
+		if (surface) {
+			SwapChainSupportDetails swapchainSupport = querySwapChainSupport(device, surface);
+			swapChainAdequate = !swapchainSupport.formats.empty() && !swapchainSupport.presentModes.empty();
+		}
 	}
 
-	return indices.isComplete() && extensionsSupported && swapChainAdequate;
+	bool isComplete = true;
+
+	if ((wantedQueues & vk::QueueFlagBits::eGraphics) == vk::QueueFlagBits::eGraphics)
+		isComplete &= indices.graphicsFamily.has_value();
+
+	if ((wantedQueues & vk::QueueFlagBits::eCompute) == vk::QueueFlagBits::eCompute)
+		isComplete &= indices.computeFamily.has_value();
+
+	if (surface)
+		isComplete &= indices.presentFamily.has_value();
+
+	return isComplete && extensionsSupported && swapChainAdequate;
 }
 
 vk::SurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<vk::SurfaceFormatKHR>& availableFormats) {

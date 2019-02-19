@@ -235,6 +235,13 @@ void Render::setExtent(const vk::Extent2D& extent) {
 	windowExtent = extent;
 }
 
+/*****************************************************************************/
+/***                            INITIALISATION                             ***/
+/*****************************************************************************/
+
+/**
+ * Initialisation of a Vulkan application: Instance Creation
+ */
 void Render::createInstance() {
 
 	std::cout << "Instance creation\n";
@@ -298,8 +305,14 @@ void Render::pickPhysicalDevice() {
 	if (devices.empty())
 		throw std::runtime_error("Failed to find GPUs with Vulkan suport!");
 
+	vk::QueueFlags queues;
+	if ((renderType & RenderTypeBits::eGraphics) == RenderTypeBits::eGraphics)
+		queues |= vk::QueueFlagBits::eGraphics;
+	if ((renderType & RenderTypeBits::eCompute) == RenderTypeBits::eCompute)
+		queues |= vk::QueueFlagBits::eCompute;
+
 	for (const auto& device: devices) {
-		if (isDeviceSuitable(device, surface, deviceExtensions)) {
+		if (isDeviceSuitable(device, deviceExtensions, queues, surface)) {
 			physicalDevice = device;
 			break;
 		}
@@ -314,7 +327,9 @@ void Render::createLogicalDevice() {
 
 	// Queues infos
 	std::vector<vk::DeviceQueueCreateInfo> queueCreateInfos;
-	std::set<unsigned int> uniqueFamilies = { indices.presentFamily.value() };
+	std::set<unsigned int> uniqueFamilies;
+	if (surface)
+		uniqueFamilies.insert(indices.presentFamily.value());
 	if (renderType & RenderTypeBits::eGraphics)
 		uniqueFamilies.insert(indices.graphicsFamily.value());
 	if (renderType & RenderTypeBits::eCompute)
@@ -358,11 +373,13 @@ void Render::createLogicalDevice() {
 	if (renderType & RenderTypeBits::eCompute)
 		computeQueue = device.getQueue(indices.computeFamily.value(), 0, dispatchLoader);
 
-	presentQueue = device.getQueue(indices.presentFamily.value(), 0, dispatchLoader);
+	if (surface)
+		presentQueue = device.getQueue(indices.presentFamily.value(), 0, dispatchLoader);
 }
 
 void Render::createSurface() {
-	surface = surfaceCreation(parentApp, instance);
+	if (surfaceCreation)
+		surface = surfaceCreation(parentApp, instance);
 }
 
 void Render::createSwapchain(vk::SwapchainKHR oldSwapchain) {

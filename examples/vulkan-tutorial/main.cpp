@@ -8,7 +8,7 @@
 class Tutorial : public Application {
 public:
 
-	Tutorial() : Application(800, 600, "Vulkan") {
+	Tutorial() : Application(800, 600, "Vulkan", VK_MAKE_VERSION(0, 0, 0)) {
 
 	}
 
@@ -27,11 +27,6 @@ public:
 		#if defined(DEBUG)
 		render.enableValidationLayer();
 		#endif
-
-		render.setParentApplication(this);
-		render.setSurfaceCreationFunction(createSurface);
-
-		render.setExtent(windowExtent());
 
 		render.init();
 

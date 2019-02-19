@@ -71,7 +71,8 @@ void RenderTarget::cleanup() {
 	for (auto imageView : swapChainImageViews) {
 		device.destroyImageView(imageView);
 	}
-	device.destroySwapchainKHR(swapChain);
+	if (swapChain)
+		device.destroySwapchainKHR(swapChain);
 }
 
 void RenderTarget::recreate(vk::SurfaceKHR surface, vk::PhysicalDevice physicalDevice, vk::Extent2D windowExtent) {

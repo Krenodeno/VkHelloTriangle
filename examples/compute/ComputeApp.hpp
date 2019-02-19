@@ -41,9 +41,9 @@ static std::vector<uint32_t> readFile(uint32_t& length, std::string filename) {
 	return str;
 }
 
-const int WIDTH = 1024; // Size of rendered mandelbrot set.
-const int HEIGHT = 1024; // Size of renderered mandelbrot set.
-const int WORKGROUP_SIZE = 16; // Workgroup size in compute shader.
+const int WIDTH = 1024;			// Size of rendered mandelbrot set.
+const int HEIGHT = 1024;		// Size of renderered mandelbrot set.
+const int WORKGROUP_SIZE = 16;	// Workgroup size in compute shader.
 
 class ComputeApp {
 public:
@@ -52,8 +52,6 @@ public:
 
 	void run();
 private:
-
-	struct QueueFamilyIndices;
 	struct Pixel;
 
 	vk::Instance instance;
@@ -90,26 +88,11 @@ private:
 	void setupDebugCallback();
 	void pickPhysicalDevice();
 	void createDevice();
-	void allocateMemory();
 	void createBuffer();
 	void createDescriptorSetLayout();
 	void createDescriptorSet();
 	void createComputePipeline();
 	void createCommandeBuffer();
-
-	bool isDeviceSuitable(vk::PhysicalDevice);
-
-	QueueFamilyIndices findQueueFamilies(vk::PhysicalDevice);
-
-	uint32_t findMemoryType(uint32_t, vk::MemoryPropertyFlags);
-
-	struct QueueFamilyIndices {
-		int computeFamily = -1;
-
-		bool isComplete() {
-			return computeFamily >= 0;
-		}
-	};
 
 	struct Pixel {
 		float r, g, b, a;
