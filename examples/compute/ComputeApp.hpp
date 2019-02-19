@@ -14,32 +14,6 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 	const VkDebugUtilsMessengerCallbackDataEXT*,
 	void*);
 
-static std::vector<uint32_t> readFile(uint32_t& length, std::string filename) {
-	FILE* fp = fopen(filename.c_str(), "rb");
-	if (fp == NULL) {
-		throw std::runtime_error("Could not find or open file\n");
-	}
-
-	// get file size.
-	fseek(fp, 0, SEEK_END);
-	long filesize = ftell(fp);
-	fseek(fp, 0, SEEK_SET);
-
-	long filesizepadded = long(ceil(filesize / 4.0)) * 4;
-
-	// read file contents.
-	std::vector<uint32_t> str(filesizepadded);
-	fread(str.data(), filesize, sizeof(char), fp);
-	fclose(fp);
-
-	// data padding.
-	for (int i = filesize; i < filesizepadded; i++) {
-		str[i] = 0;
-	}
-
-	length = filesizepadded;
-	return str;
-}
 
 const int WIDTH = 1024;			// Size of rendered mandelbrot set.
 const int HEIGHT = 1024;		// Size of renderered mandelbrot set.
