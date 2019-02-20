@@ -249,7 +249,7 @@ void Render::setExtent(const vk::Extent2D& extent) {
 void Render::createInstance() {
 
 	std::cout << "Instance creation\n";
-	std::cout << "Required layers: \n";
+	std::cout << "  Required layers: \n";
 	for (auto layer : layers) {
 		std::cout << "\t" << layer << "\t";
 		if (!checkLayerSupport(layer)) {
@@ -260,10 +260,21 @@ void Render::createInstance() {
 		std::cout << "\n";
 	}
 
-	std::cout << "Required extensions: \n";
-	for (auto extension: instanceExtensions) {
-		std::cout << "\t" << extension << (checkExtensionSupport(extension)?"\tsupported":"\tnon supported") << "\n";
+	std::cout << "  Required extensions: \n";
+	for (auto it = instanceExtensions.begin(); it != instanceExtensions.end(); it++) {
+		std::cout << "\t" << *it << "\t";
+		if (checkExtensionSupport(*it))
+			std::cout << "supported\n";
+		else {
+			std::cerr << "non supported\n";
+			// Remove non-supported extensions 
+			instanceExtensions.erase(it);
+		}
 	}
+
+	// Check if there is minimum 2 Surface extensions (VK_KHR_surface and platform Surface)
+	if (std::count_if(instanceExtensions.begin(), instanceExtensions.end(), [](std::string s){return s.find("surface") != std::string::npos;}) < 2)
+		throw std::runtime_error("No supported surface extenstions");
 
 	vk::ApplicationInfo appInfo;
 	appInfo.pApplicationName = appName.c_str();
