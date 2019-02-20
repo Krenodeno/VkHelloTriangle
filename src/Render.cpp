@@ -113,8 +113,12 @@ void Render::cleanup() {
 	if (surface)
 		instance.destroySurfaceKHR(surface, nullptr, dispatchLoader);
 	if (validationLayerEnabled) {
+#if (VK_HEADER_VERSION >= 99)
 		auto func = (PFN_vkGetInstanceProcAddr)instance.getProcAddr("vkGetInstanceProcAddr", dispatchLoader);
 		instance.destroyDebugUtilsMessengerEXT(callback, nullptr, vk::DispatchLoaderDynamic(instance, func));
+#else
+		instance.destroyDebugUtilsMessengerEXT(callback, nullptr, vk::DispatchLoaderDynamic(instance));
+#endif
 	}
 	// Then destroy the instance
 	instance.destroy();
@@ -293,10 +297,12 @@ void Render::setupDebugCallback() {
 		vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance;
 	createInfo.pfnUserCallback = debugCallback;
 	createInfo.pUserData = nullptr;
-
+#if (VK_HEADER_VERSION >= 99)
 	auto func = (PFN_vkGetInstanceProcAddr)instance.getProcAddr("vkGetInstanceProcAddr", dispatchLoader);
-
 	callback = instance.createDebugUtilsMessengerEXT(createInfo, nullptr, vk::DispatchLoaderDynamic(instance, func));
+#else
+	callback = instance.createDebugUtilsMessengerEXT(createInfo, nullptr, vk::DispatchLoaderDynamic(instance));
+#endif
 }
 
 void Render::pickPhysicalDevice() {
