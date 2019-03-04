@@ -267,14 +267,23 @@ void Render::createInstance() {
 			std::cout << "supported\n";
 		else {
 			std::cerr << "non supported\n";
-			// Remove non-supported extensions 
-			instanceExtensions.erase(it);
 		}
 	}
+
+	std::cout << "hé ho" << std::endl;
+
+	// Remove non-supported extensions 
+	instanceExtensions.erase(
+		std::remove_if(instanceExtensions.begin(), instanceExtensions.end(), [](const char* e){ return !checkExtensionSupport(e); }),
+		instanceExtensions.end());
+
+	std::cout << "là là" << std::endl;
 
 	// Check if there is minimum 2 Surface extensions (VK_KHR_surface and platform Surface)
 	if (std::count_if(instanceExtensions.begin(), instanceExtensions.end(), [](std::string s){return s.find("surface") != std::string::npos;}) < 2)
 		throw std::runtime_error("No supported surface extenstions");
+
+	std::cout << "ici ici" << std::endl;
 
 	vk::ApplicationInfo appInfo;
 	appInfo.pApplicationName = appName.c_str();
