@@ -1,6 +1,6 @@
 -- premake5.lua
 workspace "VkHelloTriangle"
-	configurations { "Debug", "DebugWSAN", "Release" }
+	configurations { "Debug", "DebugSAN", "Release", "ReleaseSAN" }
 
 	local sourceDir = "src/"
 	local LibDir = "Libraries/"
@@ -18,22 +18,24 @@ workspace "VkHelloTriangle"
 	flags { "MultiProcessorCompile" }
 	warnings "Extra"
 
-	filter "configurations:Debug"
+	filter "configurations:Debug*"
 		defines { "DEBUG" }
 		symbols "On"
+		optimize "Debug"
 		targetsuffix "-d"
 
-	filter "configurations:DebugWSAN"
-		defines { "DEBUG" }
-		symbols "On"
-		targetsuffix "-dsan"
+	filter "configurations:*SAN"
 		buildoptions { "-fno-omit-frame-pointer" }
 		buildoptions { "-fsanitize=undefined,address" }
 		linkoptions { "-fsanitize=undefined,address" }
 
-	filter "configurations:Release"
+	filter "configurations:Release*"
 		defines { "NDEBUG" }
+		symbols "Off"
 		optimize "On"
+
+	filter "configurations:DebugSAN"
+		targetsuffix "-dsan"
 
 	filter "system:Windows"
 		defines {
