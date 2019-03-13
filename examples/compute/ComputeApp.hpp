@@ -50,10 +50,14 @@ private:
 	vk::Buffer buffer;
 	vk::DeviceMemory bufferMemory;
 
+	vk::Buffer uniformBuffer;
+	vk::DeviceMemory uniformBufferMemory;
+
 	uint32_t bufferSize; // size of buffer in bytes
 
 	void init();
 
+	void updateUniformBuffer();
 	void draw();
 
 	void cleanup();
@@ -63,6 +67,7 @@ private:
 	void pickPhysicalDevice();
 	void createDevice();
 	void createBuffer();
+	void createUniformBuffer();
 	void createDescriptorSetLayout();
 	void createDescriptorSet();
 	void createComputePipeline();
@@ -70,6 +75,11 @@ private:
 
 	struct Pixel {
 		float r, g, b, a;
+	};
+
+	struct ComputeUBO {
+		int width;
+		int height;
 	};
 };
 

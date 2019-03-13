@@ -44,7 +44,7 @@ ComputeApp::~ComputeApp() {
 
 void ComputeApp::run() {
 	init();
-
+	updateUniformBuffer();
 	draw();
 
 	// Get data back
@@ -83,6 +83,15 @@ void ComputeApp::run() {
 	file.close();
 }
 
+void ComputeApp::updateUniformBuffer() {
+	ComputeUBO ubo = {WIDTH, HEIGHT};
+
+	// Copy data in ubo
+	auto data = static_cast<ComputeUBO*>(device.mapMemory(uniformBufferMemory, /*offset*/ 0, sizeof(ubo)));
+		std::memcpy(data, &ubo, sizeof(ubo));
+	device.unmapMemory(uniformBufferMemory);
+}
+
 void ComputeApp::draw() {
 	vk::SubmitInfo submitInfo;
 	submitInfo.commandBufferCount = 1;
@@ -105,6 +114,7 @@ void ComputeApp::init() {
 	pickPhysicalDevice();
 	createDevice();
 	createBuffer();
+	createUniformBuffer();
 	createDescriptorSetLayout();
 	createDescriptorSet();
 	createComputePipeline();
@@ -113,21 +123,23 @@ void ComputeApp::init() {
 
 void ComputeApp::cleanup() {
 	// Destroy vulkan objects
-	device.destroyShaderModule(computeShaderModule);
-	device.destroyCommandPool(commandPool);
-	device.destroyPipeline(pipeline);
-	device.destroyPipelineLayout(pipelineLayout);
-	device.destroyDescriptorPool(descriptorPool);
-	device.destroyDescriptorSetLayout(descriptorSetLayout);
-	device.freeMemory(bufferMemory);
-	device.destroyBuffer(buffer);
+	if (computeShaderModule) device.destroy(computeShaderModule);
+	if (commandPool) device.destroy(commandPool);
+	if (pipeline) device.destroy(pipeline);
+	if (pipelineLayout) device.destroy(pipelineLayout);
+	if (descriptorPool) device.destroy(descriptorPool);
+	if (descriptorSetLayout) device.destroy(descriptorSetLayout);
+	if (uniformBufferMemory) device.free(uniformBufferMemory);
+	if (uniformBuffer) device.destroy(uniformBuffer);
+	if (bufferMemory) device.free(bufferMemory);
+	if (buffer) device.destroy(buffer);
 	// Then destroy Device
-	device.destroy();
+	if (device) device.destroy();
 	// destroy debug utils
 	auto func = (PFN_vkGetInstanceProcAddr)instance.getProcAddr("vkGetInstanceProcAddr");
-	instance.destroyDebugUtilsMessengerEXT(callback, nullptr, vk::DispatchLoaderDynamic(instance, func));
+	if (callback) instance.destroyDebugUtilsMessengerEXT(callback, nullptr, vk::DispatchLoaderDynamic(instance, func));
 	// Finally destroy the instance
-	instance.destroy();
+	if (instance) instance.destroy();
 }
 
 void ComputeApp::createInstance() {
@@ -237,6 +249,25 @@ void ComputeApp::createBuffer() {
 	device.bindBufferMemory(buffer, bufferMemory, /*MemoryOffset*/ 0);
 }
 
+void ComputeApp::createUniformBuffer() {
+	vk::BufferCreateInfo createInfo;
+	createInfo.size = sizeof(ComputeUBO);
+	createInfo.usage = vk::BufferUsageFlagBits::eUniformBuffer;
+	createInfo.sharingMode = vk::SharingMode::eExclusive;
+
+	uniformBuffer = device.createBuffer(createInfo);
+
+	vk::MemoryRequirements memoryRequirements = device.getBufferMemoryRequirements(uniformBuffer);
+
+	vk::MemoryAllocateInfo allocateInfo;
+	allocateInfo.allocationSize = memoryRequirements.size;
+	allocateInfo.memoryTypeIndex = findMemoryType(physicalDevice, memoryRequirements.memoryTypeBits, vk::MemoryPropertyFlagBits::eHostCoherent | vk::MemoryPropertyFlagBits::eHostVisible);
+
+	uniformBufferMemory = device.allocateMemory(allocateInfo);
+
+	device.bindBufferMemory(uniformBuffer, uniformBufferMemory, /*memoryOffset*/ 0);
+}
+
 void ComputeApp::createDescriptorSetLayout() {
 	vk::DescriptorSetLayoutBinding binding;
 	binding.binding = 0;
@@ -244,22 +275,33 @@ void ComputeApp::createDescriptorSetLayout() {
 	binding.descriptorCount = 1;
 	binding.stageFlags = vk::ShaderStageFlagBits::eCompute;
 
+	vk::DescriptorSetLayoutBinding uniformBinding;
+	uniformBinding.binding = 1;
+	uniformBinding.descriptorType = vk::DescriptorType::eUniformBuffer;
+	uniformBinding.descriptorCount = 1;
+	uniformBinding.stageFlags = vk::ShaderStageFlagBits::eCompute;
+
+	vk::DescriptorSetLayoutBinding bindings[] = {binding, uniformBinding};
+
 	vk::DescriptorSetLayoutCreateInfo createInfo;
-	createInfo.bindingCount = 1;
-	createInfo.pBindings = &binding;
+	createInfo.bindingCount = 2;
+	createInfo.pBindings = bindings;
 
 	descriptorSetLayout = device.createDescriptorSetLayout(createInfo);
 }
 
 void ComputeApp::createDescriptorSet() {
-	vk::DescriptorPoolSize poolSize;
-	poolSize.type = vk::DescriptorType::eStorageBuffer;
-	poolSize.descriptorCount = 1;
+	vk::DescriptorPoolSize poolSizes[2];
+	poolSizes[0].type = vk::DescriptorType::eStorageBuffer;
+	poolSizes[0].descriptorCount = 1;
+
+	poolSizes[1].type = vk::DescriptorType::eUniformBuffer;
+	poolSizes[1].descriptorCount = 1;
 
 	vk::DescriptorPoolCreateInfo createInfo;
 	createInfo.maxSets = 1;	// We only need to allocate one descriptor set from the pool
-	createInfo.poolSizeCount = 1;
-	createInfo.pPoolSizes = &poolSize;
+	createInfo.poolSizeCount = 2;
+	createInfo.pPoolSizes = poolSizes;
 
 	descriptorPool = device.createDescriptorPool(createInfo);
 
@@ -280,12 +322,27 @@ void ComputeApp::createDescriptorSet() {
 
 	vk::WriteDescriptorSet writeDescriptorSet;
 	writeDescriptorSet.dstSet = descriptorSet;	// Write to this descriptor set
-	writeDescriptorSet.dstBinding = 0;			// Write to the first, and only binding
+	writeDescriptorSet.dstBinding = 0;			// Write to the first binding
 	writeDescriptorSet.descriptorCount = 1;
 	writeDescriptorSet.descriptorType = vk::DescriptorType::eStorageBuffer;
 	writeDescriptorSet.pBufferInfo = &bufferInfo;
 
 	device.updateDescriptorSets(writeDescriptorSet, nullptr);
+
+	vk::DescriptorBufferInfo uniformBufferInfo;
+	uniformBufferInfo.buffer = uniformBuffer;
+	uniformBufferInfo.offset = 0;
+	uniformBufferInfo.range = sizeof(ComputeUBO);
+
+	vk::WriteDescriptorSet uniformWriteDescriptorSet;
+	uniformWriteDescriptorSet.dstSet = descriptorSet;
+	uniformWriteDescriptorSet.dstBinding = 1;
+	uniformWriteDescriptorSet.dstArrayElement = 0;
+	uniformWriteDescriptorSet.descriptorType = vk::DescriptorType::eUniformBuffer;
+	uniformWriteDescriptorSet.descriptorCount = 1;
+	uniformWriteDescriptorSet.pBufferInfo = &uniformBufferInfo;
+
+	device.updateDescriptorSets(uniformWriteDescriptorSet, nullptr);
 }
 
 void ComputeApp::createComputePipeline() {
