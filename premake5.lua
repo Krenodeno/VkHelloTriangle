@@ -21,7 +21,7 @@ workspace "VkHelloTriangle"
 	filter "configurations:Debug*"
 		defines { "DEBUG" }
 		symbols "On"
-		optimize "Debug"
+		optimize "Off"
 		targetsuffix "-d"
 
 	filter "configurations:*SAN"
