@@ -123,7 +123,6 @@ void ComputeApp::init() {
 
 void ComputeApp::cleanup() {
 	// Destroy vulkan objects
-	if (computeShaderModule) device.destroy(computeShaderModule);
 	if (commandPool) device.destroy(commandPool);
 	if (pipeline) device.destroy(pipeline);
 	if (pipelineLayout) device.destroy(pipelineLayout);
@@ -348,13 +347,11 @@ void ComputeApp::createDescriptorSet() {
 void ComputeApp::createComputePipeline() {
 
 	// Create Shader
-	Shader computeShader("ressources/shaders/shader.comp.spv", device);
+	Shader computeShader(device, vk::ShaderStageFlagBits::eCompute);
+	computeShader.create("ressources/shaders/shader.comp.spv");
 
 	// Specify compute shader stage
-	vk::PipelineShaderStageCreateInfo shaderStageCreateInfo;
-	shaderStageCreateInfo.stage = vk::ShaderStageFlagBits::eCompute;
-	shaderStageCreateInfo.module = computeShader.shaderModule;
-	shaderStageCreateInfo.pName = "main";
+	auto shaderStageCreateInfo = computeShader.getShaderStageInfo();
 
 	// Create PipelineLayout
 	vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo;

@@ -483,22 +483,15 @@ void Render::createDescriptorSetLayout() {
 
 void Render::createGraphicsPipeline() {
 
-	Shader vert("ressources/shaders/shader.vert.spv", device);
-	Shader frag("ressources/shaders/shader.frag.spv", device);
-	// Get the bytecode
-	auto vertModule = vert.shaderModule;
-	auto fragModule = frag.shaderModule;
+	Shader vert(device, vk::ShaderStageFlagBits::eVertex);
+	vert.create("ressources/shaders/shader.vert.spv");
+	Shader frag(device, vk::ShaderStageFlagBits::eFragment);
+	frag.create("ressources/shaders/shader.frag.spv");
 
 	// Create the actuals shaders and link them
-	vk::PipelineShaderStageCreateInfo vertShaderStageInfo;
-	vertShaderStageInfo.stage = vk::ShaderStageFlagBits::eVertex;
-	vertShaderStageInfo.module = vertModule;
-	vertShaderStageInfo.pName = "main";			// entry point in the shader's code
+	vk::PipelineShaderStageCreateInfo vertShaderStageInfo = vert.getShaderStageInfo();
 
-	vk::PipelineShaderStageCreateInfo fragShaderStageInfo;
-	fragShaderStageInfo.stage = vk::ShaderStageFlagBits::eFragment;
-	fragShaderStageInfo.module = fragModule;
-	fragShaderStageInfo.pName = "main";			// entry point in the shader's code
+	vk::PipelineShaderStageCreateInfo fragShaderStageInfo = frag.getShaderStageInfo();
 
 	vk::PipelineShaderStageCreateInfo shaderStages[] = {vertShaderStageInfo, fragShaderStageInfo};
 

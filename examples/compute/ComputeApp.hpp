@@ -38,7 +38,6 @@ private:
 
 	vk::Pipeline pipeline;
 	vk::PipelineLayout pipelineLayout;
-	vk::ShaderModule computeShaderModule;
 
 	vk::CommandPool commandPool;
 	vk::CommandBuffer commandBuffer;
