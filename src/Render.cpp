@@ -11,7 +11,7 @@
 
 #include <chrono>
 
-Render::Render(std::string appName, uint32_t appVersion) : appName(appName), appVersion(appVersion), renderType(RenderTypeBits::eGraphics), validationLayerEnabled(false) {
+Render::Render(std::string appName, uint32_t appVersion, RenderType type) : appName(appName), appVersion(appVersion), renderType(type), validationLayerEnabled(false) {
 
 }
 
@@ -270,7 +270,7 @@ void Render::createInstance() {
 		}
 	}
 
-	// Remove non-supported extensions 
+	// Remove non-supported extensions
 	instanceExtensions.erase(
 		std::remove_if(instanceExtensions.begin(), instanceExtensions.end(), [](const char* e){ return !checkExtensionSupport(e); }),
 		instanceExtensions.end());

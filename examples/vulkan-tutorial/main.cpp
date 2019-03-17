@@ -1,14 +1,15 @@
 #include <stdexcept>
 #include <iostream>
 #include <cstdlib>
-#include <chrono>
 
 #include "Application.hpp"
+#include "RenderWindow.hpp"
 
 class Tutorial : public Application {
 public:
 
-	Tutorial() : Application(800, 600, "Vulkan", VK_MAKE_VERSION(0, 0, 0)) {
+	Tutorial() : Application("Vulkan", VK_MAKE_VERSION(0, 0, 0)),
+				 window(800, 600, "VkHelloTriangle") {
 
 	}
 
@@ -16,40 +17,43 @@ public:
 
 	}
 
-	void init() {
+	/** Have to be derivated to render in a Window */
+	vk::SurfaceKHR createRenderSurface(vk::Instance instance) {
+		return window.createSurface(instance);
+	}
 
-		auto start = std::chrono::steady_clock::now();
+	/** Have to be derivated */
+	void init() {
 
 		auto extensions = window.getRequiredExtensions();
 		for (auto extensionName : extensions)
 			render.addInstanceExtension(extensionName);
 		render.addDeviceExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
-		#if defined(DEBUG)
-		render.enableValidationLayer();
-		#endif
 
-		render.init();
+		render.init();	// TODO replace with wanted functions calls to initialize the render
 
-		auto end = std::chrono::steady_clock::now();
-
-		auto elapsedTime = end - start;
-
-		std::cout << "Vulkan Initialisation took " << std::chrono::duration_cast<std::chrono::milliseconds>(elapsedTime).count() << "ms\n";
 	}
 
+	/** Have to be derivated */
 	void quit() {
 
 	}
 
+	/** Have to be derivated */
 	void update() {
+		window.pollEvents();
 
 	}
 
-	void draw() {
+	/** Have to be derivated */
+	bool draw() {
 		render.drawFrame();
+
+		return !window.isClosed();
 	}
 
 private:
+	RenderWindow window;
 
 };
 

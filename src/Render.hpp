@@ -38,7 +38,7 @@ struct UniformBufferObject {
 
 class Render {
 public:
-	Render(std::string appName = "", uint32_t appVersion = 0);
+	Render(std::string appName = "", uint32_t appVersion = 0, RenderType type = RenderTypeBits::eGraphics);
 	~Render();
 
 	void init();
