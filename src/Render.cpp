@@ -222,9 +222,11 @@ void Render::addDeviceExtension(const char* extensionName) {
 }
 
 void Render::enableValidationLayer() {
-	validationLayerEnabled = true;
-	layers.push_back("VK_LAYER_LUNARG_standard_validation");
-	instanceExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+	if (validationLayerEnabled == false) {
+		validationLayerEnabled = true;
+		layers.push_back("VK_LAYER_LUNARG_standard_validation");
+		instanceExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+	}
 }
 
 void Render::setParentApplication(Application* app) {
