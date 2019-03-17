@@ -31,6 +31,10 @@ public:
 			render.addInstanceExtension(extensionName);
 		render.addDeviceExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
 
+		// set vertex and fragment shader
+		render.setVertexShader("ressources/shaders/shader.vert.spv");
+		render.setFragmentShader("ressources/shaders/shader.frag.spv");
+
 		// Add a quad to be drawn
 		const std::vector<Vertex> vertices = {
 			{{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},

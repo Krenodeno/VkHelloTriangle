@@ -103,6 +103,14 @@ public:
 		return res;
 	}
 
+	void setVertexShader(std::string file) {
+		vertexShaderFile = file;
+	}
+
+	void setFragmentShader(std::string file) {
+		fragmentShaderFile = file;
+	}
+
 	void waitDeviceIdle() { device.waitIdle(dispatchLoader); }
 
 protected:
@@ -152,6 +160,9 @@ protected:
 	vk::RenderPass renderPass;
 	vk::DescriptorSetLayout descriptorSetLayout;
 	vk::PipelineLayout pipelineLayout;
+
+	std::string vertexShaderFile;
+	std::string fragmentShaderFile;
 
 	vk::Pipeline graphicsPipeline;
 

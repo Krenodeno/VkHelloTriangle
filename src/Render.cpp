@@ -509,9 +509,9 @@ void Render::createDescriptorSetLayout() {
 void Render::createGraphicsPipeline() {
 
 	Shader vert(device, vk::ShaderStageFlagBits::eVertex);
-	vert.create("ressources/shaders/shader.vert.spv");
+	vert.create(vertexShaderFile);
 	Shader frag(device, vk::ShaderStageFlagBits::eFragment);
-	frag.create("ressources/shaders/shader.frag.spv");
+	frag.create(fragmentShaderFile);
 
 	// Create the actuals shaders and link them
 	vk::PipelineShaderStageCreateInfo vertShaderStageInfo = vert.getShaderStageInfo();
