@@ -55,8 +55,7 @@ void Render::init() {
 	createCommandPool();
 	createDepthResources();
 	createFramebuffers();
-	createVertexBuffer();
-	createIndexBuffer();
+	createBuffers();
 	createUniformBuffers();
 	createDescriptorPool();
 	createDescriptorSets();
@@ -99,11 +98,10 @@ void Render::cleanup() {
 		device.destroySemaphore(imageAvailableSemaphores[i], nullptr, dispatchLoader);
 	}
 
-	device.destroyBuffer(vertexBuffer, nullptr, dispatchLoader);
-	device.free(vertexBufferMemory, nullptr, dispatchLoader);
-
-	device.destroyBuffer(indexBuffer, nullptr, dispatchLoader);
-	device.free(indexBufferMemory, nullptr, dispatchLoader);
+	for (size_t i = 0; i < buffers.size(); i++) {
+		device.destroyBuffer(buffers[i], nullptr, dispatchLoader);
+		device.free(buffersMemory[i], nullptr, dispatchLoader);
+	}
 
 	device.destroyCommandPool(commandPool, nullptr, dispatchLoader);
 
@@ -150,7 +148,7 @@ void Render::updateUniformBuffer(uint32_t currentImage) {
 	ubo.proj = glm::perspective(glm::radians(45.0f), swapchain.getExtent().width / (float)swapchain.getExtent().height, 0.1f, 10.0f);
 	ubo.proj[1][1] *= -1;	// because of OpenGL
 
-	fillBuffer(device, uniformBuffersMemory[currentImage], &ubo, sizeof(ubo));
+	::fillBuffer(device, uniformBuffersMemory[currentImage], &ubo, sizeof(ubo));
 }
 
 void Render::drawFrame() {
@@ -240,6 +238,31 @@ void Render::setSurfaceCreationFunction(createSurfaceFoncter functer) {
 void Render::setExtent(const vk::Extent2D& extent) {
 	windowExtent = extent;
 }
+
+unsigned int Render::addBuffer(uint64_t size, vk::BufferUsageFlags usage, bool writeFromHost, bool readFromHost) {
+	bufferSizes.push_back(size);
+	if (writeFromHost)
+		usage |= vk::BufferUsageFlagBits::eTransferDst;
+	if (readFromHost)
+		usage |= vk::BufferUsageFlagBits::eTransferSrc;
+	bufferUsages.push_back(usage);
+	return (int)bufferSizes.size() - 1;
+}
+
+void Render::fillBuffer(unsigned int bufferIndex, const void* data, uint64_t dataSize) {
+	// Create staging buffer
+	vk::Buffer stagingBuffer;
+	vk::DeviceMemory stagingBufferMemory;
+	createBuffer(dataSize, vk::BufferUsageFlagBits::eTransferSrc, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, stagingBuffer, stagingBufferMemory);
+	// Copy data from CPU memory to staging buffer memory
+	::fillBuffer(device, stagingBufferMemory, data, dataSize);
+	// Copy data from staging buffer memory to GPU memory
+	copyBuffer(stagingBuffer, buffers[bufferIndex], dataSize);
+	// Destroy staging buffer
+	device.freeMemory(stagingBufferMemory, nullptr, dispatchLoader);
+	device.destroyBuffer(stagingBuffer, nullptr, dispatchLoader);
+}
+
 
 /*****************************************************************************/
 /***                            INITIALISATION                             ***/
@@ -760,36 +783,14 @@ void Render::transitionImageLayout(vk::Image image, vk::Format format, vk::Image
 	endSingleTimeCommands(commandBuffer);
 }
 
-void Render::createVertexBuffer() {
-	vk::DeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
-
-	vk::Buffer stagingBuffer;
-	vk::DeviceMemory stagingBufferMemory;
-	createBuffer(bufferSize, vk::BufferUsageFlagBits::eTransferSrc, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, stagingBuffer, stagingBufferMemory);
-	fillBuffer(device, stagingBufferMemory, vertices);
-
-	createBuffer(bufferSize, vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eVertexBuffer, vk::MemoryPropertyFlagBits::eDeviceLocal, vertexBuffer, vertexBufferMemory);
-
-	copyBuffer(stagingBuffer, vertexBuffer, bufferSize);
-
-	device.freeMemory(stagingBufferMemory, nullptr, dispatchLoader);
-	device.destroyBuffer(stagingBuffer, nullptr, dispatchLoader);
-}
-
-void Render::createIndexBuffer() {
-	vk::DeviceSize bufferSize = sizeof(indices[0]) * indices.size();
-
-	vk::Buffer stagingBuffer;
-	vk::DeviceMemory stagingBufferMemory;
-	createBuffer(bufferSize, vk::BufferUsageFlagBits::eTransferSrc, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, stagingBuffer, stagingBufferMemory);
-	fillBuffer(device, stagingBufferMemory, indices);
-
-	createBuffer(bufferSize, vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eIndexBuffer, vk::MemoryPropertyFlagBits::eDeviceLocal, indexBuffer, indexBufferMemory);
-
-	copyBuffer(stagingBuffer, indexBuffer, bufferSize);
-
-	device.freeMemory(stagingBufferMemory, nullptr, dispatchLoader);
-	device.destroyBuffer(stagingBuffer, nullptr, dispatchLoader);
+void Render::createBuffers() {
+	buffers.clear();
+	buffersMemory.clear();
+	for (int i = 0; i < bufferSizes.size(); i++) {
+		buffers.push_back(vk::Buffer());
+		buffersMemory.push_back(vk::DeviceMemory());
+		createBuffer(bufferSizes[i], bufferUsages[i], vk::MemoryPropertyFlagBits::eDeviceLocal, buffers[i], buffersMemory[i]);
+	}
 }
 
 void Render::createUniformBuffers() {
@@ -919,15 +920,28 @@ void Render::createCommandBuffers() {
 
 		commandBuffers[i].bindPipeline(vk::PipelineBindPoint::eGraphics, graphicsPipeline, dispatchLoader);
 
-		vk::Buffer vertexBuffers[] = {vertexBuffer};
-		vk::DeviceSize offsets[] = {0};
+		// TODO enhance to handle multiple meshes
+		vk::Buffer vertexBuffers[1];
+		vk::Buffer indexBuffer;
+		uint32_t indexCount;
 
-		commandBuffers[i].bindVertexBuffers(0, 1, vertexBuffers, offsets, dispatchLoader);
-		commandBuffers[i].bindIndexBuffer(indexBuffer, 0, vk::IndexType::eUint16, dispatchLoader);
+		for (int i = 0; i < bufferUsages.size(); i++) {
+			if ((bufferUsages[i] & vk::BufferUsageFlagBits::eVertexBuffer) == vk::BufferUsageFlagBits::eVertexBuffer)
+				vertexBuffers[0] = buffers[i];
+			if ((bufferUsages[i] & vk::BufferUsageFlagBits::eIndexBuffer) == vk::BufferUsageFlagBits::eIndexBuffer) {
+				indexBuffer = buffers[i];
+				indexCount = bufferSizes[i] / sizeof(uint16_t);
+			}
+		}
 
-		commandBuffers[i].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, /**/0, descriptorSets[i], nullptr, dispatchLoader);
+		vk::DeviceSize offsets[1] = {0};
 
-		commandBuffers[i].drawIndexed(static_cast<uint32_t>(indices.size()), /*instance count*/1, /*index offset*/0, /**/0, /*instance offset*/0, dispatchLoader);
+		commandBuffers[i].bindVertexBuffers(/*first*/0, /*count*/1, vertexBuffers, offsets, dispatchLoader);
+		commandBuffers[i].bindIndexBuffer(indexBuffer, /*offset*/0, vk::IndexType::eUint16, dispatchLoader);
+
+		commandBuffers[i].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, /*first set*/0, descriptorSets[i], nullptr, dispatchLoader);
+
+		commandBuffers[i].drawIndexed(indexCount, /*instance count*/1, /*first index*/0, /*vertex offset*/0, /*first instance*/0, dispatchLoader);
 
 		commandBuffers[i].endRenderPass(dispatchLoader);
 

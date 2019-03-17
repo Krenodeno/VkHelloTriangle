@@ -63,6 +63,46 @@ public:
 	void setAppName(std::string name) { appName = name; }
 	void setAppVersion(uint32_t version) { appVersion = version; }
 
+	/**
+	 * Create a buffer of size bytes and return its index
+	 * If writeFromHost is true, you can call fillBuffer on it later
+	 * IF readFromHost if true, you can call getDataFomBuffer on it later
+	 */
+	unsigned int addBuffer(uint64_t size, vk::BufferUsageFlags usage, bool writeFromHost = true, bool readFromHost = false);
+
+	/**
+	 * Fill a buffer
+	 */
+	void fillBuffer(unsigned int bufferIndex, const void* data, uint64_t dataSize);
+	template<typename T> void fillBuffer(unsigned int bufferIndex, std::vector<T> data) {
+		fillBuffer(bufferIndex, data.data(), data.size() * sizeof(data[0]));
+	}
+
+	/**
+	 * Get data from a buffer
+	 */
+	template<typename T>
+	std::vector<T> getDataFromBuffer(unsigned int index, uint64_t elementCount){
+		uint64_t dataSize = elementCount * sizeof(T);
+
+		// Create staging buffer
+		vk::Buffer stagingBuffer;
+		vk::DeviceMemory stagingBufferMemory;
+		createBuffer(dataSize, vk::BufferUsageFlagBits::eTransferDst, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, stagingBuffer, stagingBufferMemory);
+		// Copy buffer data from device to host accessbile buffer
+		copyBuffer(buffers[index], stagingBuffer, dataSize);
+
+		// Get data back
+		auto data = static_cast<T*>(device.mapMemory(stagingBufferMemory, /*offset*/ 0, dataSize));
+		std::vector<T> res(data, data + elementCount);
+		device.unmapMemory(stagingBufferMemory, dispatchLoader);
+
+		// Destroy staging buffer
+		device.freeMemory(stagingBufferMemory, nullptr, dispatchLoader);
+		device.destroyBuffer(stagingBuffer, nullptr, dispatchLoader);
+		return res;
+	}
+
 	void waitDeviceIdle() { device.waitIdle(dispatchLoader); }
 
 protected:
@@ -120,10 +160,10 @@ protected:
 
 	vk::CommandPool commandPool;
 
-	vk::Buffer vertexBuffer;
-	vk::DeviceMemory vertexBufferMemory;
-	vk::Buffer indexBuffer;
-	vk::DeviceMemory indexBufferMemory;
+	std::vector<vk::Buffer> buffers;
+	std::vector<vk::DeviceMemory> buffersMemory;
+	std::vector<uint64_t> bufferSizes;
+	std::vector<vk::BufferUsageFlags> bufferUsages;
 
 	std::vector<vk::Buffer> uniformBuffers;
 	std::vector<vk::DeviceMemory> uniformBuffersMemory;
@@ -136,18 +176,6 @@ protected:
 	/* Fences sync GPU with CPU */
 	std::vector<vk::Fence> inFlightFences;
 	size_t currentFrame = 0;
-
-	// TODO to be removed
-	const std::vector<Vertex> vertices = {
-		{{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-		{{0.5f, -0.5f, 0.0f},  {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
-		{{0.5f, 0.5f, 0.0f},   {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f}},
-		{{-0.5f, 0.5f, 0.0f},  {1.0f, 1.0f, 1.0f}, {0.0f, 0.0f}}
-	};
-
-	const std::vector<uint16_t> indices = {
-		0, 1, 2, 2, 3, 0
-	};
 
 	// initialising functions
 
@@ -187,9 +215,7 @@ protected:
 
 	void transitionImageLayout(vk::Image, vk::Format, vk::ImageLayout oldLayout, vk::ImageLayout newLayout);
 
-	void createVertexBuffer();
-
-	void createIndexBuffer();
+	void createBuffers();
 
 	void createUniformBuffers();
 
