@@ -24,7 +24,7 @@ workspace "VkHelloTriangle"
 		optimize "Off"
 		targetsuffix "-d"
 
-	filter "configurations:*SAN"
+	filter { "configurations:*SAN", "toolset:gcc,clang" }
 		buildoptions { "-fno-omit-frame-pointer" }
 		buildoptions { "-fsanitize=undefined,address" }
 		linkoptions { "-fsanitize=undefined,address" }
