@@ -4,8 +4,6 @@
 
 Application::Application(std::string appName, uint32_t appVersion)
 		: name(appName), version(appVersion) {
-	render.setParentApplication(this);
-	render.setSurfaceCreationFunction(createSurface);
 	render.setAppName(appName);
 	render.setAppVersion(appVersion);
 }
@@ -36,8 +34,4 @@ void Application::run() {
 	render.waitDeviceIdle();
 
 	quit();
-}
-
-vk::SurfaceKHR createSurface(Application* app, vk::Instance instance) {
-	return app->createRenderSurface(instance);
 }

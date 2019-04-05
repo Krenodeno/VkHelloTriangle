@@ -10,16 +10,15 @@ public:
 
 	Tutorial() : Application("Vulkan", VK_MAKE_VERSION(0, 0, 0)),
 				 window(800, 600, "VkHelloTriangle") {
-
+		render.setSurfaceCreationFunction(
+			[&](vk::Instance instance) {
+				return window.createSurface(instance);
+			}
+		);
 	}
 
 	~Tutorial() {
 
-	}
-
-	/** Have to be derivated to render in a Window */
-	vk::SurfaceKHR createRenderSurface(vk::Instance instance) {
-		return window.createSurface(instance);
 	}
 
 	/** Have to be derivated */

@@ -20,8 +20,6 @@ public:
 
 	void run();
 
-	virtual vk::SurfaceKHR createRenderSurface(vk::Instance) = 0;
-
 	std::string getName() { return name; }
 	uint32_t getVersion() { return version; }
 
@@ -32,7 +30,5 @@ protected:
 	uint32_t version;	// vulkan style : VK_MAKE_VERSION(major, minor, patch)
 
 };
-
-vk::SurfaceKHR createSurface(Application*, vk::Instance);
 
 #endif

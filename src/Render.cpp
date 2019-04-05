@@ -227,10 +227,6 @@ void Render::enableValidationLayer() {
 	}
 }
 
-void Render::setParentApplication(Application* app) {
-	parentApp = app;
-}
-
 void Render::setSurfaceCreationFunction(createSurfaceFoncter functer) {
 	surfaceCreation = functer;
 }
@@ -424,7 +420,7 @@ void Render::createLogicalDevice() {
 
 void Render::createSurface() {
 	if (surfaceCreation)
-		surface = surfaceCreation(parentApp, instance);
+		surface = surfaceCreation(instance);
 }
 
 void Render::createSwapchain(vk::SwapchainKHR oldSwapchain) {

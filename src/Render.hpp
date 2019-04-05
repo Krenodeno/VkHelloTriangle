@@ -26,7 +26,7 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 class Application;
 
 /* used as callback function to delegate surface creation  */
-using createSurfaceFoncter = std::function<vk::SurfaceKHR(Application*, vk::Instance)>;
+using createSurfaceFoncter = std::function<vk::SurfaceKHR(vk::Instance)>;
 
 /* Uniform struct to be removed later */
 struct UniformBufferObject {
@@ -127,8 +127,6 @@ protected:
 	std::vector<const char*> deviceExtensions;
 
 	const int MAX_FRAMES_IN_FLIGHT = 2;
-
-	Application* parentApp;
 
 	RenderTarget swapchain;
 
