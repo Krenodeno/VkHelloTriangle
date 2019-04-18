@@ -2,13 +2,16 @@
 workspace "VkHelloTriangle"
 	configurations { "Debug", "DebugSAN", "Release", "ReleaseSAN" }
 
-	local sourceDir = "src/"
-	local LibDir = "Libraries/"
+	local rootDir =   "../../"
+	local sourceDir = rootDir .. "src/"
+	local libDir =    rootDir .. "external/"
+	local dataDir =   rootDir .. "data/"
+	local buildDir =  rootDir .. "build/"
 
-	location ( "build/" .. _ACTION )
-	targetdir "build/bin/%{cfg.platform}/%{cfg.buildcfg}"
-	objdir "build/obj/"
-	debugdir "./"
+	location( buildDir )
+	targetdir( buildDir .. "bin/%{cfg.platform}/%{cfg.buildcfg}/" )
+	objdir( buildDir .. "obj/" )
+	debugdir( rootDir )
 
 	language "C++"
 	cppdialect "C++17"
@@ -23,6 +26,9 @@ workspace "VkHelloTriangle"
 		symbols "On"
 		optimize "Off"
 		targetsuffix "-d"
+
+	filter "toolset:not gcc and not clang"
+		removeconfigurations "*SAN"
 
 	filter { "configurations:*SAN", "toolset:gcc,clang" }
 		buildoptions { "-fno-omit-frame-pointer" }
@@ -43,7 +49,7 @@ workspace "VkHelloTriangle"
 			"VK_USE_PLATFORM_WIN32_KHR",
 			"NOMINMAX"
 		}
-		libdirs { LibDir .. "Lib/*" }
+		libdirs { libDir .. "Lib/*" }
 
 
 	filter "system:Linux"
@@ -63,7 +69,7 @@ workspace "VkHelloTriangle"
 		["Shaders"] = { "**.vert", "**.frag", ".comp" }
 	}
 
-	include( "Libraries/findVulkan.lua" )
+	include( "findVulkan.lua" )
 
 	includeVulkan()
 
@@ -71,7 +77,7 @@ workspace "VkHelloTriangle"
 
 project "CompileShaders"
 	kind "Utility"
-	files { "ressources/shaders/*.comp", "ressources/shaders/*.frag", "ressources/shaders/*.vert"}
+	files({ dataDir .. "shaders/*.comp", dataDir .. "shaders/*.frag", dataDir .. "shaders/*.vert"})
 
 	local vulkanSDK = getVulkanPath()
 	local glslCompiler = "glslangValidator"
@@ -79,7 +85,7 @@ project "CompileShaders"
 		glslCompiler = vulkanSDK .. '/bin/glslangValidator'
 	end
 
-	filter "files:ressources/shaders/*"
+	filter "files:**/shaders/*"
 		buildcommands(glslCompiler .. ' -V -o "%{file.reldirectory}/%{file.name}.spv" "%{file.relpath}"')
 		--buildinputs "%{file.reldirectory}/%{file.name}"
 		buildoutputs "%{file.reldirectory}/%{file.name}.spv"
@@ -88,14 +94,14 @@ project "CompileShaders"
 project "VkHelloTriangle"
 	kind "StaticLib"
 
-	includedirs { LibDir .. "Include" }
+	includedirs { libDir .. "Include" }
 
 	files { sourceDir .. "**.hpp", sourceDir .. "**.inl", sourceDir .. "**.cpp" }
 
 
 project "printVulkanInfos"
 	kind "ConsoleApp"
-	includedirs { LibDir .. "Include", sourceDir }
+	includedirs { libDir .. "Include", sourceDir }
 	files { "examples/printCapabilities.cpp" }
 
 	links "VkHelloTriangle"
@@ -103,7 +109,7 @@ project "printVulkanInfos"
 
 project "vulkan-tutorial"
 	kind "ConsoleApp"
-	includedirs { LibDir .. "Include", sourceDir  }
+	includedirs { libDir .. "Include", sourceDir }
 	files { "examples/vulkan-tutorial/*", "ressources/shaders/*.frag", "ressources/shaders/*.vert" }
 
 	filter "system:Windows"
@@ -120,7 +126,7 @@ project "vulkan-tutorial"
 
 project "compute-fractal"
 	kind "ConsoleApp"
-	includedirs { LibDir .. "Include", sourceDir }
+	includedirs { libDir .. "Include", sourceDir }
 	files { "examples/compute/*", "ressources/shaders/*.comp" }
 
 	links { "CompileShaders" }
