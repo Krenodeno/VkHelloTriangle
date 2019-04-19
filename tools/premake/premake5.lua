@@ -4,6 +4,7 @@ workspace "VkHelloTriangle"
 
 	local rootDir =   "../../"
 	local sourceDir = rootDir .. "src/"
+	local sampleDir = rootDir .. "examples/"
 	local libDir =    rootDir .. "external/"
 	local dataDir =   rootDir .. "data/"
 	local buildDir =  rootDir .. "build/"
@@ -49,7 +50,7 @@ workspace "VkHelloTriangle"
 			"VK_USE_PLATFORM_WIN32_KHR",
 			"NOMINMAX"
 		}
-		libdirs { libDir .. "Lib/*" }
+		libdirs { libDir .. "lib/*" }
 
 
 	filter "system:Linux"
@@ -94,23 +95,23 @@ project "CompileShaders"
 project "VkHelloTriangle"
 	kind "StaticLib"
 
-	includedirs { libDir .. "Include" }
+	includedirs { libDir .. "include" }
 
 	files { sourceDir .. "**.hpp", sourceDir .. "**.inl", sourceDir .. "**.cpp" }
 
 
 project "printVulkanInfos"
 	kind "ConsoleApp"
-	includedirs { libDir .. "Include", sourceDir }
-	files { "examples/printCapabilities.cpp" }
+	includedirs { libDir .. "include", sourceDir }
+	files( sampleDir .. "printCapabilities.cpp" )
 
 	links "VkHelloTriangle"
 
 
 project "vulkan-tutorial"
 	kind "ConsoleApp"
-	includedirs { libDir .. "Include", sourceDir }
-	files { "examples/vulkan-tutorial/*", "ressources/shaders/*.frag", "ressources/shaders/*.vert" }
+	includedirs { libDir .. "include", sourceDir }
+	files({ sampleDir .. "vulkan-tutorial/*", dataDir .. "shaders/*.frag", dataDir .. "shaders/*.vert" })
 
 	filter "system:Windows"
 		links "glfw3"
@@ -126,7 +127,7 @@ project "vulkan-tutorial"
 
 project "compute-fractal"
 	kind "ConsoleApp"
-	includedirs { libDir .. "Include", sourceDir }
-	files { "examples/compute/*", "ressources/shaders/*.comp" }
+	includedirs { libDir .. "include", sourceDir }
+	files({ sampleDir .. "compute/*", dataDir .. "shaders/*.comp" })
 
 	links { "CompileShaders" }

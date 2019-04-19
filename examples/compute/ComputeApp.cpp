@@ -348,7 +348,7 @@ void ComputeApp::createComputePipeline() {
 
 	// Create Shader
 	Shader computeShader(device, vk::ShaderStageFlagBits::eCompute);
-	computeShader.create("ressources/shaders/shader.comp.spv");
+	computeShader.create("data/shaders/shader.comp.spv");
 
 	// Specify compute shader stage
 	auto shaderStageCreateInfo = computeShader.getShaderStageInfo();
