@@ -28,8 +28,11 @@ void Application::run() {
 	std::cout << "ms\n";
 #endif
 	do {
+		render.waitForFences();
 		update();
 	} while (draw());
+
+	std::cout << std::endl;
 
 	render.waitDeviceIdle();
 

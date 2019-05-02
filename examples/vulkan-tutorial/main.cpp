@@ -1,9 +1,18 @@
 #include <stdexcept>
 #include <iostream>
 #include <cstdlib>
+#include <chrono>
 
 #include "Application.hpp"
 #include "RenderWindow.hpp"
+
+using std::chrono::high_resolution_clock;
+
+struct UniformBufferObject {
+	glm::mat4 model;
+	glm::mat4 view;
+	glm::mat4 proj;
+};
 
 class Tutorial : public Application {
 public:
@@ -21,7 +30,7 @@ public:
 
 	}
 
-	/** Have to be derivated */
+	/** Called first and once after Application ctor */
 	void init() {
 
 		// Add windows extensions to render to be able to draw in the window
@@ -48,6 +57,8 @@ public:
 		unsigned int vertexBuffer = render.addBuffer(vertices.size() * sizeof(vertices[0]), vk::BufferUsageFlagBits::eVertexBuffer);
 		unsigned int indexBuffer = render.addBuffer(indices.size() * sizeof(indices[0]), vk::BufferUsageFlagBits::eIndexBuffer);
 
+		unsigned int uniformBuffer = render.addUniform(sizeof(UniformBufferObject), vk::ShaderStageFlagBits::eVertex);
+
 		// Initialise the render with previous info set
 		render.init();	// TODO replace with wanted functions calls to initialize the render
 
@@ -57,18 +68,37 @@ public:
 
 	}
 
-	/** Have to be derivated */
+	/** Called once at the program exit to handle resource destruction */
 	void quit() {
 
 	}
 
-	/** Have to be derivated */
+	/** Called at each frame before draw */
 	void update() {
 		window.pollEvents();
 
+		static auto startTime = high_resolution_clock::now();
+		static auto lastTime = high_resolution_clock::now();
+
+		auto currentTime = high_resolution_clock::now();
+
+		float frameTime = std::chrono::duration<float, std::chrono::milliseconds::period>(currentTime - lastTime).count();
+		std::cout << "Frame time = " << frameTime << "ms\r";
+		lastTime = currentTime;
+
+		float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+
+		UniformBufferObject ubo = {};
+		ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+		ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+		ubo.proj = glm::perspective(glm::radians(45.0f), window.getWidth() / (float)window.getHeight(), 0.1f, 10.0f);
+		ubo.proj[1][1] *= -1;	// because of OpenGL upside down screen coordinates
+
+		render.updateUniform(0, &ubo, sizeof(ubo));
+
 	}
 
-	/** Have to be derivated */
+	/** Return true to continue, false to end the main loop and exit the program */
 	bool draw() {
 		render.drawFrame();
 

@@ -136,19 +136,10 @@ void Render::recreateSwapChain() {
 	createCommandBuffers();
 }
 
-void Render::updateUniformBuffer(uint32_t currentImage) {
-	static auto startTime = std::chrono::high_resolution_clock::now();
+void Render::updateUniformBuffers(uint32_t currentImage) {
 
-	auto currentTime = std::chrono::high_resolution_clock::now();
-	float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+	::fillBuffer(device, uniformBuffersMemory[currentImage], , );
 
-	UniformBufferObject ubo = {};
-	ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-	ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-	ubo.proj = glm::perspective(glm::radians(45.0f), swapchain.getExtent().width / (float)swapchain.getExtent().height, 0.1f, 10.0f);
-	ubo.proj[1][1] *= -1;	// because of OpenGL
-
-	::fillBuffer(device, uniformBuffersMemory[currentImage], &ubo, sizeof(ubo));
 }
 
 void Render::drawFrame() {
@@ -163,7 +154,7 @@ void Render::drawFrame() {
 		return;
 	}
 
-	updateUniformBuffer(imageIndex);
+	updateUniformBuffers(imageIndex);
 
 	vk::SubmitInfo submitInfo;
 	vk::Semaphore waitSemaphores[] = { imageAvailableSemaphores[currentFrame] };
@@ -488,15 +479,23 @@ void Render::createRenderPass() {
 }
 
 void Render::createDescriptorSetLayout() {
-	vk::DescriptorSetLayoutBinding uboLayoutBinding;
-	uboLayoutBinding.binding = 0;
-	uboLayoutBinding.descriptorType = vk::DescriptorType::eUniformBuffer;
-	uboLayoutBinding.descriptorCount = 1;
-	uboLayoutBinding.stageFlags = vk::ShaderStageFlagBits::eVertex;
+	std::vector<vk::DescriptorSetLayoutBinding> uboLayoutBindings;
+
+	for (unsigned int i = 0; i < uniformStages.size(); i++) {
+		auto stages = uniformStages[i];
+		
+		vk::DescriptorSetLayoutBinding uboLayoutBinding;
+		uboLayoutBinding.binding = i;
+		uboLayoutBinding.descriptorType = vk::DescriptorType::eUniformBuffer;
+		uboLayoutBinding.descriptorCount = 1;
+		uboLayoutBinding.stageFlags = stages;
+
+		uboLayoutBindings.push_back(uboLayoutBinding);
+	}
 
 	vk::DescriptorSetLayoutCreateInfo layoutInfo;
-	layoutInfo.bindingCount = 1;
-	layoutInfo.pBindings = &uboLayoutBinding;
+	layoutInfo.bindingCount = uboLayoutBindings.size();
+	layoutInfo.pBindings = uboLayoutBindings.data();
 
 	descriptorSetLayout = device.createDescriptorSetLayout(layoutInfo, nullptr, dispatchLoader);
 
@@ -782,7 +781,7 @@ void Render::transitionImageLayout(vk::Image image, vk::Format format, vk::Image
 void Render::createBuffers() {
 	buffers.clear();
 	buffersMemory.clear();
-	for (int i = 0; i < bufferSizes.size(); i++) {
+	for (unsigned int i = 0; i < bufferSizes.size(); i++) {
 		buffers.push_back(vk::Buffer());
 		buffersMemory.push_back(vk::DeviceMemory());
 		createBuffer(bufferSizes[i], bufferUsages[i], vk::MemoryPropertyFlagBits::eDeviceLocal, buffers[i], buffersMemory[i]);
@@ -790,56 +789,64 @@ void Render::createBuffers() {
 }
 
 void Render::createUniformBuffers() {
-	vk::DeviceSize bufferSize = sizeof(UniformBufferObject);
+	unsigned int uniformCount = uniformSizes.size();
+	unsigned int frameCount = swapchain.getSize();
 
-	size_t size = swapchain.getSize();
+	uniformBuffers.resize(uniformCount * frameCount);
+	uniformBuffersMemory.resize(uniformCount * frameCount);
 
-	uniformBuffers.resize(size);
-	uniformBuffersMemory.resize(size);
-
-	for (size_t i = 0; i < size; i++) {
-		createBuffer(bufferSize, vk::BufferUsageFlagBits::eUniformBuffer, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, uniformBuffers[i], uniformBuffersMemory[i]);
-	}
+	for (unsigned int uniform = 0; uniform < uniformCount; uniform++)
+		for (unsigned int frame = 0; frame < frameCount; frame++) {
+			unsigned int buffIndex = frame + frameCount * uniform;
+			createBuffer(uniformSizes[uniform], vk::BufferUsageFlagBits::eUniformBuffer, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, uniformBuffers[buffIndex], uniformBuffersMemory[buffIndex]);
+		}
 }
 
 void Render::createDescriptorPool() {
+	uint32_t frameCount = static_cast<uint32_t>(swapchain.getSize());
+	uint32_t uniformCount = static_cast<uint32_t>(uniformSizes.size());
+
 	vk::DescriptorPoolSize poolSize;
 	poolSize.type = vk::DescriptorType::eUniformBuffer;
-	poolSize.descriptorCount = static_cast<uint32_t>(swapchain.getSize());
+	poolSize.descriptorCount = frameCount * uniformCount;
 
 	vk::DescriptorPoolCreateInfo createInfo;
 	createInfo.poolSizeCount = 1;
 	createInfo.pPoolSizes = &poolSize;
-	createInfo.maxSets = static_cast<uint32_t>(swapchain.getSize());
+	createInfo.maxSets = frameCount;
 
 	descriptorPool = device.createDescriptorPool(createInfo, nullptr, dispatchLoader);
 }
 
 void Render::createDescriptorSets() {
-	std::vector<vk::DescriptorSetLayout> layouts(swapchain.getSize(), descriptorSetLayout);
+	unsigned int frameCount = swapchain.getSize();
+	unsigned int uniformCount = uniformSizes.size();
+	std::vector<vk::DescriptorSetLayout> layouts(frameCount, descriptorSetLayout);
 	vk::DescriptorSetAllocateInfo allocInfo;
 	allocInfo.descriptorPool = descriptorPool;
-	allocInfo.descriptorSetCount = static_cast<uint32_t>(swapchain.getSize());
+	allocInfo.descriptorSetCount = static_cast<uint32_t>(frameCount);
 	allocInfo.pSetLayouts = layouts.data();
 
 	descriptorSets = device.allocateDescriptorSets(allocInfo, dispatchLoader);
 
-	for (size_t i = 0; i < swapchain.getSize(); i++) {
-		vk::DescriptorBufferInfo bufferInfo;
-		bufferInfo.buffer = uniformBuffers[i];
-		bufferInfo.offset = 0;
-		bufferInfo.range = sizeof(UniformBufferObject);
+	for (unsigned int uniform = 0; uniform < uniformCount; uniform++)
+		for (unsigned int frame = 0; frame < frameCount; frame++) {
+			unsigned int bufferIndex = frame + uniform * frameCount;
+			vk::DescriptorBufferInfo bufferInfo;
+			bufferInfo.buffer = uniformBuffers[bufferIndex];
+			bufferInfo.offset = 0;
+			bufferInfo.range = uniformSizes[uniform];
 
-		vk::WriteDescriptorSet descriptorWrite;
-		descriptorWrite.dstSet = descriptorSets[i];
-		descriptorWrite.dstBinding = 0;
-		descriptorWrite.dstArrayElement = 0;
-		descriptorWrite.descriptorType = vk::DescriptorType::eUniformBuffer;
-		descriptorWrite.descriptorCount = 1;
-		descriptorWrite.pBufferInfo = &bufferInfo;
+			vk::WriteDescriptorSet descriptorWrite;
+			descriptorWrite.dstSet = descriptorSets[frame];
+			descriptorWrite.dstBinding = uniform;
+			descriptorWrite.dstArrayElement = 0;
+			descriptorWrite.descriptorType = vk::DescriptorType::eUniformBuffer;
+			descriptorWrite.descriptorCount = 1;
+			descriptorWrite.pBufferInfo = &bufferInfo;
 
-		device.updateDescriptorSets(descriptorWrite, nullptr, dispatchLoader);
-	}
+			device.updateDescriptorSets(descriptorWrite, nullptr, dispatchLoader);
+		}
 }
 
 void Render::copyBuffer(vk::Buffer src, vk::Buffer dst, vk::DeviceSize size) {
@@ -921,7 +928,7 @@ void Render::createCommandBuffers() {
 		vk::Buffer indexBuffer;
 		uint32_t indexCount;
 
-		for (int i = 0; i < bufferUsages.size(); i++) {
+		for (unsigned int i = 0; i < bufferUsages.size(); i++) {
 			if ((bufferUsages[i] & vk::BufferUsageFlagBits::eVertexBuffer) == vk::BufferUsageFlagBits::eVertexBuffer)
 				vertexBuffers[0] = buffers[i];
 			if ((bufferUsages[i] & vk::BufferUsageFlagBits::eIndexBuffer) == vk::BufferUsageFlagBits::eIndexBuffer) {

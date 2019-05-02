@@ -6,6 +6,7 @@
 #include <optional>
 #include <string>
 #include <functional>
+#include <cassert>
 
 #include <vulkan/vulkan.hpp>
 
@@ -25,15 +26,8 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 /* forward declaration */
 class Application;
 
-/* used as callback function to delegate surface creation  */
+/* used as callback function to delegate surface creation */
 using createSurfaceFoncter = std::function<vk::SurfaceKHR(vk::Instance)>;
-
-/* Uniform struct to be removed later */
-struct UniformBufferObject {
-	glm::mat4 model;
-	glm::mat4 view;
-	glm::mat4 proj;
-};
 
 
 class Render {
@@ -74,8 +68,34 @@ public:
 	 * Fill a buffer
 	 */
 	void fillBuffer(unsigned int bufferIndex, const void* data, uint64_t dataSize);
+
+	template<typename T> void fillBuffer(unsigned int bufferIndex, const T& data) {
+		fillBuffer(bufferIndex, &data, sizeof(data));
+	}
+
 	template<typename T> void fillBuffer(unsigned int bufferIndex, std::vector<T> data) {
 		fillBuffer(bufferIndex, data.data(), data.size() * sizeof(data[0]));
+	}
+
+	/**
+	 * Add a uniform buffer before init time
+	 */
+	unsigned int addUniform(uint64_t uniformSize, vk::ShaderStageFlags stageFlags) {
+		unsigned int uniformIndex = uniformSizes.size();
+		uniformSizes.push_back(uniformSize);
+		uniformStages.push_back(stageFlags);
+		return uniformIndex;
+	}
+
+	/**
+	 * Update uniform data while rendering
+	 */
+	void updateUniform(unsigned int uniformIndex, const void* data, uint64_t dataSize) {
+		assert(uniformIndex < uniformSizes.size());
+		// enlever ça et sauvegarder les données pour faire l'update des uniform buffers après l'acquisition de l'image dans la swapchain
+		device.waitForFences(inFlightFences[currentFrame], VK_TRUE, std::numeric_limits<uint64_t>::max(), dispatchLoader);
+		unsigned int buffIndex = uniformIndex * swapchain.getSize() + currentFrame;
+		::fillBuffer(device, uniformBuffersMemory[buffIndex], data, dataSize);
 	}
 
 	/**
@@ -83,6 +103,7 @@ public:
 	 */
 	template<typename T>
 	std::vector<T> getDataFromBuffer(unsigned int index, uint64_t elementCount){
+		assert(index < buffers.size());
 		uint64_t dataSize = elementCount * sizeof(T);
 
 		// Create staging buffer
@@ -110,6 +131,8 @@ public:
 	void setFragmentShader(std::string file) {
 		fragmentShaderFile = file;
 	}
+
+	void waitForFences() { device.waitForFences(inFlightFences[currentFrame], VK_TRUE, std::numeric_limits<uint64_t>::max(), dispatchLoader); }
 
 	void waitDeviceIdle() { device.waitIdle(dispatchLoader); }
 
@@ -174,6 +197,8 @@ protected:
 	std::vector<uint64_t> bufferSizes;
 	std::vector<vk::BufferUsageFlags> bufferUsages;
 
+	std::vector<uint64_t> uniformSizes;
+	std::vector<vk::ShaderStageFlags> uniformStages;
 	std::vector<vk::Buffer> uniformBuffers;
 	std::vector<vk::DeviceMemory> uniformBuffersMemory;
 
@@ -228,7 +253,7 @@ protected:
 
 	void createUniformBuffers();
 
-	void updateUniformBuffer(uint32_t);
+	void updateUniformBuffers(uint32_t currentImage);
 
 	void copyBuffer(vk::Buffer, vk::Buffer, vk::DeviceSize);
 
