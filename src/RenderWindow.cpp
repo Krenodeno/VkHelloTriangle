@@ -58,6 +58,10 @@ void RenderWindow::setResizeCallback(GLFWwindowsizefun resizeFunction)
 	glfwSetWindowSizeCallback(window, resizeFunction);
 }
 
+void RenderWindow::setKeyCallback(GLFWkeyfun keyFunction) {
+	glfwSetKeyCallback(window, keyFunction);
+}
+
 void RenderWindow::pollEvents() {
 	glfwPollEvents();
 }

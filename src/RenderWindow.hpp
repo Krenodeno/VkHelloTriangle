@@ -63,6 +63,7 @@ public:
 
 	void setUserPointer(void* ptr);
 	void setResizeCallback(GLFWwindowsizefun resizeFunction);
+	void setKeyCallback(GLFWkeyfun keyFunction);
 
 	void pollEvents();
 
