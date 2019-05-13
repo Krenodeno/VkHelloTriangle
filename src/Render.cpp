@@ -76,21 +76,21 @@ void Render::cleanupSwapchain() {
 	device.destroyPipelineLayout(pipelineLayout, nullptr, dispatchLoader);
 	device.destroyRenderPass(renderPass, nullptr, dispatchLoader);
 
+	for (size_t i = 0; i < swapchain.getImageCount(); i++) {
+		device.destroyBuffer(uniformBuffers[i], nullptr, dispatchLoader);
+		device.free(uniformBuffersMemory[i], nullptr, dispatchLoader);
+		device.destroyEvent(uniformEvent[i], nullptr, dispatchLoader);
+	}
+
 }
 
 void Render::cleanup() {
-	size_t size = swapchain.getSize();
 	// Destroy device related objects
 	cleanupSwapchain();
 	swapchain.cleanup();
 
 	device.destroyDescriptorPool(descriptorPool, nullptr, dispatchLoader);
 	device.destroyDescriptorSetLayout(descriptorSetLayout, nullptr, dispatchLoader);
-
-	for (size_t i = 0; i < size; i++) {
-		device.destroyBuffer(uniformBuffers[i], nullptr, dispatchLoader);
-		device.free(uniformBuffersMemory[i], nullptr, dispatchLoader);
-	}
 
 	for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 		device.destroyFence(inFlightFences[i], nullptr, dispatchLoader);
@@ -112,7 +112,7 @@ void Render::cleanup() {
 		instance.destroySurfaceKHR(surface, nullptr, dispatchLoader);
 	if (validationLayerEnabled) {
 #if (VK_HEADER_VERSION >= 99)
-		auto func = (PFN_vkGetInstanceProcAddr)instance.getProcAddr("vkGetInstanceProcAddr", dispatchLoader);
+		auto func = reinterpret_cast<PFN_vkGetInstanceProcAddr>(instance.getProcAddr("vkGetInstanceProcAddr", dispatchLoader));
 		instance.destroyDebugUtilsMessengerEXT(callback, nullptr, vk::DispatchLoaderDynamic(instance, func));
 #else
 		instance.destroyDebugUtilsMessengerEXT(callback, nullptr, vk::DispatchLoaderDynamic(instance));
@@ -136,12 +136,6 @@ void Render::recreateSwapChain() {
 	createCommandBuffers();
 }
 
-void Render::updateUniformBuffers(uint32_t currentImage) {
-
-	::fillBuffer(device, uniformBuffersMemory[currentImage], , );
-
-}
-
 void Render::drawFrame() {
 	device.waitForFences(inFlightFences[currentFrame], VK_TRUE, std::numeric_limits<uint64_t>::max(), dispatchLoader);
 
@@ -153,8 +147,6 @@ void Render::drawFrame() {
 		recreateSwapChain();
 		return;
 	}
-
-	updateUniformBuffers(imageIndex);
 
 	vk::SubmitInfo submitInfo;
 	vk::Semaphore waitSemaphores[] = { imageAvailableSemaphores[currentFrame] };
@@ -182,14 +174,16 @@ void Render::drawFrame() {
 	presentInfo.pSwapchains = swapChains;
 	presentInfo.pImageIndices = &imageIndex;
 
-	currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
-
-	// TODO recreate swapchain when swapchain suboptimal too
 	try {
-		presentQueue.presentKHR(presentInfo, dispatchLoader);
+		auto result = presentQueue.presentKHR(presentInfo, dispatchLoader);
+		if (result == vk::Result::eSuboptimalKHR) {
+			recreateSwapChain();
+		}
 	} catch (const vk::OutOfDateKHRError& e) {
 		recreateSwapChain();
 	}
+
+	currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 
 	presentQueue.waitIdle(dispatchLoader);
 }
@@ -790,55 +784,62 @@ void Render::createBuffers() {
 
 void Render::createUniformBuffers() {
 	unsigned int uniformCount = uniformSizes.size();
-	unsigned int frameCount = swapchain.getSize();
+	unsigned int swapChainImageCount = swapchain.getImageCount();
 
-	uniformBuffers.resize(uniformCount * frameCount);
-	uniformBuffersMemory.resize(uniformCount * frameCount);
+	uniformBuffers.resize(uniformCount * swapChainImageCount);
+	uniformBuffersMemory.resize(uniformCount * swapChainImageCount);
 
 	for (unsigned int uniform = 0; uniform < uniformCount; uniform++)
-		for (unsigned int frame = 0; frame < frameCount; frame++) {
-			unsigned int buffIndex = frame + frameCount * uniform;
+		for (unsigned int image = 0; image < swapChainImageCount; image++) {
+			unsigned int buffIndex = image + swapChainImageCount * uniform;
 			createBuffer(uniformSizes[uniform], vk::BufferUsageFlagBits::eUniformBuffer, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, uniformBuffers[buffIndex], uniformBuffersMemory[buffIndex]);
 		}
+
+	// Create fences to know which uniform to update
+	uniformEvent.resize(swapChainImageCount);
+	vk::EventCreateInfo createInfo;
+	for (unsigned int image = 0; image < swapChainImageCount; image++) {
+		uniformEvent[image] = device.createEvent(createInfo, nullptr, dispatchLoader);
+	}
 }
 
 void Render::createDescriptorPool() {
-	uint32_t frameCount = static_cast<uint32_t>(swapchain.getSize());
+	uint32_t swapChainImageCount = static_cast<uint32_t>(swapchain.getImageCount());
 	uint32_t uniformCount = static_cast<uint32_t>(uniformSizes.size());
 
 	vk::DescriptorPoolSize poolSize;
 	poolSize.type = vk::DescriptorType::eUniformBuffer;
-	poolSize.descriptorCount = frameCount * uniformCount;
+	poolSize.descriptorCount = swapChainImageCount * uniformCount;
 
 	vk::DescriptorPoolCreateInfo createInfo;
 	createInfo.poolSizeCount = 1;
 	createInfo.pPoolSizes = &poolSize;
-	createInfo.maxSets = frameCount;
+	createInfo.maxSets = swapChainImageCount;
 
 	descriptorPool = device.createDescriptorPool(createInfo, nullptr, dispatchLoader);
 }
 
 void Render::createDescriptorSets() {
-	unsigned int frameCount = swapchain.getSize();
+	unsigned int swapChainImageCount = swapchain.getImageCount();
 	unsigned int uniformCount = uniformSizes.size();
-	std::vector<vk::DescriptorSetLayout> layouts(frameCount, descriptorSetLayout);
+	std::vector<vk::DescriptorSetLayout> layouts(swapChainImageCount, descriptorSetLayout);
 	vk::DescriptorSetAllocateInfo allocInfo;
 	allocInfo.descriptorPool = descriptorPool;
-	allocInfo.descriptorSetCount = static_cast<uint32_t>(frameCount);
+	allocInfo.descriptorSetCount = static_cast<uint32_t>(swapChainImageCount);
 	allocInfo.pSetLayouts = layouts.data();
 
 	descriptorSets = device.allocateDescriptorSets(allocInfo, dispatchLoader);
 
 	for (unsigned int uniform = 0; uniform < uniformCount; uniform++)
-		for (unsigned int frame = 0; frame < frameCount; frame++) {
-			unsigned int bufferIndex = frame + uniform * frameCount;
+		for (unsigned int image = 0; image < swapChainImageCount; image++) {
+			unsigned int bufferIndex = image + uniform * swapChainImageCount;
 			vk::DescriptorBufferInfo bufferInfo;
 			bufferInfo.buffer = uniformBuffers[bufferIndex];
 			bufferInfo.offset = 0;
 			bufferInfo.range = uniformSizes[uniform];
 
 			vk::WriteDescriptorSet descriptorWrite;
-			descriptorWrite.dstSet = descriptorSets[frame];
+			descriptorWrite.dstSet = descriptorSets[image];
 			descriptorWrite.dstBinding = uniform;
 			descriptorWrite.dstArrayElement = 0;
 			descriptorWrite.descriptorType = vk::DescriptorType::eUniformBuffer;
@@ -892,7 +893,7 @@ void Render::endSingleTimeCommands(vk::CommandBuffer commandBuffer) {
 }
 
 void Render::createCommandBuffers() {
-	commandBuffers.resize(swapchain.getSize());
+	commandBuffers.resize(swapchain.getImageCount());
 
 	vk::CommandBufferAllocateInfo allocInfo;
 	allocInfo.commandPool = commandPool;
@@ -928,12 +929,12 @@ void Render::createCommandBuffers() {
 		vk::Buffer indexBuffer;
 		uint32_t indexCount;
 
-		for (unsigned int i = 0; i < bufferUsages.size(); i++) {
-			if ((bufferUsages[i] & vk::BufferUsageFlagBits::eVertexBuffer) == vk::BufferUsageFlagBits::eVertexBuffer)
-				vertexBuffers[0] = buffers[i];
-			if ((bufferUsages[i] & vk::BufferUsageFlagBits::eIndexBuffer) == vk::BufferUsageFlagBits::eIndexBuffer) {
-				indexBuffer = buffers[i];
-				indexCount = bufferSizes[i] / sizeof(uint16_t);
+		for (unsigned int j = 0; j < bufferUsages.size(); j++) {
+			if ((bufferUsages[j] & vk::BufferUsageFlagBits::eVertexBuffer) == vk::BufferUsageFlagBits::eVertexBuffer)
+				vertexBuffers[0] = buffers[j];
+			if ((bufferUsages[j] & vk::BufferUsageFlagBits::eIndexBuffer) == vk::BufferUsageFlagBits::eIndexBuffer) {
+				indexBuffer = buffers[j];
+				indexCount = bufferSizes[j] / sizeof(uint16_t);
 			}
 		}
 
@@ -947,6 +948,8 @@ void Render::createCommandBuffers() {
 		commandBuffers[i].drawIndexed(indexCount, /*instance count*/1, /*first index*/0, /*vertex offset*/0, /*first instance*/0, dispatchLoader);
 
 		commandBuffers[i].endRenderPass(dispatchLoader);
+
+		commandBuffers[i].setEvent(uniformEvent[i], vk::PipelineStageFlagBits::eVertexShader, dispatchLoader);
 
 		commandBuffers[i].end(dispatchLoader);
 	}

@@ -92,10 +92,14 @@ public:
 	 */
 	void updateUniform(unsigned int uniformIndex, const void* data, uint64_t dataSize) {
 		assert(uniformIndex < uniformSizes.size());
-		// enlever ça et sauvegarder les données pour faire l'update des uniform buffers après l'acquisition de l'image dans la swapchain
-		device.waitForFences(inFlightFences[currentFrame], VK_TRUE, std::numeric_limits<uint64_t>::max(), dispatchLoader);
-		unsigned int buffIndex = uniformIndex * swapchain.getSize() + currentFrame;
-		::fillBuffer(device, uniformBuffersMemory[buffIndex], data, dataSize);
+		assert(dataSize <= uniformSizes[uniformIndex]);
+
+		// check wether the buffer is ready to be updated (no longer used)
+		for (unsigned int i = 0; i < swapchain.getImageCount(); i++)
+			if (device.getEventStatus(uniformEvent[i]) == vk::Result::eEventSet) {
+				::fillBuffer(device, uniformBuffersMemory[uniformIndex * swapchain.getImageCount() + i], data, dataSize);
+				device.resetEvent(uniformEvent[i], dispatchLoader);
+			}
 	}
 
 	/**
@@ -201,6 +205,7 @@ protected:
 	std::vector<vk::ShaderStageFlags> uniformStages;
 	std::vector<vk::Buffer> uniformBuffers;
 	std::vector<vk::DeviceMemory> uniformBuffersMemory;
+	std::vector<vk::Event> uniformEvent;
 
 	std::vector<vk::CommandBuffer> commandBuffers;
 
@@ -252,8 +257,6 @@ protected:
 	void createBuffers();
 
 	void createUniformBuffers();
-
-	void updateUniformBuffers(uint32_t currentImage);
 
 	void copyBuffer(vk::Buffer, vk::Buffer, vk::DeviceSize);
 
