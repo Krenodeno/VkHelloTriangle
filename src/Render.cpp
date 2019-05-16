@@ -82,6 +82,8 @@ void Render::cleanupSwapchain() {
 		device.destroyEvent(uniformEvent[i], nullptr, dispatchLoader);
 	}
 
+	device.destroyDescriptorPool(descriptorPool, nullptr, dispatchLoader);
+
 }
 
 void Render::cleanup() {
@@ -89,7 +91,6 @@ void Render::cleanup() {
 	cleanupSwapchain();
 	swapchain.cleanup();
 
-	device.destroyDescriptorPool(descriptorPool, nullptr, dispatchLoader);
 	device.destroyDescriptorSetLayout(descriptorSetLayout, nullptr, dispatchLoader);
 
 	for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
@@ -133,6 +134,9 @@ void Render::recreateSwapChain() {
 	createGraphicsPipeline();
 	createDepthResources();
 	createFramebuffers();
+	createUniformBuffers();
+	createDescriptorPool();
+	createDescriptorSets();
 	createCommandBuffers();
 }
 
