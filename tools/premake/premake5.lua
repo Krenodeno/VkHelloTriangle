@@ -1,6 +1,6 @@
 -- premake5.lua
 workspace "VkHelloTriangle"
-	configurations { "Debug", "DebugSAN", "Release", "ReleaseSAN" }
+	configurations { "Debug", "DebugSAN", "Release" }
 
 	local rootDir =   "../../"
 	local sourceDir = rootDir .. "src/"
@@ -28,10 +28,10 @@ workspace "VkHelloTriangle"
 		optimize "Off"
 		targetsuffix "-d"
 
-	filter "toolset:not gcc and not clang"
-		removeconfigurations "*SAN"
+--	filter { "toolset:not gcc", "toolset:not clang" }
+--		removeconfigurations "*SAN"
 
-	filter { "configurations:*SAN", "toolset:gcc,clang" }
+	filter { "configurations:*SAN", "toolset:gcc or clang" }
 		buildoptions { "-fno-omit-frame-pointer" }
 		buildoptions { "-fsanitize=undefined,address" }
 		linkoptions { "-fsanitize=undefined,address" }

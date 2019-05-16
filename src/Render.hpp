@@ -15,17 +15,6 @@
 #include "Shader.hpp"
 #include "Vertex.hpp"
 
-/** Callback */
-
-static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
-	VkDebugUtilsMessageSeverityFlagBitsEXT,
-	VkDebugUtilsMessageTypeFlagsEXT,
-	const VkDebugUtilsMessengerCallbackDataEXT*,
-	void*);
-
-/* forward declaration */
-class Application;
-
 /* used as callback function to delegate surface creation */
 using createSurfaceFoncter = std::function<vk::SurfaceKHR(vk::Instance)>;
 
@@ -47,8 +36,6 @@ public:
 	void enableValidationLayer();
 
 	void setRenderType(RenderType);
-
-	void setParentApplication(Application*);
 
 	void setSurfaceCreationFunction(createSurfaceFoncter);
 
