@@ -17,14 +17,14 @@ void RenderTarget::init(vk::SurfaceKHR surface, vk::PhysicalDevice physicalDevic
 	vk::Extent2D extent = chooseSwapExtent(swapChainSupport.capabilities, windowExtent);
 
 	// amount of image in the swapchain
-	uint32_t imageCount = swapChainSupport.capabilities.minImageCount + 1;
-	if (swapChainSupport.capabilities.maxImageCount > 0 && imageCount > swapChainSupport.capabilities.maxImageCount) {
-		imageCount = swapChainSupport.capabilities.maxImageCount;
+	uint32_t minImageCount = swapChainSupport.capabilities.minImageCount + 1;
+	if (swapChainSupport.capabilities.maxImageCount > 0 && minImageCount > swapChainSupport.capabilities.maxImageCount) {
+		minImageCount = swapChainSupport.capabilities.maxImageCount;
 	}
 
 	vk::SwapchainCreateInfoKHR createInfo;
 	createInfo.surface = surface;
-	createInfo.minImageCount = imageCount;
+	createInfo.minImageCount = minImageCount;
 	createInfo.imageFormat = surfaceFormat.format;
 	createInfo.imageColorSpace = surfaceFormat.colorSpace;
 	createInfo.imageExtent = extent;
@@ -58,6 +58,7 @@ void RenderTarget::init(vk::SurfaceKHR surface, vk::PhysicalDevice physicalDevic
 	swapChainImages = device.getSwapchainImagesKHR(swapChain);
 	swapChainImageFormat = surfaceFormat.format;
 	swapChainExtent = extent;
+	imageCount = swapChainImages.size();
 
 	createImageViews();
 }
@@ -71,7 +72,8 @@ void RenderTarget::cleanup() {
 	for (auto imageView : swapChainImageViews) {
 		device.destroyImageView(imageView);
 	}
-	device.destroySwapchainKHR(swapChain);
+	if (swapChain)
+		device.destroySwapchainKHR(swapChain);
 }
 
 void RenderTarget::recreate(vk::SurfaceKHR surface, vk::PhysicalDevice physicalDevice, vk::Extent2D windowExtent) {
@@ -111,12 +113,12 @@ vk::Framebuffer RenderTarget::getFramebuffer(unsigned long i) {
 	return swapChainFramebuffers[i];
 }
 
-unsigned long RenderTarget::getSize() {
-	return swapChainImageViews.size();
+unsigned int RenderTarget::getImageCount() {
+	return imageCount;
 }
 
 void RenderTarget::createFramebuffers(vk::RenderPass renderPass, vk::ImageView depthImageView) {
-	swapChainFramebuffers.resize(swapChainImageViews.size());
+	swapChainFramebuffers.resize(imageCount);
 
 	for(size_t i = 0; i < swapChainImageViews.size(); ++i) {
 		std::array<vk::ImageView, 2> attachments = {
@@ -137,7 +139,7 @@ void RenderTarget::createFramebuffers(vk::RenderPass renderPass, vk::ImageView d
 }
 
 void RenderTarget::createImageViews() {
-	swapChainImageViews.resize(swapChainImages.size());
+	swapChainImageViews.resize(imageCount);
 
 	for (size_t i = 0; i < swapChainImageViews.size(); ++i) {
 		vk::ImageViewCreateInfo createInfo;

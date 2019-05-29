@@ -22,3 +22,6 @@ build/
 # Precompiled headers
 **.pch
 **.gch
+
+# Outputs of examples
+image.ppm

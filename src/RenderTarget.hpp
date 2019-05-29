@@ -26,7 +26,7 @@ public:
 
 	vk::Framebuffer getFramebuffer(unsigned long);
 
-	unsigned long getSize();
+	unsigned int getImageCount();
 
 	void createFramebuffers(vk::RenderPass, vk::ImageView);
 
@@ -35,6 +35,7 @@ private:
 	vk::Device device;
 
 	vk::SwapchainKHR swapChain;
+	unsigned int imageCount;
 	std::vector<vk::Image> swapChainImages;
 	vk::Format swapChainImageFormat;
 	vk::Extent2D swapChainExtent;

@@ -33,7 +33,7 @@ bool checkDeviceExtensionSupport(vk::PhysicalDevice device, std::vector<const ch
 	return requiredExtensions.empty();
 }
 
-QueueFamilyIndices findQueueFamilies(vk::PhysicalDevice device, vk::SurfaceKHR surface) {
+QueueFamilyIndices findQueueFamilies(vk::PhysicalDevice device, vk::SurfaceKHR surface = nullptr) {
 	QueueFamilyIndices indices;
 
 	auto queueFamilyProperties = device.getQueueFamilyProperties();
@@ -48,9 +48,11 @@ QueueFamilyIndices findQueueFamilies(vk::PhysicalDevice device, vk::SurfaceKHR s
 			indices.computeFamily = i;
 		}
 
-		auto presentSupport = device.getSurfaceSupportKHR(i, surface);
-		if (queueFamily.queueCount > 0 && presentSupport) {
-			indices.presentFamily = i;
+		if (surface) {
+			auto presentSupport = device.getSurfaceSupportKHR(i, surface);
+			if (queueFamily.queueCount > 0 && presentSupport) {
+				indices.presentFamily = i;
+			}
 		}
 
 		if (indices.isComplete())
@@ -58,7 +60,7 @@ QueueFamilyIndices findQueueFamilies(vk::PhysicalDevice device, vk::SurfaceKHR s
 
 		++i;
 	}
-
+	// return lastly found indices for each families if one is not found
 	return indices;
 }
 
@@ -74,18 +76,31 @@ SwapChainSupportDetails querySwapChainSupport(vk::PhysicalDevice device, vk::Sur
 	return details;
 }
 
-bool isDeviceSuitable(vk::PhysicalDevice device, vk::SurfaceKHR surface, std::vector<const char*> extensions) {
+bool isDeviceSuitable(vk::PhysicalDevice device, std::vector<const char*> extensions, vk::QueueFlags wantedQueues, vk::SurfaceKHR surface = nullptr) {
 	QueueFamilyIndices indices = findQueueFamilies(device, surface);
 
 	bool extensionsSupported = checkDeviceExtensionSupport(device, extensions);
 
-	bool swapChainAdequate = false;
+	bool swapChainAdequate = true;
 	if (extensionsSupported) {
-		SwapChainSupportDetails swapchainSupport = querySwapChainSupport(device, surface);
-		swapChainAdequate = !swapchainSupport.formats.empty() && !swapchainSupport.presentModes.empty();
+		if (surface) {
+			SwapChainSupportDetails swapchainSupport = querySwapChainSupport(device, surface);
+			swapChainAdequate = !swapchainSupport.formats.empty() && !swapchainSupport.presentModes.empty();
+		}
 	}
 
-	return indices.isComplete() && extensionsSupported && swapChainAdequate;
+	bool isComplete = true;
+
+	if ((wantedQueues & vk::QueueFlagBits::eGraphics) == vk::QueueFlagBits::eGraphics)
+		isComplete &= indices.graphicsFamily.has_value();
+
+	if ((wantedQueues & vk::QueueFlagBits::eCompute) == vk::QueueFlagBits::eCompute)
+		isComplete &= indices.computeFamily.has_value();
+
+	if (surface)
+		isComplete &= indices.presentFamily.has_value();
+
+	return isComplete && extensionsSupported && swapChainAdequate;
 }
 
 vk::SurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<vk::SurfaceFormatKHR>& availableFormats) {
@@ -120,14 +135,12 @@ vk::PresentModeKHR chooseSwapPresentMode(const std::vector<vk::PresentModeKHR>& 
 }
 
 vk::Extent2D chooseSwapExtent(const vk::SurfaceCapabilitiesKHR& capabilities, vk::Extent2D windowExtent) {
-	// If current extent velue is set with uint32_t limit value, then the DM
+	// If current extent value is set with uint32_t limit value, then the DM
 	// tells us that it accept different extent that the window
 	if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
 		return capabilities.currentExtent;
 	}
 	else {
-		// TODO get the actual window size
-		//vk::Extent2D actualExtent = parentApp->windowExtent();
 		vk::Extent2D actualExtent = windowExtent;
 
 		actualExtent.width = std::max(capabilities.minImageExtent.width,

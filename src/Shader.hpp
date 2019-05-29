@@ -11,17 +11,32 @@ struct Shader {
 	std::string path;
 	std::vector<char> buffer;
 	vk::ShaderModule shaderModule;
-	vk::Device _device;
+	vk::Device device;
+	vk::ShaderStageFlagBits stage;
 
-	Shader(const std::string& file, vk::Device device) : path(file), buffer(readFile(path)), _device(device) {
-		vk::ShaderModuleCreateInfo createInfo;
-		createInfo.codeSize = buffer.size();
-		createInfo.pCode = reinterpret_cast<const uint32_t*>(buffer.data());
-		shaderModule = _device.createShaderModule(createInfo);
+	Shader(vk::Device device, vk::ShaderStageFlagBits stage) : device(device), stage(stage) {
+
 	}
 
 	~Shader() {
-		_device.destroyShaderModule(shaderModule);
+		device.destroyShaderModule(shaderModule);
+	}
+
+	void create(const std::string& file) {
+		path = file;
+		buffer = readFile(path);
+		vk::ShaderModuleCreateInfo createInfo;
+		createInfo.codeSize = buffer.size();
+		createInfo.pCode = reinterpret_cast<const uint32_t*>(buffer.data());
+		shaderModule = device.createShaderModule(createInfo);
+	}
+
+	vk::PipelineShaderStageCreateInfo getShaderStageInfo() {
+		vk::PipelineShaderStageCreateInfo shaderStageInfo;
+		shaderStageInfo.stage = stage;
+		shaderStageInfo.module = shaderModule;
+		shaderStageInfo.pName = "main";		// entry point in the shader's code
+		return shaderStageInfo;
 	}
 };
 

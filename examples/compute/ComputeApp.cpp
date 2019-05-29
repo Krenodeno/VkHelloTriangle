@@ -1,5 +1,8 @@
 #include "ComputeApp.hpp"
 
+#include "RenderUtils.hpp"
+#include "Shader.hpp"
+
 #include <cassert>
 #include <fstream>
 #include <iostream>
@@ -41,7 +44,7 @@ ComputeApp::~ComputeApp() {
 
 void ComputeApp::run() {
 	init();
-
+	updateUniformBuffer();
 	draw();
 
 	// Get data back
@@ -80,6 +83,15 @@ void ComputeApp::run() {
 	file.close();
 }
 
+void ComputeApp::updateUniformBuffer() {
+	ComputeUBO ubo = {WIDTH, HEIGHT};
+
+	// Copy data in ubo
+	auto data = static_cast<ComputeUBO*>(device.mapMemory(uniformBufferMemory, /*offset*/ 0, sizeof(ubo)));
+		std::memcpy(data, &ubo, sizeof(ubo));
+	device.unmapMemory(uniformBufferMemory);
+}
+
 void ComputeApp::draw() {
 	vk::SubmitInfo submitInfo;
 	submitInfo.commandBufferCount = 1;
@@ -102,6 +114,7 @@ void ComputeApp::init() {
 	pickPhysicalDevice();
 	createDevice();
 	createBuffer();
+	createUniformBuffer();
 	createDescriptorSetLayout();
 	createDescriptorSet();
 	createComputePipeline();
@@ -110,20 +123,22 @@ void ComputeApp::init() {
 
 void ComputeApp::cleanup() {
 	// Destroy vulkan objects
-	device.destroyShaderModule(computeShaderModule);
-	device.destroyCommandPool(commandPool);
-	device.destroyPipeline(pipeline);
-	device.destroyPipelineLayout(pipelineLayout);
-	device.destroyDescriptorPool(descriptorPool);
-	device.destroyDescriptorSetLayout(descriptorSetLayout);
-	device.freeMemory(bufferMemory);
-	device.destroyBuffer(buffer);
+	if (commandPool) device.destroy(commandPool);
+	if (pipeline) device.destroy(pipeline);
+	if (pipelineLayout) device.destroy(pipelineLayout);
+	if (descriptorPool) device.destroy(descriptorPool);
+	if (descriptorSetLayout) device.destroy(descriptorSetLayout);
+	if (uniformBufferMemory) device.free(uniformBufferMemory);
+	if (uniformBuffer) device.destroy(uniformBuffer);
+	if (bufferMemory) device.free(bufferMemory);
+	if (buffer) device.destroy(buffer);
 	// Then destroy Device
-	device.destroy();
+	if (device) device.destroy();
 	// destroy debug utils
-	instance.destroyDebugUtilsMessengerEXT(callback, nullptr, vk::DispatchLoaderDynamic(instance));
+	auto func = (PFN_vkGetInstanceProcAddr)instance.getProcAddr("vkGetInstanceProcAddr");
+	if (callback) instance.destroyDebugUtilsMessengerEXT(callback, nullptr, vk::DispatchLoaderDynamic(instance, func));
 	// Finally destroy the instance
-	instance.destroy();
+	if (instance) instance.destroy();
 }
 
 void ComputeApp::createInstance() {
@@ -161,7 +176,8 @@ void ComputeApp::setupDebugCallback() {
 	createInfo.pfnUserCallback = debugCallback;
 	createInfo.pUserData = nullptr;
 
-	vk::DispatchLoaderDynamic didy(instance);
+	auto func = (PFN_vkGetInstanceProcAddr)instance.getProcAddr("vkGetInstanceProcAddr");
+	vk::DispatchLoaderDynamic didy(instance, func);
 	callback = instance.createDebugUtilsMessengerEXT(createInfo, nullptr, didy);
 }
 
@@ -173,7 +189,7 @@ void ComputeApp::pickPhysicalDevice() {
 		throw std::runtime_error("Failed to find GPUs with Vulkan suport!");
 
 	for (const auto& device: devices) {
-		if (isDeviceSuitable(device)) {
+		if (isDeviceSuitable(device, {}, vk::QueueFlagBits::eCompute)) {
 			physicalDevice = device;
 			break;
 		}
@@ -189,7 +205,7 @@ void ComputeApp::createDevice() {
 	// Queues
 	float priority = 1.f;
 	vk::DeviceQueueCreateInfo queueCreateInfo;
-	queueCreateInfo.queueFamilyIndex = indices.computeFamily;
+	queueCreateInfo.queueFamilyIndex = indices.computeFamily.value();
 	queueCreateInfo.queueCount = 1;
 	queueCreateInfo.pQueuePriorities = &priority;
 
@@ -209,7 +225,7 @@ void ComputeApp::createDevice() {
 	device = physicalDevice.createDevice(createInfo);
 
 	// get Queue
-	computeQueue = device.getQueue(indices.computeFamily, 0);
+	computeQueue = device.getQueue(indices.computeFamily.value(), 0);
 
 }
 
@@ -225,11 +241,30 @@ void ComputeApp::createBuffer() {
 
 	vk::MemoryAllocateInfo allocateInfo;
 	allocateInfo.allocationSize = memoryRequirements.size;
-	allocateInfo.memoryTypeIndex = findMemoryType(memoryRequirements.memoryTypeBits, vk::MemoryPropertyFlagBits::eHostCoherent | vk::MemoryPropertyFlagBits::eHostVisible);
+	allocateInfo.memoryTypeIndex = findMemoryType(physicalDevice, memoryRequirements.memoryTypeBits, vk::MemoryPropertyFlagBits::eHostCoherent | vk::MemoryPropertyFlagBits::eHostVisible);
 
 	bufferMemory = device.allocateMemory(allocateInfo);
 
 	device.bindBufferMemory(buffer, bufferMemory, /*MemoryOffset*/ 0);
+}
+
+void ComputeApp::createUniformBuffer() {
+	vk::BufferCreateInfo createInfo;
+	createInfo.size = sizeof(ComputeUBO);
+	createInfo.usage = vk::BufferUsageFlagBits::eUniformBuffer;
+	createInfo.sharingMode = vk::SharingMode::eExclusive;
+
+	uniformBuffer = device.createBuffer(createInfo);
+
+	vk::MemoryRequirements memoryRequirements = device.getBufferMemoryRequirements(uniformBuffer);
+
+	vk::MemoryAllocateInfo allocateInfo;
+	allocateInfo.allocationSize = memoryRequirements.size;
+	allocateInfo.memoryTypeIndex = findMemoryType(physicalDevice, memoryRequirements.memoryTypeBits, vk::MemoryPropertyFlagBits::eHostCoherent | vk::MemoryPropertyFlagBits::eHostVisible);
+
+	uniformBufferMemory = device.allocateMemory(allocateInfo);
+
+	device.bindBufferMemory(uniformBuffer, uniformBufferMemory, /*memoryOffset*/ 0);
 }
 
 void ComputeApp::createDescriptorSetLayout() {
@@ -239,22 +274,33 @@ void ComputeApp::createDescriptorSetLayout() {
 	binding.descriptorCount = 1;
 	binding.stageFlags = vk::ShaderStageFlagBits::eCompute;
 
+	vk::DescriptorSetLayoutBinding uniformBinding;
+	uniformBinding.binding = 1;
+	uniformBinding.descriptorType = vk::DescriptorType::eUniformBuffer;
+	uniformBinding.descriptorCount = 1;
+	uniformBinding.stageFlags = vk::ShaderStageFlagBits::eCompute;
+
+	vk::DescriptorSetLayoutBinding bindings[] = {binding, uniformBinding};
+
 	vk::DescriptorSetLayoutCreateInfo createInfo;
-	createInfo.bindingCount = 1;
-	createInfo.pBindings = &binding;
+	createInfo.bindingCount = 2;
+	createInfo.pBindings = bindings;
 
 	descriptorSetLayout = device.createDescriptorSetLayout(createInfo);
 }
 
 void ComputeApp::createDescriptorSet() {
-	vk::DescriptorPoolSize poolSize;
-	poolSize.type = vk::DescriptorType::eStorageBuffer;
-	poolSize.descriptorCount = 1;
+	vk::DescriptorPoolSize poolSizes[2];
+	poolSizes[0].type = vk::DescriptorType::eStorageBuffer;
+	poolSizes[0].descriptorCount = 1;
+
+	poolSizes[1].type = vk::DescriptorType::eUniformBuffer;
+	poolSizes[1].descriptorCount = 1;
 
 	vk::DescriptorPoolCreateInfo createInfo;
 	createInfo.maxSets = 1;	// We only need to allocate one descriptor set from the pool
-	createInfo.poolSizeCount = 1;
-	createInfo.pPoolSizes = &poolSize;
+	createInfo.poolSizeCount = 2;
+	createInfo.pPoolSizes = poolSizes;
 
 	descriptorPool = device.createDescriptorPool(createInfo);
 
@@ -275,30 +321,37 @@ void ComputeApp::createDescriptorSet() {
 
 	vk::WriteDescriptorSet writeDescriptorSet;
 	writeDescriptorSet.dstSet = descriptorSet;	// Write to this descriptor set
-	writeDescriptorSet.dstBinding = 0;			// Write to the first, and only binding
+	writeDescriptorSet.dstBinding = 0;			// Write to the first binding
 	writeDescriptorSet.descriptorCount = 1;
 	writeDescriptorSet.descriptorType = vk::DescriptorType::eStorageBuffer;
 	writeDescriptorSet.pBufferInfo = &bufferInfo;
 
 	device.updateDescriptorSets(writeDescriptorSet, nullptr);
+
+	vk::DescriptorBufferInfo uniformBufferInfo;
+	uniformBufferInfo.buffer = uniformBuffer;
+	uniformBufferInfo.offset = 0;
+	uniformBufferInfo.range = sizeof(ComputeUBO);
+
+	vk::WriteDescriptorSet uniformWriteDescriptorSet;
+	uniformWriteDescriptorSet.dstSet = descriptorSet;
+	uniformWriteDescriptorSet.dstBinding = 1;
+	uniformWriteDescriptorSet.dstArrayElement = 0;
+	uniformWriteDescriptorSet.descriptorType = vk::DescriptorType::eUniformBuffer;
+	uniformWriteDescriptorSet.descriptorCount = 1;
+	uniformWriteDescriptorSet.pBufferInfo = &uniformBufferInfo;
+
+	device.updateDescriptorSets(uniformWriteDescriptorSet, nullptr);
 }
 
 void ComputeApp::createComputePipeline() {
 
 	// Create Shader
-	uint32_t filelength;
-	std::vector<uint32_t> code = readFile(filelength, "ressources/shaders/shader.comp.spv");
-	vk::ShaderModuleCreateInfo shaderCreateInfo;
-	shaderCreateInfo.codeSize = filelength;
-	shaderCreateInfo.pCode = code.data();
-
-	computeShaderModule = device.createShaderModule(shaderCreateInfo);
+	Shader computeShader(device, vk::ShaderStageFlagBits::eCompute);
+	computeShader.create("data/shaders/shader.comp.spv");
 
 	// Specify compute shader stage
-	vk::PipelineShaderStageCreateInfo shaderStageCreateInfo;
-	shaderStageCreateInfo.stage = vk::ShaderStageFlagBits::eCompute;
-	shaderStageCreateInfo.module = computeShaderModule;
-	shaderStageCreateInfo.pName = "main";
+	auto shaderStageCreateInfo = computeShader.getShaderStageInfo();
 
 	// Create PipelineLayout
 	vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo;
@@ -321,7 +374,7 @@ void ComputeApp::createCommandeBuffer() {
 
 	// Create Command Pool
 	vk::CommandPoolCreateInfo poolCreateInfo;
-	poolCreateInfo.queueFamilyIndex = static_cast<uint32_t>(queueFamilyIndex.computeFamily);
+	poolCreateInfo.queueFamilyIndex = queueFamilyIndex.computeFamily.value();
 	commandPool = device.createCommandPool(poolCreateInfo);
 
 	// Create Command buffer
@@ -348,43 +401,4 @@ void ComputeApp::createCommandeBuffer() {
 	commandBuffer.dispatch(dx, dy, 1);
 
 	commandBuffer.end();
-}
-
-bool ComputeApp::isDeviceSuitable(vk::PhysicalDevice device) {
-	QueueFamilyIndices indices = findQueueFamilies(device);
-
-	return indices.isComplete();
-}
-
-ComputeApp::QueueFamilyIndices ComputeApp::findQueueFamilies(vk::PhysicalDevice physDevice) {
-	QueueFamilyIndices indices;
-
-	auto queueFamilyProperties = physDevice.getQueueFamilyProperties();
-
-	int i = 0;
-	for (const auto& queueFamily : queueFamilyProperties) {
-		if (queueFamily.queueCount > 0 && queueFamily.queueFlags & vk::QueueFlagBits::eCompute) {
-			indices.computeFamily = i;
-		}
-
-		if (indices.isComplete())
-			break;
-
-		++i;
-	}
-
-	return indices;
-}
-
-uint32_t ComputeApp::findMemoryType(uint32_t memoryTypeBits, vk::MemoryPropertyFlags properties) {
-	auto memoryProperties = physicalDevice.getMemoryProperties();
-
-	for (uint32_t i = 0; i < memoryProperties.memoryTypeCount; i++) {
-		if (
-			(memoryTypeBits & (i << 1)) &&
-			((memoryProperties.memoryTypes[i].propertyFlags & properties) == properties)
-		)
-			return i;
-	}
-	return -1;
 }

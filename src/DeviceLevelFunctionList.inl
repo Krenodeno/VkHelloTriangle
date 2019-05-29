@@ -1,6 +1,6 @@
 #ifndef VK_DEVICE_LEVEL_FUNCTION
 #define VK_DEVICE_LEVEL_FUNCTION( fun )
-#endif // !VK_DEVICE_LEVEL_FUNCTION
+#endif
 
 VK_DEVICE_LEVEL_FUNCTION(vkDestroyDevice)
 
