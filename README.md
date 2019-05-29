@@ -5,11 +5,11 @@ My goal is to have a general comprehension of the API, and to learn commons grap
 
 ## TODO LIST
 
-* Library loading
-	* load extension functions only if activated at Instance/Device creation time
+* Load Vulkan Dynamic Library instead of using static loader
 
 * Renderer
-	* Rendering technics
+	* UBO allocator
+	* Rendering technics:
 		* Shadow maps
 		* SSR
 		* SSAO

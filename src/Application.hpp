@@ -18,14 +18,13 @@ public:
 	/** Should return true to continue, and false to end the main loop */
 	virtual bool draw() = 0;
 
-	void run();
+	virtual void run();
 
 	std::string getName() { return name; }
 	uint32_t getVersion() { return version; }
 
 protected:
 
-	Render render;
 	std::string name;
 	uint32_t version;	// vulkan style : VK_MAKE_VERSION(major, minor, patch)
 

@@ -113,16 +113,14 @@ project "vulkan-tutorial"
 	includedirs({ libDir .. "include", sourceDir })
 	files({ sampleDir .. "vulkan-tutorial/*", dataDir .. "shaders/*.frag", dataDir .. "shaders/*.vert" })
 
+	links { "VkHelloTriangle", "CompileShaders" }
+
 	filter "system:Windows"
 		links "glfw3"
 
 	filter { "system:Linux" , "action:gmake2" }
 		buildoptions { "`pkg-config --cflags glfw3`" }
 		linkoptions  { "`pkg-config --static --libs glfw3`" }
-
-	filter {}
-
-	links { "VkHelloTriangle", "CompileShaders" }
 
 
 project "compute-fractal"

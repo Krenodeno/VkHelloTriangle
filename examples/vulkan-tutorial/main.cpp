@@ -3,8 +3,7 @@
 #include <cstdlib>
 #include <chrono>
 
-#include "Application.hpp"
-#include "RenderWindow.hpp"
+#include "WindowedApp.hpp"
 
 using std::chrono::high_resolution_clock;
 
@@ -14,11 +13,10 @@ struct UniformBufferObject {
 	glm::mat4 proj;
 };
 
-class Tutorial : public Application {
+class Tutorial : public WindowedApp {
 public:
 
-	Tutorial() : Application("Vulkan", VK_MAKE_VERSION(0, 0, 0)),
-				 window(800, 600, "VkHelloTriangle") {
+	Tutorial() : WindowedApp("Vulkan", VK_MAKE_VERSION(0, 0, 0)) {
 		render.setSurfaceCreationFunction(
 			[&](vk::Instance instance) {
 				return window.createSurface(instance);
@@ -112,9 +110,6 @@ public:
 
 		return !window.isClosed();
 	}
-
-private:
-	RenderWindow window;
 
 };
 
