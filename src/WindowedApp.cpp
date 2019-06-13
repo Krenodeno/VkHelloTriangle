@@ -14,7 +14,7 @@ WindowedApp::~WindowedApp() {
 }
 
 void WindowedApp::run() {
-	#ifdef DEBUG
+#ifdef DEBUG
 	auto start = std::chrono::high_resolution_clock::now();
 	render.enableValidationLayer();
 #endif

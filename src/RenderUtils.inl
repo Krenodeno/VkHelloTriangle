@@ -104,10 +104,6 @@ bool isDeviceSuitable(vk::PhysicalDevice device, std::vector<const char*> extens
 }
 
 vk::SurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<vk::SurfaceFormatKHR>& availableFormats) {
-	// Select format ourself as there is not prefered format from the surface
-	if (availableFormats.size() == 1 && availableFormats[0].format == vk::Format::eUndefined) {
-		return {vk::Format::eB8G8R8A8Unorm, vk::ColorSpaceKHR::eSrgbNonlinear};
-	}
 	// Let's try to see if the format we want is in the list
 	for (const auto& availableFormat : availableFormats) {
 		if (availableFormat.format == vk::Format::eB8G8R8A8Unorm && availableFormat.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear) {
