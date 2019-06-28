@@ -8,7 +8,7 @@
 #include <functional>
 #include <cassert>
 
-#include <vulkan/vulkan.hpp>
+#include <Vulkan.hpp>
 
 #include "RenderTarget.hpp"
 #include "RenderUtils.hpp"
@@ -85,7 +85,7 @@ public:
 		for (unsigned int i = 0; i < swapchain.getImageCount(); i++)
 			if (device.getEventStatus(uniformEvent[i]) == vk::Result::eEventSet) {
 				::fillBuffer(device, uniformBuffersMemory[uniformIndex * swapchain.getImageCount() + i], data, dataSize);
-				device.resetEvent(uniformEvent[i], dispatchLoader);
+				device.resetEvent(uniformEvent[i]);
 			}
 	}
 
@@ -123,11 +123,13 @@ public:
 		fragmentShaderFile = file;
 	}
 
-	void waitForFences() { device.waitForFences(inFlightFences[currentFrame], VK_TRUE, std::numeric_limits<uint64_t>::max(), dispatchLoader); }
+	void waitForFences() { device.waitForFences(inFlightFences[currentFrame], VK_TRUE, std::numeric_limits<uint64_t>::max()); }
 
-	void waitDeviceIdle() { device.waitIdle(dispatchLoader); }
+	void waitDeviceIdle() { device.waitIdle(); }
 
 protected:
+
+	VulkanLoader loader;
 
 	std::string appName;
 
@@ -148,15 +150,13 @@ protected:
 
 	vk::Extent2D windowExtent;
 
-	vk::DispatchLoaderStatic dispatchLoader;
-
-	vk::Instance instance;
+	Instance instance;
 
 	vk::DebugUtilsMessengerEXT callback;
 
 	vk::PhysicalDevice physicalDevice;
 
-	vk::Device device;
+	Device device;
 
 	vk::Queue graphicsQueue;
 	vk::Queue computeQueue;

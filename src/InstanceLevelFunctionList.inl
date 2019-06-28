@@ -24,12 +24,6 @@ VK_INSTANCE_LEVEL_FUNCTION(vkEnumerateDeviceLayerProperties)
 
 VK_INSTANCE_LEVEL_FUNCTION(vkGetDeviceProcAddr)
 
-/* Debug report callback extension */
-
-VK_INSTANCE_LEVEL_FUNCTION(vkCreateDebugReportCallbackEXT)
-
-VK_INSTANCE_LEVEL_FUNCTION(vkDestroyDebugReportCallbackEXT)
-
 /* Surface extensions */
 
 VK_INSTANCE_LEVEL_FUNCTION(vkGetPhysicalDeviceSurfaceCapabilitiesKHR)
