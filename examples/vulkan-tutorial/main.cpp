@@ -18,8 +18,8 @@ public:
 
 	Tutorial() : WindowedApp("Vulkan", VK_MAKE_VERSION(0, 0, 0)) {
 		render.setSurfaceCreationFunction(
-			[&](vk::Instance instance) {
-				return window.createSurface(instance);
+			[&](vk::Instance instance, vk::DispatchLoaderDynamic d) {
+				return window.createSurface(instance, d);
 			}
 		);
 

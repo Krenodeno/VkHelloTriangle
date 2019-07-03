@@ -66,23 +66,31 @@ void Render::init() {
 
 void Render::cleanupSwapchain() {
 
-	device.freeCommandBuffers(commandPool, commandBuffers);
+	if (!commandBuffers.empty())
+		device.freeCommandBuffers(commandPool, commandBuffers, deviceLoader);
 
-	device.destroyImageView(depthImageView, nullptr);
-	device.destroyImage(depthImage, nullptr);
-	device.free(depthImageMemory, nullptr);
+	if (depthImageView)
+		device.destroyImageView(depthImageView, nullptr, deviceLoader);
+	if (depthImage)
+		device.destroyImage(depthImage, nullptr, deviceLoader);
+	if (depthImageMemory)
+		device.free(depthImageMemory, nullptr, deviceLoader);
 
-	device.destroyPipeline(graphicsPipeline, nullptr);
-	device.destroyPipelineLayout(pipelineLayout, nullptr);
-	device.destroyRenderPass(renderPass, nullptr);
+	if (graphicsPipeline)
+		device.destroyPipeline(graphicsPipeline, nullptr, deviceLoader);
+	if (pipelineLayout)
+		device.destroyPipelineLayout(pipelineLayout, nullptr, deviceLoader);
+	if (renderPass)
+		device.destroyRenderPass(renderPass, nullptr, deviceLoader);
 
 	for (size_t i = 0; i < swapchain.getImageCount(); i++) {
-		device.destroyBuffer(uniformBuffers[i], nullptr);
-		device.free(uniformBuffersMemory[i], nullptr);
-		device.destroyEvent(uniformEvent[i], nullptr);
+		device.destroyBuffer(uniformBuffers[i], nullptr, deviceLoader);
+		device.free(uniformBuffersMemory[i], nullptr, deviceLoader);
+		device.destroyEvent(uniformEvent[i], nullptr, deviceLoader);
 	}
 
-	device.destroyDescriptorPool(descriptorPool, nullptr);
+	if (descriptorPool)
+		device.destroyDescriptorPool(descriptorPool, nullptr, deviceLoader);
 
 }
 
@@ -91,40 +99,42 @@ void Render::cleanup() {
 	cleanupSwapchain();
 	swapchain.cleanup();
 
-	device.destroyDescriptorSetLayout(descriptorSetLayout, nullptr);
+	if (descriptorSetLayout)
+		device.destroyDescriptorSetLayout(descriptorSetLayout, nullptr, deviceLoader);
 
 	for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-		device.destroyFence(inFlightFences[i], nullptr);
-		device.destroySemaphore(renderFinishedSemaphores[i], nullptr);
-		device.destroySemaphore(imageAvailableSemaphores[i], nullptr);
+		if (inFlightFences[i])
+			device.destroyFence(inFlightFences[i], nullptr, deviceLoader);
+		if (renderFinishedSemaphores[i])
+			device.destroySemaphore(renderFinishedSemaphores[i], nullptr, deviceLoader);
+		if (imageAvailableSemaphores[i])
+			device.destroySemaphore(imageAvailableSemaphores[i], nullptr, deviceLoader);
 	}
 
 	for (size_t i = 0; i < buffers.size(); i++) {
-		device.destroyBuffer(buffers[i], nullptr);
-		device.free(buffersMemory[i], nullptr);
+		device.destroyBuffer(buffers[i], nullptr, deviceLoader);
+		device.free(buffersMemory[i], nullptr, deviceLoader);
 	}
 
-	device.destroyCommandPool(commandPool, nullptr);
+	if (commandPool)
+		device.destroyCommandPool(commandPool, nullptr, deviceLoader);
 
 	// Destroy Device
-	device.destroy(nullptr);
+	if (device)
+		device.destroy(nullptr, deviceLoader);
 	// Destroy instance related objects
 	if (surface)
-		instance.destroySurfaceKHR(surface, nullptr);
+		instance.destroySurfaceKHR(surface, nullptr, instanceLoader);
 	if (validationLayerEnabled) {
-#if (VK_HEADER_VERSION >= 99)
-		auto func = reinterpret_cast<PFN_vkGetInstanceProcAddr>(instance.getProcAddr("vkGetInstanceProcAddr"));
-		instance.destroyDebugUtilsMessengerEXT(callback, nullptr, vk::DispatchLoaderDynamic(instance, func));
-#else
-		instance.destroyDebugUtilsMessengerEXT(callback, nullptr, vk::DispatchLoaderDynamic(instance));
-#endif
+		instance.destroyDebugUtilsMessengerEXT(callback, nullptr, instanceLoader);
 	}
 	// Then destroy the instance
-	instance.destroy();
+	if (instance)
+		instance.destroy(nullptr, instanceLoader);
 }
 
 void Render::recreateSwapChain() {
-	device.waitIdle();
+	device.waitIdle(deviceLoader);
 
 	cleanupSwapchain();
 
@@ -141,11 +151,11 @@ void Render::recreateSwapChain() {
 }
 
 void Render::drawFrame() {
-	device.waitForFences(inFlightFences[currentFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
+	device.waitForFences(inFlightFences[currentFrame], VK_TRUE, std::numeric_limits<uint64_t>::max(), deviceLoader);
 
 	uint32_t imageIndex;
 	try {
-		auto result = device.acquireNextImageKHR(swapchain.getSwapchain(), std::numeric_limits<uint64_t>::max(), imageAvailableSemaphores[currentFrame], nullptr);
+		auto result = device.acquireNextImageKHR(swapchain.getSwapchain(), std::numeric_limits<uint64_t>::max(), imageAvailableSemaphores[currentFrame], nullptr, deviceLoader);
 		imageIndex = result.value;
 	} catch (const vk::OutOfDateKHRError& e) {
 		recreateSwapChain();
@@ -166,9 +176,9 @@ void Render::drawFrame() {
 	submitInfo.signalSemaphoreCount = 1;
 	submitInfo.pSignalSemaphores = signalSemaphores;
 
-	device.resetFences(inFlightFences[currentFrame]);
+	device.resetFences(inFlightFences[currentFrame], deviceLoader);
 
-	graphicsQueue.submit(submitInfo, inFlightFences[currentFrame]);
+	graphicsQueue.submit(submitInfo, inFlightFences[currentFrame], deviceLoader);
 
 	vk::PresentInfoKHR presentInfo;
 	presentInfo.waitSemaphoreCount = 1;
@@ -179,7 +189,7 @@ void Render::drawFrame() {
 	presentInfo.pImageIndices = &imageIndex;
 
 	try {
-		auto result = presentQueue.presentKHR(presentInfo);
+		auto result = presentQueue.presentKHR(presentInfo, deviceLoader);
 		if (result == vk::Result::eSuboptimalKHR) {
 			recreateSwapChain();
 		}
@@ -189,7 +199,7 @@ void Render::drawFrame() {
 
 	currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 
-	presentQueue.waitIdle();
+	presentQueue.waitIdle(deviceLoader);
 }
 
 void Render::setRenderType(RenderType newType) {
@@ -240,12 +250,12 @@ void Render::fillBuffer(unsigned int bufferIndex, const void* data, uint64_t dat
 	vk::DeviceMemory stagingBufferMemory;
 	createBuffer(dataSize, vk::BufferUsageFlagBits::eTransferSrc, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, stagingBuffer, stagingBufferMemory);
 	// Copy data from CPU memory to staging buffer memory
-	::fillBuffer(device, stagingBufferMemory, data, dataSize);
+	::fillBuffer(device, stagingBufferMemory, data, dataSize, deviceLoader);
 	// Copy data from staging buffer memory to GPU memory
 	copyBuffer(stagingBuffer, buffers[bufferIndex], dataSize);
 	// Destroy staging buffer
-	device.freeMemory(stagingBufferMemory, nullptr);
-	device.destroyBuffer(stagingBuffer, nullptr);
+	device.freeMemory(stagingBufferMemory, nullptr, deviceLoader);
+	device.destroyBuffer(stagingBuffer, nullptr, deviceLoader);
 }
 
 
@@ -262,7 +272,7 @@ void Render::createInstance() {
 	std::cout << "  Required layers: \n";
 	for (auto layer : layers) {
 		std::cout << "\t" << layer << "\t";
-		if (!checkLayerSupport(layer)) {
+		if (!checkLayerSupport(layer, loader)) {
 			std::string error_msg1(layer);
 			std::string error_msg2(" not supported !");
 			throw std::runtime_error(error_msg1 + error_msg2);
@@ -271,9 +281,9 @@ void Render::createInstance() {
 	}
 
 	std::cout << "  Required extensions: \n";
-	for (auto it = instanceExtensions.begin(); it != instanceExtensions.end(); it++) {
-		std::cout << "\t" << *it << "\t";
-		if (checkExtensionSupport(*it))
+	for (auto extension : instanceExtensions) {
+		std::cout << "\t" << extension << "\t";
+		if (checkExtensionSupport(extension, loader))
 			std::cout << "supported\n";
 		else {
 			std::cerr << "non supported\n";
@@ -282,7 +292,7 @@ void Render::createInstance() {
 
 	// Remove non-supported extensions
 	instanceExtensions.erase(
-		std::remove_if(instanceExtensions.begin(), instanceExtensions.end(), [](const char* e){ return !checkExtensionSupport(e); }),
+		std::remove_if(instanceExtensions.begin(), instanceExtensions.end(), [&](const char* e){ return !checkExtensionSupport(e, loader); }),
 		instanceExtensions.end());
 
 	// Check if there is minimum 2 Surface extensions (VK_KHR_surface and platform Surface)
@@ -303,7 +313,9 @@ void Render::createInstance() {
 	instanceInfo.enabledExtensionCount = instanceExtensions.size();
 	instanceInfo.ppEnabledExtensionNames = instanceExtensions.data();
 
-	instance = vk::createInstance(instanceInfo, nullptr);
+	instance = vk::createInstance(instanceInfo, nullptr, loader);
+	loader.loadInstanceLevelEntryPoints(instance);
+	instanceLoader.init(instance, loader.vkGetInstanceProcAddr);
 }
 
 void Render::setupDebugCallback() {
@@ -321,16 +333,11 @@ void Render::setupDebugCallback() {
 		vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance;
 	createInfo.pfnUserCallback = debugCallback;
 	createInfo.pUserData = nullptr;
-#if (VK_HEADER_VERSION >= 99)
-	auto func = (PFN_vkGetInstanceProcAddr)instance.getProcAddr("vkGetInstanceProcAddr");
-	callback = instance.createDebugUtilsMessengerEXT(createInfo, nullptr, vk::DispatchLoaderDynamic(instance, func));
-#else
-	callback = instance.createDebugUtilsMessengerEXT(createInfo, nullptr, vk::DispatchLoaderDynamic(instance));
-#endif
+	callback = instance.createDebugUtilsMessengerEXT(createInfo, nullptr, instanceLoader);
 }
 
 void Render::pickPhysicalDevice() {
-	auto devices = instance.enumeratePhysicalDevices(dispatchLoader);
+	auto devices = instance.enumeratePhysicalDevices(instanceLoader);
 
 	if (devices.empty())
 		throw std::runtime_error("Failed to find GPUs with Vulkan suport!");
@@ -342,7 +349,7 @@ void Render::pickPhysicalDevice() {
 		queues |= vk::QueueFlagBits::eCompute;
 
 	for (const auto& device: devices) {
-		if (isDeviceSuitable(device, deviceExtensions, queues, surface)) {
+		if (isDeviceSuitable(device, deviceExtensions, queues, surface, instanceLoader)) {
 			physicalDevice = device;
 			break;
 		}
@@ -353,7 +360,7 @@ void Render::pickPhysicalDevice() {
 }
 
 void Render::createLogicalDevice() {
-	QueueFamilyIndices indices = findQueueFamilies(physicalDevice, surface);
+	QueueFamilyIndices indices = findQueueFamilies(physicalDevice, surface, instanceLoader);
 
 	// Queues infos
 	std::vector<vk::DeviceQueueCreateInfo> queueCreateInfos;
@@ -395,25 +402,27 @@ void Render::createLogicalDevice() {
 	else
 		createInfo.enabledLayerCount = 0;
 
-	device = physicalDevice.createDevice(createInfo, nullptr);
+	device = physicalDevice.createDevice(createInfo, nullptr, instanceLoader);
+	loader.loadDeviceLevelEntryPoints(device);
+	deviceLoader.init(VkInstance(instance), loader.vkGetInstanceProcAddr, device, loader.vkGetDeviceProcAddr);
 
 	if (renderType & RenderTypeBits::eGraphics)
-		graphicsQueue = device.getQueue(indices.graphicsFamily.value(), 0);
+		graphicsQueue = device.getQueue(indices.graphicsFamily.value(), 0, deviceLoader);
 
 	if (renderType & RenderTypeBits::eCompute)
-		computeQueue = device.getQueue(indices.computeFamily.value(), 0);
+		computeQueue = device.getQueue(indices.computeFamily.value(), 0, deviceLoader);
 
 	if (surface)
-		presentQueue = device.getQueue(indices.presentFamily.value(), 0);
+		presentQueue = device.getQueue(indices.presentFamily.value(), 0, deviceLoader);
 }
 
 void Render::createSurface() {
 	if (surfaceCreation)
-		surface = surfaceCreation(instance);
+		surface = surfaceCreation(instance, instanceLoader);
 }
 
 void Render::createSwapchain(vk::SwapchainKHR oldSwapchain) {
-	swapchain.init(surface, physicalDevice, device, windowExtent, oldSwapchain);
+	swapchain.init(surface, physicalDevice, device, windowExtent, oldSwapchain, deviceLoader);
 }
 
 
@@ -433,7 +442,7 @@ void Render::createRenderPass() {
 	colorAttachmentRef.layout = vk::ImageLayout::eColorAttachmentOptimal;
 
 	vk::AttachmentDescription depthAttachment;
-	depthAttachment.format = findDepthFormat(physicalDevice);
+	depthAttachment.format = findDepthFormat(physicalDevice, deviceLoader);
 	depthAttachment.samples = vk::SampleCountFlagBits::e1;
 	depthAttachment.loadOp = vk::AttachmentLoadOp::eClear;
 	depthAttachment.storeOp = vk::AttachmentStoreOp::eDontCare;	// What to do when writing final image
@@ -473,7 +482,7 @@ void Render::createRenderPass() {
 	renderPassInfo.dependencyCount = 1;
 	renderPassInfo.pDependencies = &dependency;
 
-	renderPass = device.createRenderPass(renderPassInfo, nullptr);
+	renderPass = device.createRenderPass(renderPassInfo, nullptr, deviceLoader);
 }
 
 void Render::createDescriptorSetLayout() {
@@ -495,16 +504,14 @@ void Render::createDescriptorSetLayout() {
 	layoutInfo.bindingCount = uboLayoutBindings.size();
 	layoutInfo.pBindings = uboLayoutBindings.data();
 
-	descriptorSetLayout = device.createDescriptorSetLayout(layoutInfo, nullptr);
+	descriptorSetLayout = device.createDescriptorSetLayout(layoutInfo, nullptr, deviceLoader);
 
 }
 
 void Render::createGraphicsPipeline() {
 
-	Shader vert(device, vk::ShaderStageFlagBits::eVertex);
-	vert.create(vertexShaderFile);
-	Shader frag(device, vk::ShaderStageFlagBits::eFragment);
-	frag.create(fragmentShaderFile);
+	Shader vert(device, vk::ShaderStageFlagBits::eVertex, vertexShaderFile, deviceLoader);
+	Shader frag(device, vk::ShaderStageFlagBits::eFragment, fragmentShaderFile, deviceLoader);
 
 	// Create the actuals shaders and link them
 	vk::PipelineShaderStageCreateInfo vertShaderStageInfo = vert.getShaderStageInfo();
@@ -611,7 +618,7 @@ void Render::createGraphicsPipeline() {
 	pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
 	pipelineLayoutInfo.pushConstantRangeCount = 0;
 
-	pipelineLayout = device.createPipelineLayout(pipelineLayoutInfo, nullptr);
+	pipelineLayout = device.createPipelineLayout(pipelineLayoutInfo, nullptr, deviceLoader);
 
 	// Graphics Pipeline
 	vk::GraphicsPipelineCreateInfo pipelineInfo;
@@ -631,21 +638,21 @@ void Render::createGraphicsPipeline() {
 	pipelineInfo.renderPass = renderPass;
 	pipelineInfo.subpass = 0;
 
-	graphicsPipeline = device.createGraphicsPipeline(nullptr, pipelineInfo, nullptr);
+	graphicsPipeline = device.createGraphicsPipeline(nullptr, pipelineInfo, nullptr, deviceLoader);
 
 }
 
 void Render::createCommandPool() {
-	QueueFamilyIndices queueFamilyIndices = findQueueFamilies(physicalDevice, surface);
+	QueueFamilyIndices queueFamilyIndices = findQueueFamilies(physicalDevice, surface, deviceLoader);
 
 	vk::CommandPoolCreateInfo poolInfo;
 	poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
 
-	commandPool = device.createCommandPool(poolInfo, nullptr);
+	commandPool = device.createCommandPool(poolInfo, nullptr, deviceLoader);
 }
 
 void Render::createDepthResources() {
-	vk::Format depthFormat = findDepthFormat(physicalDevice);
+	vk::Format depthFormat = findDepthFormat(physicalDevice, deviceLoader);
 
 	createImage(swapchain.getExtent().width, swapchain.getExtent().height, depthFormat, vk::ImageTiling::eOptimal, vk::ImageUsageFlagBits::eDepthStencilAttachment, vk::MemoryPropertyFlagBits::eDeviceLocal, depthImage, depthImageMemory);
 
@@ -662,17 +669,17 @@ void Render::createBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, vk::M
 	bufferInfo.usage = usage;
 	bufferInfo.sharingMode = vk::SharingMode::eExclusive;
 
-	buffer = device.createBuffer(bufferInfo, nullptr);
+	buffer = device.createBuffer(bufferInfo, nullptr, deviceLoader);
 
-	auto memRequirements = device.getBufferMemoryRequirements(buffer);
+	auto memRequirements = device.getBufferMemoryRequirements(buffer, deviceLoader);
 
 	vk::MemoryAllocateInfo allocInfo;
 	allocInfo.allocationSize = memRequirements.size;
-	allocInfo.memoryTypeIndex = findMemoryType(physicalDevice, memRequirements.memoryTypeBits, properties);
+	allocInfo.memoryTypeIndex = findMemoryType(physicalDevice, memRequirements.memoryTypeBits, properties, deviceLoader);
 
-	memory = device.allocateMemory(allocInfo, nullptr);
+	memory = device.allocateMemory(allocInfo, nullptr, deviceLoader);
 
-	device.bindBufferMemory(buffer, memory, /*memoryOffset*/ 0);
+	device.bindBufferMemory(buffer, memory, /*memoryOffset*/ 0, deviceLoader);
 }
 
 void Render::createImage(uint32_t width, uint32_t height, vk::Format format, vk::ImageTiling tiling, vk::ImageUsageFlags usage, vk::MemoryPropertyFlags properties, vk::Image& image, vk::DeviceMemory& imageMemory) {
@@ -690,17 +697,17 @@ void Render::createImage(uint32_t width, uint32_t height, vk::Format format, vk:
 	imageInfo.samples = vk::SampleCountFlagBits::e1;
 	imageInfo.sharingMode = vk::SharingMode::eExclusive;
 
-	image = device.createImage(imageInfo, nullptr);
+	image = device.createImage(imageInfo, nullptr, deviceLoader);
 
-	vk::MemoryRequirements memRequirements = device.getImageMemoryRequirements(image);
+	vk::MemoryRequirements memRequirements = device.getImageMemoryRequirements(image, deviceLoader);
 
 	vk::MemoryAllocateInfo allocInfo;
 	allocInfo.allocationSize = memRequirements.size;
-	allocInfo.memoryTypeIndex = findMemoryType(physicalDevice, memRequirements.memoryTypeBits, properties);
+	allocInfo.memoryTypeIndex = findMemoryType(physicalDevice, memRequirements.memoryTypeBits, properties, deviceLoader);
 
-	imageMemory = device.allocateMemory(allocInfo, nullptr);
+	imageMemory = device.allocateMemory(allocInfo, nullptr, deviceLoader);
 
-	device.bindImageMemory(image, imageMemory, /*memoryOffset*/0);
+	device.bindImageMemory(image, imageMemory, /*memoryOffset*/0, deviceLoader);
 }
 
 vk::ImageView Render::createImageView(vk::Image image, vk::Format format, vk::ImageAspectFlags aspect) {
@@ -719,7 +726,7 @@ vk::ImageView Render::createImageView(vk::Image image, vk::Format format, vk::Im
 	createInfo.subresourceRange.baseArrayLayer = 0;
 	createInfo.subresourceRange.layerCount = 1;
 
-	return device.createImageView(createInfo);
+	return device.createImageView(createInfo, nullptr, deviceLoader);
 }
 
 void Render::transitionImageLayout(vk::Image image, vk::Format format, vk::ImageLayout oldLayout, vk::ImageLayout newLayout) {
@@ -771,7 +778,7 @@ void Render::transitionImageLayout(vk::Image image, vk::Format format, vk::Image
 	else
 		throw std::invalid_argument("Unsupported Layout transition !");
 
-	commandBuffer.pipelineBarrier(srcStage, dstStage, vk::DependencyFlags(), nullptr, nullptr, barrier);
+	commandBuffer.pipelineBarrier(srcStage, dstStage, vk::DependencyFlags(), nullptr, nullptr, barrier, deviceLoader);
 
 	endSingleTimeCommands(commandBuffer);
 }
@@ -803,7 +810,7 @@ void Render::createUniformBuffers() {
 	uniformEvent.resize(swapChainImageCount);
 	vk::EventCreateInfo createInfo;
 	for (unsigned int image = 0; image < swapChainImageCount; image++) {
-		uniformEvent[image] = device.createEvent(createInfo, nullptr);
+		uniformEvent[image] = device.createEvent(createInfo, nullptr, deviceLoader);
 	}
 }
 
@@ -820,7 +827,7 @@ void Render::createDescriptorPool() {
 	createInfo.pPoolSizes = &poolSize;
 	createInfo.maxSets = swapChainImageCount;
 
-	descriptorPool = device.createDescriptorPool(createInfo, nullptr);
+	descriptorPool = device.createDescriptorPool(createInfo, nullptr, deviceLoader);
 }
 
 void Render::createDescriptorSets() {
@@ -832,7 +839,7 @@ void Render::createDescriptorSets() {
 	allocInfo.descriptorSetCount = static_cast<uint32_t>(swapChainImageCount);
 	allocInfo.pSetLayouts = layouts.data();
 
-	descriptorSets = device.allocateDescriptorSets(allocInfo);
+	descriptorSets = device.allocateDescriptorSets(allocInfo, std::allocator<vk::DescriptorSet>(), deviceLoader);
 
 	for (unsigned int uniform = 0; uniform < uniformCount; uniform++)
 		for (unsigned int image = 0; image < swapChainImageCount; image++) {
@@ -850,7 +857,7 @@ void Render::createDescriptorSets() {
 			descriptorWrite.descriptorCount = 1;
 			descriptorWrite.pBufferInfo = &bufferInfo;
 
-			device.updateDescriptorSets(descriptorWrite, nullptr);
+			device.updateDescriptorSets(descriptorWrite, nullptr, deviceLoader);
 		}
 }
 
@@ -861,7 +868,7 @@ void Render::copyBuffer(vk::Buffer src, vk::Buffer dst, vk::DeviceSize size) {
 	copyRegion.srcOffset = 0;
 	copyRegion.dstOffset = 0;
 	copyRegion.size = size;
-	commandBuffer.copyBuffer(src, dst, copyRegion);
+	commandBuffer.copyBuffer(src, dst, copyRegion, deviceLoader);
 
 	endSingleTimeCommands(commandBuffer);
 }
@@ -872,28 +879,28 @@ vk::CommandBuffer Render::beginSingleTimeCommands() {
 	allocInfo.level = vk::CommandBufferLevel::ePrimary;
 	allocInfo.commandBufferCount = 1;
 
-	auto commandBuffer = device.allocateCommandBuffers(allocInfo)[0];
+	auto commandBuffer = device.allocateCommandBuffers(allocInfo, deviceLoader)[0];
 
 	vk::CommandBufferBeginInfo beginInfo;
 	beginInfo.flags = vk::CommandBufferUsageFlagBits::eSimultaneousUse;
 	beginInfo.pInheritanceInfo = nullptr;
 
-	commandBuffer.begin(beginInfo);
+	commandBuffer.begin(beginInfo, deviceLoader);
 
 	return commandBuffer;
 }
 
 void Render::endSingleTimeCommands(vk::CommandBuffer commandBuffer) {
-	commandBuffer.end(dispatchLoader);
+	commandBuffer.end(deviceLoader);
 
 	vk::SubmitInfo submitInfo;
 	submitInfo.commandBufferCount = 1;
 	submitInfo.pCommandBuffers = &commandBuffer;
 
-	graphicsQueue.submit(submitInfo, nullptr);
-	graphicsQueue.waitIdle(dispatchLoader);
+	graphicsQueue.submit(submitInfo, nullptr, deviceLoader);
+	graphicsQueue.waitIdle(deviceLoader);
 
-	device.freeCommandBuffers(commandPool, commandBuffer);
+	device.freeCommandBuffers(commandPool, commandBuffer, deviceLoader);
 }
 
 void Render::createCommandBuffers() {
@@ -904,14 +911,14 @@ void Render::createCommandBuffers() {
 	allocInfo.level = vk::CommandBufferLevel::ePrimary;
 	allocInfo.commandBufferCount = (uint32_t)commandBuffers.size();
 
-	commandBuffers = device.allocateCommandBuffers(allocInfo);
+	commandBuffers = device.allocateCommandBuffers(allocInfo, std::allocator<vk::CommandBuffer>(), deviceLoader);
 
 	for (size_t i = 0; i < commandBuffers.size(); i++) {
 		vk::CommandBufferBeginInfo beginInfo;
 		beginInfo.flags = vk::CommandBufferUsageFlagBits::eSimultaneousUse;
 		beginInfo.pInheritanceInfo = nullptr;
 
-		commandBuffers[i].begin(beginInfo);
+		commandBuffers[i].begin(beginInfo, deviceLoader);
 
 		vk::RenderPassBeginInfo renderPassInfo;
 		renderPassInfo.renderPass = renderPass;
@@ -924,9 +931,9 @@ void Render::createCommandBuffers() {
 		renderPassInfo.clearValueCount = clearColors.size();
 		renderPassInfo.pClearValues = clearColors.data();
 
-		commandBuffers[i].beginRenderPass(renderPassInfo, vk::SubpassContents::eInline);
+		commandBuffers[i].beginRenderPass(renderPassInfo, vk::SubpassContents::eInline, deviceLoader);
 
-		commandBuffers[i].bindPipeline(vk::PipelineBindPoint::eGraphics, graphicsPipeline);
+		commandBuffers[i].bindPipeline(vk::PipelineBindPoint::eGraphics, graphicsPipeline, deviceLoader);
 
 		// TODO enhance to handle multiple meshes
 		vk::Buffer vertexBuffers[1];
@@ -944,18 +951,18 @@ void Render::createCommandBuffers() {
 
 		vk::DeviceSize offsets[1] = {0};
 
-		commandBuffers[i].bindVertexBuffers(/*first*/0, /*count*/1, vertexBuffers, offsets);
-		commandBuffers[i].bindIndexBuffer(indexBuffer, /*offset*/0, vk::IndexType::eUint16);
+		commandBuffers[i].bindVertexBuffers(/*first*/0, /*count*/1, vertexBuffers, offsets, deviceLoader);
+		commandBuffers[i].bindIndexBuffer(indexBuffer, /*offset*/0, vk::IndexType::eUint16, deviceLoader);
 
-		commandBuffers[i].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, /*first set*/0, descriptorSets[i], nullptr);
+		commandBuffers[i].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, /*first set*/0, descriptorSets[i], nullptr, deviceLoader);
 
-		commandBuffers[i].drawIndexed(indexCount, /*instance count*/1, /*first index*/0, /*vertex offset*/0, /*first instance*/0);
+		commandBuffers[i].drawIndexed(indexCount, /*instance count*/1, /*first index*/0, /*vertex offset*/0, /*first instance*/0, deviceLoader);
 
-		commandBuffers[i].endRenderPass(dispatchLoader);
+		commandBuffers[i].endRenderPass(deviceLoader);
 
-		commandBuffers[i].setEvent(uniformEvent[i], vk::PipelineStageFlagBits::eVertexShader);
+		commandBuffers[i].setEvent(uniformEvent[i], vk::PipelineStageFlagBits::eVertexShader, deviceLoader);
 
-		commandBuffers[i].end(dispatchLoader);
+		commandBuffers[i].end(deviceLoader);
 	}
 }
 
@@ -966,8 +973,8 @@ void Render::createSemaphores() {
 	vk::SemaphoreCreateInfo createInfo;
 
 	for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-		imageAvailableSemaphores[i] = device.createSemaphore(createInfo, nullptr);
-		renderFinishedSemaphores[i] = device.createSemaphore(createInfo, nullptr);
+		imageAvailableSemaphores[i] = device.createSemaphore(createInfo, nullptr, deviceLoader);
+		renderFinishedSemaphores[i] = device.createSemaphore(createInfo, nullptr, deviceLoader);
 	}
 }
 
@@ -977,5 +984,5 @@ void Render::createFences() {
 	vk::FenceCreateInfo createInfo;
 	createInfo.flags = vk::FenceCreateFlagBits::eSignaled;
 	for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
-		inFlightFences[i] = device.createFence(createInfo, nullptr);
+		inFlightFences[i] = device.createFence(createInfo, nullptr, deviceLoader);
 }

@@ -1,7 +1,7 @@
-
-bool checkExtensionSupport(const char* extensionName) {
+template<typename Dispatch = vk::DispatchLoaderDefault>
+bool checkExtensionSupport(const char* extensionName, const Dispatch& d) {
 	bool result = false;
-	for (auto extension : vk::enumerateInstanceExtensionProperties(std::string())) {
+	for (auto extension : vk::enumerateInstanceExtensionProperties(nullptr, d)) {
 		if (strcmp(extensionName, extension.extensionName) == 0) {
 			result = true;
 			break;
@@ -10,9 +10,10 @@ bool checkExtensionSupport(const char* extensionName) {
 	return result;
 }
 
-bool checkLayerSupport(const char* layerName) {
+template<typename Dispatch = vk::DispatchLoaderDefault>
+bool checkLayerSupport(const char* layerName, const Dispatch& d) {
 	bool result = false;
-	for (auto layer : vk::enumerateInstanceLayerProperties()) {
+	for (auto layer : vk::enumerateInstanceLayerProperties(d)) {
 		if (strcmp(layerName, layer.layerName)) {
 			result = true;
 			break;
@@ -21,8 +22,9 @@ bool checkLayerSupport(const char* layerName) {
 	return result;
 }
 
-bool checkDeviceExtensionSupport(vk::PhysicalDevice device, std::vector<const char*> deviceExtensions) {
-	auto availableExtensions = device.enumerateDeviceExtensionProperties();
+template<typename Dispatch = vk::DispatchLoaderDefault>
+bool checkDeviceExtensionSupport(vk::PhysicalDevice device, std::vector<const char*> deviceExtensions, const Dispatch& d) {
+	auto availableExtensions = device.enumerateDeviceExtensionProperties(nullptr, d);
 
 	std::set<std::string> requiredExtensions(deviceExtensions.begin(), deviceExtensions.end());
 
@@ -33,10 +35,11 @@ bool checkDeviceExtensionSupport(vk::PhysicalDevice device, std::vector<const ch
 	return requiredExtensions.empty();
 }
 
-QueueFamilyIndices findQueueFamilies(vk::PhysicalDevice device, vk::SurfaceKHR surface = nullptr) {
+template<typename Dispatch = vk::DispatchLoaderDefault>
+QueueFamilyIndices findQueueFamilies(vk::PhysicalDevice device, vk::SurfaceKHR surface, const Dispatch& d) {
 	QueueFamilyIndices indices;
 
-	auto queueFamilyProperties = device.getQueueFamilyProperties();
+	auto queueFamilyProperties = device.getQueueFamilyProperties(d);
 
 	int i = 0;
 	for (const auto& queueFamily : queueFamilyProperties) {
@@ -49,7 +52,7 @@ QueueFamilyIndices findQueueFamilies(vk::PhysicalDevice device, vk::SurfaceKHR s
 		}
 
 		if (surface) {
-			auto presentSupport = device.getSurfaceSupportKHR(i, surface);
+			auto presentSupport = device.getSurfaceSupportKHR(i, surface, d);
 			if (queueFamily.queueCount > 0 && presentSupport) {
 				indices.presentFamily = i;
 			}
@@ -64,27 +67,29 @@ QueueFamilyIndices findQueueFamilies(vk::PhysicalDevice device, vk::SurfaceKHR s
 	return indices;
 }
 
-SwapChainSupportDetails querySwapChainSupport(vk::PhysicalDevice device, vk::SurfaceKHR surface) {
+template<typename Dispatch = vk::DispatchLoaderDefault>
+SwapChainSupportDetails querySwapChainSupport(vk::PhysicalDevice device, vk::SurfaceKHR surface, const Dispatch& d) {
 	SwapChainSupportDetails details;
 
-	details.capabilities = device.getSurfaceCapabilitiesKHR(surface);
+	details.capabilities = device.getSurfaceCapabilitiesKHR(surface, d);
 
-	details.formats = device.getSurfaceFormatsKHR(surface);
+	details.formats = device.getSurfaceFormatsKHR(surface, d);
 
-	details.presentModes = device.getSurfacePresentModesKHR(surface);
+	details.presentModes = device.getSurfacePresentModesKHR(surface, d);
 
 	return details;
 }
 
-bool isDeviceSuitable(vk::PhysicalDevice device, std::vector<const char*> extensions, vk::QueueFlags wantedQueues, vk::SurfaceKHR surface = nullptr) {
-	QueueFamilyIndices indices = findQueueFamilies(device, surface);
+template<typename Dispatch = vk::DispatchLoaderDefault>
+bool isDeviceSuitable(vk::PhysicalDevice device, std::vector<const char*> extensions, vk::QueueFlags wantedQueues, vk::SurfaceKHR surface, const Dispatch& d) {
+	QueueFamilyIndices indices = findQueueFamilies(device, surface, d);
 
-	bool extensionsSupported = checkDeviceExtensionSupport(device, extensions);
+	bool extensionsSupported = checkDeviceExtensionSupport(device, extensions, d);
 
 	bool swapChainAdequate = true;
 	if (extensionsSupported) {
 		if (surface) {
-			SwapChainSupportDetails swapchainSupport = querySwapChainSupport(device, surface);
+			SwapChainSupportDetails swapchainSupport = querySwapChainSupport(device, surface, d);
 			swapChainAdequate = !swapchainSupport.formats.empty() && !swapchainSupport.presentModes.empty();
 		}
 	}
@@ -148,8 +153,9 @@ vk::Extent2D chooseSwapExtent(const vk::SurfaceCapabilitiesKHR& capabilities, vk
 	}
 }
 
-uint32_t findMemoryType(vk::PhysicalDevice device, uint32_t typeFilter, vk::MemoryPropertyFlags properties) {
-	auto memProperties = device.getMemoryProperties();
+template<typename Dispatch = vk::DispatchLoaderDefault>
+uint32_t findMemoryType(vk::PhysicalDevice device, uint32_t typeFilter, vk::MemoryPropertyFlags properties, const Dispatch& d) {
+	auto memProperties = device.getMemoryProperties(d);
 
 	for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
 		if (typeFilter & (1 << i) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
@@ -160,9 +166,10 @@ uint32_t findMemoryType(vk::PhysicalDevice device, uint32_t typeFilter, vk::Memo
 	throw std::runtime_error("Failed to find suitable memory type!");
 }
 
-vk::Format findSupportedFormat(vk::PhysicalDevice device, const std::vector<vk::Format>& candidates, vk::ImageTiling tiling, vk::FormatFeatureFlags features) {
+template<typename Dispatch = vk::DispatchLoaderDefault>
+vk::Format findSupportedFormat(vk::PhysicalDevice device, const std::vector<vk::Format>& candidates, vk::ImageTiling tiling, vk::FormatFeatureFlags features, const Dispatch& d) {
 	for (auto format : candidates) {
-		vk::FormatProperties props = device.getFormatProperties(format);
+		vk::FormatProperties props = device.getFormatProperties(format, d);
 
 		if (tiling == vk::ImageTiling::eLinear && (props.linearTilingFeatures & features) == features)
 			return format;
@@ -173,25 +180,29 @@ vk::Format findSupportedFormat(vk::PhysicalDevice device, const std::vector<vk::
 	throw std::runtime_error("Failed to find supported format!");
 }
 
-vk::Format findDepthFormat(vk::PhysicalDevice device) {
+template<typename Dispatch = vk::DispatchLoaderDefault>
+vk::Format findDepthFormat(vk::PhysicalDevice device, const Dispatch& d) {
 	return findSupportedFormat( device,
 								{vk::Format::eD32Sfloat, vk::Format::eD32SfloatS8Uint, vk::Format::eD24UnormS8Uint},
 								vk::ImageTiling::eOptimal,
-								vk::FormatFeatureFlagBits::eDepthStencilAttachment);
+								vk::FormatFeatureFlagBits::eDepthStencilAttachment,
+								d);
 }
 
 bool hasStencilComponent(vk::Format format) {
 	return format == vk::Format::eD32SfloatS8Uint || format == vk::Format::eD24UnormS8Uint;
 }
 
-void fillBuffer(vk::Device device, vk::DeviceMemory& memory, const void* dataToCopy, vk::DeviceSize size) {
-	auto data = device.mapMemory(memory, /*offset*/ 0, size, vk::MemoryMapFlags());
+template<typename Dispatch = vk::DispatchLoaderDefault>
+void fillBuffer(vk::Device device, vk::DeviceMemory& memory, const void* dataToCopy, vk::DeviceSize size, const Dispatch& d) {
+	auto data = device.mapMemory(memory, /*offset*/ 0, size, vk::MemoryMapFlags(), d);
 		std::memcpy(data, dataToCopy, static_cast<size_t>(size));
-	device.unmapMemory(memory);
+	device.unmapMemory(memory, d);
 }
 
-template<typename T>
-void fillBuffer(vk::Device device, vk::DeviceMemory& memory, std::vector<T> v) {
+template<typename T, typename Dispatch = vk::DispatchLoaderDefault>
+void fillBuffer(vk::Device device, vk::DeviceMemory& memory, std::vector<T> v, const Dispatch& d) {
+	assert(!v.empty());
 	vk::DeviceSize bufferSize = sizeof(v[0]) * v.size();
-	fillBuffer(device, memory, v.data(), bufferSize);
+	fillBuffer(device, memory, v.data(), bufferSize, d);
 }

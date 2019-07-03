@@ -1,7 +1,7 @@
 #ifndef RENDER_WINDOW_HPP
 #define RENDER_WINDOW_HPP
 
-#include <vulkan/vulkan.hpp>
+#include "Vulkan.hpp"
 
 #define GLFW_INCLUDE_NONE
 #if defined(USE_WINDOWS_OPERATING_SYSTEM)
@@ -169,33 +169,32 @@ public:
 	RenderWindow& operator=(const RenderWindow&) = delete;
 	RenderWindow& operator=(RenderWindow&&) = delete;
 
-	template<typename Dispatch = vk::DispatchLoaderStatic>
-	vk::UniqueSurfaceKHR createSurfaceUnique(vk::Instance instance, Dispatch dispatch = Dispatch()) {
+	template<typename Dispatch = vk::DispatchLoaderDefault>
+	vk::UniqueHandle<vk::SurfaceKHR, Dispatch> createSurfaceUnique(vk::Instance instance, Dispatch d) {
 #if defined(USE_WINDOWS_OPERATING_SYSTEM)
 		vk::Win32SurfaceCreateInfoKHR surfaceCreateInfo;
 		surfaceCreateInfo.hinstance = GetModuleHandle(NULL);
 		surfaceCreateInfo.hwnd = glfwGetWin32Window(window);
-		return instance.createWin32SurfaceKHRUnique(surfaceCreateInfo, nullptr, dispatch);
+		return instance.createWin32SurfaceKHRUnique(surfaceCreateInfo, nullptr, d);
 #elif defined(USE_LINUX_OPERATING_SYSTEM)
 		vk::XlibSurfaceCreateInfoKHR surfaceCreateInfo;
 		surfaceCreateInfo.dpy = glfwGetX11Display();
 		surfaceCreateInfo.window = glfwGetX11Window(window);
-		return instance.createXlibSurfaceKHRUnique(surfaceCreateInfo, nullptr, dispatch);
+		return instance.createXlibSurfaceKHRUnique(surfaceCreateInfo, nullptr, d);
 #endif
 	}
-
-	template<typename Dispatch = vk::DispatchLoaderStatic>
-	vk::SurfaceKHR createSurface(vk::Instance instance, Dispatch dispatch = Dispatch()) {
+	template<typename Dispatch = vk::DispatchLoaderDefault>
+	vk::SurfaceKHR createSurface(vk::Instance instance, Dispatch d) {
 #if defined(USE_WINDOWS_OPERATING_SYSTEM)
 		vk::Win32SurfaceCreateInfoKHR surfaceCreateInfo;
 		surfaceCreateInfo.hinstance = GetModuleHandle(NULL);
 		surfaceCreateInfo.hwnd = glfwGetWin32Window(window);
-		return instance.createWin32SurfaceKHR(surfaceCreateInfo, nullptr, dispatch);
+		return instance.createWin32SurfaceKHR(surfaceCreateInfo, nullptr, d);
 #elif defined(USE_LINUX_OPERATING_SYSTEM)
 		vk::XlibSurfaceCreateInfoKHR surfaceCreateInfo;
 		surfaceCreateInfo.dpy = glfwGetX11Display();
 		surfaceCreateInfo.window = glfwGetX11Window(window);
-		return instance.createXlibSurfaceKHR(surfaceCreateInfo, nullptr, dispatch);
+		return instance.createXlibSurfaceKHR(surfaceCreateInfo, nullptr, d);
 #endif
 	}
 

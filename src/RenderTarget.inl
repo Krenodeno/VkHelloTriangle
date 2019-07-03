@@ -1,16 +1,16 @@
-#include "RenderTarget.hpp"
-
 #include <vector>
 
-void RenderTarget::init(vk::SurfaceKHR surface, vk::PhysicalDevice physicalDevice, vk::Device logicalDevice, vk::Extent2D windowExtent, vk::SwapchainKHR oldSwapchain) {
+template<typename Dispatch>
+void RenderTarget<Dispatch>::init(vk::SurfaceKHR surface, vk::PhysicalDevice physicalDevice, vk::Device logicalDevice, vk::Extent2D windowExtent, vk::SwapchainKHR oldSwapchain, Dispatch d) {
 
 	device = logicalDevice;
+	deviceLoader = d;
 
 	std::vector<const char*> extensions = getRequiredExtensions();
-	if(!checkDeviceExtensionSupport(physicalDevice, extensions))
+	if(!checkDeviceExtensionSupport(physicalDevice, extensions, deviceLoader))
 		throw std::runtime_error("Swapchain extension not supported !");
 
-	SwapChainSupportDetails swapChainSupport = querySwapChainSupport(physicalDevice, surface);
+	SwapChainSupportDetails swapChainSupport = querySwapChainSupport(physicalDevice, surface, deviceLoader);
 
 	vk::SurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
 	vk::PresentModeKHR presentMode = chooseSwapPresentMode(swapChainSupport.presentModes);
@@ -32,7 +32,7 @@ void RenderTarget::init(vk::SurfaceKHR surface, vk::PhysicalDevice physicalDevic
 	createInfo.imageUsage = vk::ImageUsageFlagBits::eColorAttachment; // render image and present it directly
 
 	// Use the right queue
-	QueueFamilyIndices indices = findQueueFamilies(physicalDevice, surface);
+	QueueFamilyIndices indices = findQueueFamilies(physicalDevice, surface, deviceLoader);
 	uint32_t queueFamilyIndices[] = { indices.graphicsFamily.value(), indices.presentFamily.value() };
 	// We use Concurrent mode, but Exclusive give more performance but require to be explicit about image sharing
 	if (indices.graphicsFamily.value() != indices.presentFamily.value()) {
@@ -52,10 +52,10 @@ void RenderTarget::init(vk::SurfaceKHR surface, vk::PhysicalDevice physicalDevic
 
 	createInfo.oldSwapchain = oldSwapchain;
 
-	swapChain = device.createSwapchainKHR(createInfo);
+	swapChain = device.createSwapchainKHR(createInfo, nullptr, deviceLoader);
 
 	// Retrieve swapchain images
-	swapChainImages = device.getSwapchainImagesKHR(swapChain);
+	swapChainImages = device.getSwapchainImagesKHR(swapChain, deviceLoader);
 	swapChainImageFormat = surfaceFormat.format;
 	swapChainExtent = extent;
 	imageCount = swapChainImages.size();
@@ -63,61 +63,68 @@ void RenderTarget::init(vk::SurfaceKHR surface, vk::PhysicalDevice physicalDevic
 	createImageViews();
 }
 
-
-
-void RenderTarget::cleanup() {
+template<typename Dispatch>
+void RenderTarget<Dispatch>::cleanup() {
 	for (auto framebuffer : swapChainFramebuffers) {
-		device.destroyFramebuffer(framebuffer);
+		device.destroyFramebuffer(framebuffer, nullptr, deviceLoader);
 	}
 	for (auto imageView : swapChainImageViews) {
-		device.destroyImageView(imageView);
+		device.destroyImageView(imageView, nullptr, deviceLoader);
 	}
 	if (swapChain)
-		device.destroySwapchainKHR(swapChain);
+		device.destroySwapchainKHR(swapChain, nullptr, deviceLoader);
 }
 
-void RenderTarget::recreate(vk::SurfaceKHR surface, vk::PhysicalDevice physicalDevice, vk::Extent2D windowExtent) {
+template<typename Dispatch>
+void RenderTarget<Dispatch>::recreate(vk::SurfaceKHR surface, vk::PhysicalDevice physicalDevice, vk::Extent2D windowExtent) {
 	// Destroy framebuffer and imageViews
 	for (auto framebuffer : swapChainFramebuffers) {
-		device.destroyFramebuffer(framebuffer);
+		device.destroyFramebuffer(framebuffer, nullptr, deviceLoader);
 	}
 	for (auto imageView : swapChainImageViews) {
-		device.destroyImageView(imageView);
+		device.destroyImageView(imageView, nullptr, deviceLoader);
 	}
 
 	// Recreate swapchain with new extent
 	vk::SwapchainKHR oldSwapchain = swapChain;
-	init(surface, physicalDevice, device, windowExtent, oldSwapchain);
+	init(surface, physicalDevice, device, windowExtent, oldSwapchain, deviceLoader);
 
 	// Destroy old swapchain
-	device.destroySwapchainKHR(oldSwapchain);
+	device.destroySwapchainKHR(oldSwapchain, nullptr, deviceLoader);
 }
 
-std::vector<const char*> RenderTarget::getRequiredExtensions() {
+template<typename Dispatch>
+std::vector<const char*> RenderTarget<Dispatch>::getRequiredExtensions() {
 	return { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
 }
 
-vk::SwapchainKHR RenderTarget::getSwapchain() {
+template<typename Dispatch>
+vk::SwapchainKHR RenderTarget<Dispatch>::getSwapchain() {
 	return swapChain;
 }
 
-vk::Format RenderTarget::getImageFormat() {
+template<typename Dispatch>
+vk::Format RenderTarget<Dispatch>::getImageFormat() {
 	return swapChainImageFormat;
 }
 
-vk::Extent2D RenderTarget::getExtent() {
+template<typename Dispatch>
+vk::Extent2D RenderTarget<Dispatch>::getExtent() {
 	return swapChainExtent;
 }
 
-vk::Framebuffer RenderTarget::getFramebuffer(unsigned long i) {
+template<typename Dispatch>
+vk::Framebuffer RenderTarget<Dispatch>::getFramebuffer(unsigned long i) {
 	return swapChainFramebuffers[i];
 }
 
-unsigned int RenderTarget::getImageCount() {
+template<typename Dispatch>
+unsigned int RenderTarget<Dispatch>::getImageCount() {
 	return imageCount;
 }
 
-void RenderTarget::createFramebuffers(vk::RenderPass renderPass, vk::ImageView depthImageView) {
+template<typename Dispatch>
+void RenderTarget<Dispatch>::createFramebuffers(vk::RenderPass renderPass, vk::ImageView depthImageView) {
 	swapChainFramebuffers.resize(imageCount);
 
 	for(size_t i = 0; i < swapChainImageViews.size(); ++i) {
@@ -134,11 +141,12 @@ void RenderTarget::createFramebuffers(vk::RenderPass renderPass, vk::ImageView d
 		framebufferInfo.height = swapChainExtent.height;
 		framebufferInfo.layers = 1;
 
-		swapChainFramebuffers[i] = device.createFramebuffer(framebufferInfo);
+		swapChainFramebuffers[i] = device.createFramebuffer(framebufferInfo, nullptr, deviceLoader);
 	}
 }
 
-void RenderTarget::createImageViews() {
+template<typename Dispatch>
+void RenderTarget<Dispatch>::createImageViews() {
 	swapChainImageViews.resize(imageCount);
 
 	for (size_t i = 0; i < swapChainImageViews.size(); ++i) {
@@ -157,6 +165,6 @@ void RenderTarget::createImageViews() {
 		createInfo.subresourceRange.baseArrayLayer = 0;
 		createInfo.subresourceRange.layerCount = 1;
 
-		swapChainImageViews[i] = device.createImageView(createInfo);
+		swapChainImageViews[i] = device.createImageView(createInfo, nullptr, deviceLoader);
 	}
 }

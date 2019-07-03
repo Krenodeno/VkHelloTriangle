@@ -5,30 +5,23 @@
 #include <vector>
 
 #include "fileUtils.hpp"
-#include "vulkan/vulkan.hpp"
+#include "Vulkan.hpp"
 
+template<typename Dispatch = vk::DispatchLoaderDefault>
 struct Shader {
 	std::string path;
 	std::vector<char> buffer;
 	vk::ShaderModule shaderModule;
-	vk::Device device;
+	const vk::Device& device;
+	const Dispatch& deviceLoader;
 	vk::ShaderStageFlagBits stage;
 
-	Shader(vk::Device device, vk::ShaderStageFlagBits stage) : device(device), stage(stage) {
-
+	Shader(const vk::Device& device, vk::ShaderStageFlagBits stage, const std::string& filename, const Dispatch& d) : device(device), deviceLoader(d), stage(stage) {
+		createShaderModule(filename);
 	}
 
 	~Shader() {
-		device.destroyShaderModule(shaderModule);
-	}
-
-	void create(const std::string& file) {
-		path = file;
-		buffer = readFile(path);
-		vk::ShaderModuleCreateInfo createInfo;
-		createInfo.codeSize = buffer.size();
-		createInfo.pCode = reinterpret_cast<const uint32_t*>(buffer.data());
-		shaderModule = device.createShaderModule(createInfo);
+		device.destroyShaderModule(shaderModule, nullptr, deviceLoader);
 	}
 
 	vk::PipelineShaderStageCreateInfo getShaderStageInfo() {
@@ -38,6 +31,18 @@ struct Shader {
 		shaderStageInfo.pName = "main";		// entry point in the shader's code
 		return shaderStageInfo;
 	}
+
+private:
+
+	void createShaderModule(const std::string& file) {
+		path = file;
+		buffer = readFile(path);
+		vk::ShaderModuleCreateInfo createInfo;
+		createInfo.codeSize = buffer.size();
+		createInfo.pCode = reinterpret_cast<const uint32_t*>(buffer.data());
+		shaderModule = device.createShaderModule(createInfo, nullptr, deviceLoader);
+	}
+
 };
 
 #endif

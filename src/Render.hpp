@@ -8,7 +8,7 @@
 #include <functional>
 #include <cassert>
 
-#include <Vulkan.hpp>
+#include "Vulkan.hpp"
 
 #include "RenderTarget.hpp"
 #include "RenderUtils.hpp"
@@ -16,7 +16,7 @@
 #include "Vertex.hpp"
 
 /* used as callback function to delegate surface creation */
-using createSurfaceFoncter = std::function<vk::SurfaceKHR(vk::Instance)>;
+using createSurfaceFoncter = std::function<vk::SurfaceKHR(vk::Instance, vk::DispatchLoaderDynamic)>;
 
 
 class Render {
@@ -83,9 +83,9 @@ public:
 
 		// check wether the buffer is ready to be updated (no longer used)
 		for (unsigned int i = 0; i < swapchain.getImageCount(); i++)
-			if (device.getEventStatus(uniformEvent[i]) == vk::Result::eEventSet) {
-				::fillBuffer(device, uniformBuffersMemory[uniformIndex * swapchain.getImageCount() + i], data, dataSize);
-				device.resetEvent(uniformEvent[i]);
+			if (device.getEventStatus(uniformEvent[i], deviceLoader) == vk::Result::eEventSet) {
+				::fillBuffer(device, uniformBuffersMemory[uniformIndex * swapchain.getImageCount() + i], data, dataSize, deviceLoader);
+				device.resetEvent(uniformEvent[i], deviceLoader);
 			}
 	}
 
@@ -105,13 +105,13 @@ public:
 		copyBuffer(buffers[index], stagingBuffer, dataSize);
 
 		// Get data back
-		auto data = static_cast<T*>(device.mapMemory(stagingBufferMemory, /*offset*/ 0, dataSize));
+		auto data = static_cast<T*>(device.mapMemory(stagingBufferMemory, /*offset*/ 0, dataSize, vk::MemoryMapFlags(), deviceLoader));
 		std::vector<T> res(data, data + elementCount);
-		device.unmapMemory(stagingBufferMemory, dispatchLoader);
+		device.unmapMemory(stagingBufferMemory, deviceLoader);
 
 		// Destroy staging buffer
-		device.freeMemory(stagingBufferMemory, nullptr, dispatchLoader);
-		device.destroyBuffer(stagingBuffer, nullptr, dispatchLoader);
+		device.freeMemory(stagingBufferMemory, nullptr, deviceLoader);
+		device.destroyBuffer(stagingBuffer, nullptr, deviceLoader);
 		return res;
 	}
 
@@ -123,9 +123,9 @@ public:
 		fragmentShaderFile = file;
 	}
 
-	void waitForFences() { device.waitForFences(inFlightFences[currentFrame], VK_TRUE, std::numeric_limits<uint64_t>::max()); }
+	void waitForFences() { device.waitForFences(inFlightFences[currentFrame], VK_TRUE, std::numeric_limits<uint64_t>::max(), deviceLoader); }
 
-	void waitDeviceIdle() { device.waitIdle(); }
+	void waitDeviceIdle() { device.waitIdle(deviceLoader); }
 
 protected:
 
@@ -142,21 +142,23 @@ protected:
 	std::vector<const char*> instanceExtensions;
 	std::vector<const char*> deviceExtensions;
 
-	const int MAX_FRAMES_IN_FLIGHT = 2;
-
-	RenderTarget swapchain;
-
 	createSurfaceFoncter surfaceCreation;
 
 	vk::Extent2D windowExtent;
 
-	Instance instance;
+	vk::Instance instance;
+	vk::DispatchLoaderDynamic instanceLoader;
 
 	vk::DebugUtilsMessengerEXT callback;
 
 	vk::PhysicalDevice physicalDevice;
 
-	Device device;
+	vk::Device device;
+	vk::DispatchLoaderDynamic deviceLoader;
+
+	const int MAX_FRAMES_IN_FLIGHT = 2;
+
+	RenderTarget<vk::DispatchLoaderDynamic> swapchain;
 
 	vk::Queue graphicsQueue;
 	vk::Queue computeQueue;
