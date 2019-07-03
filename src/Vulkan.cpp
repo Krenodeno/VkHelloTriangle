@@ -49,10 +49,10 @@ void VulkanLoader::loadGlobalLevelEntryPoints() {
 
 }
 
-void VulkanLoader::loadInstanceLevelEntryPoints(Instance instance) {
+void VulkanLoader::loadInstanceLevelEntryPoints(vk::Instance instance) {
 
 #define VK_INSTANCE_LEVEL_FUNCTION(fun)\
-	if( !(fun = (PFN_##fun)vkGetInstanceProcAddr(instance, #fun))) {\
+	if( !(fun = (PFN_##fun)vkGetInstanceProcAddr(VkInstance(instance), #fun))) {\
 		std::string errorMsg ("Could not load Instance level function: "#fun" !");\
 		throw std::runtime_error(errorMsg);\
 	}
@@ -61,10 +61,10 @@ void VulkanLoader::loadInstanceLevelEntryPoints(Instance instance) {
 
 }
 
-void VulkanLoader::loadDeviceLevelEntryPoints(Device device) {
+void VulkanLoader::loadDeviceLevelEntryPoints(vk::Device device) {
 
 #define VK_INSTANCE_LEVEL_FUNCTION(fun)\
-	if( !(fun = (PFN_##fun)vkGetDeviceProcAddr(device, #fun))) {\
+	if( !(fun = (PFN_##fun)vkGetDeviceProcAddr(VkDevice(device), #fun))) {\
 		std::string errorMsg ("Could not load Device level function: "#fun" !");\
 		throw std::runtime_error(errorMsg);\
 	}
@@ -73,10 +73,22 @@ void VulkanLoader::loadDeviceLevelEntryPoints(Device device) {
 
 }
 
-void VulkanLoader::loadInstanceEntryPoint(std::string& funName) {
-
+PFN_vkVoidFunction VulkanLoader::loadInstanceEntryPoint(vk::Instance instance, std::string& funName) {
+	PFN_vkVoidFunction fun;
+	if (!(fun = vkGetInstanceProcAddr(VkInstance(instance), funName.c_str()))) {
+		std::string errorMsg1 ("Could not load Instance level function: ");
+		std::string errorMsg2 (" !");
+		throw std::runtime_error(errorMsg1 + funName + errorMsg2);
+	}
+	return fun;
 }
 
-void VulkanLoader::loadDeviceEntryPoint(std::string& funName) {
-
+PFN_vkVoidFunction VulkanLoader::loadDeviceEntryPoint(vk::Device device, std::string& funName) {
+	PFN_vkVoidFunction fun;
+	if (!(fun = vkGetDeviceProcAddr(VkDevice(device), funName.c_str()))) {
+		std::string errorMsg1 ("Could not load Device level function: ");
+		std::string errorMsg2 (" !");
+		throw std::runtime_error(errorMsg1 + funName + errorMsg2);
+	}
+	return fun;
 }
