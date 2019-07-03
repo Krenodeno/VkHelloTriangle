@@ -5,22 +5,22 @@ My goal is to have a general comprehension of the API, and to learn commons grap
 
 ## TODO LIST
 
-* Load Vulkan Dynamic Library instead of using static loader
-
 * Renderer
 	* UBO allocator
 	* Rendering technics:
 		* Shadow maps
+		* PBR materials
+		* Deferred rendering pipeline
+		* Forward+ rendering pipeline
 		* SSR
 		* SSAO
-		* PBR
 		* SSSSS
 		* SMAA
 
 ## How to build
 ### Dependencies
 
-* Vulkan SDK >= 1.1.73 : [Download LunarG's SDK](https://vulkan.lunarg.com) or install vulkan packages for your Linux ditribution.
+* Vulkan SDK >= 1.1.99 : [Download LunarG's SDK](https://vulkan.lunarg.com) or install vulkan packages for your Linux ditribution.
 * GLFW >= 3.2.1 : [Download and compile GLFW](https://www.glfw.org) or install GLFW dev and regular packages.
 * GLM >= 0.9.7 : [Download GLM](https://glm.g-truc.net) or install GLM packages.
 
