@@ -24,43 +24,4 @@ VK_INSTANCE_LEVEL_FUNCTION(vkEnumerateDeviceLayerProperties)
 
 VK_INSTANCE_LEVEL_FUNCTION(vkGetDeviceProcAddr)
 
-/* Surface extensions */
-
-VK_INSTANCE_LEVEL_FUNCTION(vkGetPhysicalDeviceSurfaceCapabilitiesKHR)
-
-VK_INSTANCE_LEVEL_FUNCTION(vkGetPhysicalDeviceSurfaceFormatsKHR)
-
-VK_INSTANCE_LEVEL_FUNCTION(vkGetPhysicalDeviceSurfaceSupportKHR)
-
-VK_INSTANCE_LEVEL_FUNCTION(vkGetPhysicalDeviceSurfacePresentModesKHR)
-
-VK_INSTANCE_LEVEL_FUNCTION(vkDestroySurfaceKHR)
-
-#if defined(VK_USE_PLATFORM_WIN32_KHR)
-
-/* WIN32 Surface extension */
-
-VK_INSTANCE_LEVEL_FUNCTION(vkCreateWin32SurfaceKHR)
-
-VK_INSTANCE_LEVEL_FUNCTION(vkGetPhysicalDeviceWin32PresentationSupportKHR)
-
-#elif defined(VK_USE_PLATFORM_WAYLAND_KHR)
-
-/* Wayland Surface extension */
-
-VK_INSTANCE_LEVEL_FUNCTION(vkCreateWaylandSurfaceKHR)
-
-VK_INSTANCE_LEVEL_FUNCTION(vkGetPhysicalDeviceWaylandPresentationSupportKHR)
-
-#elif defined(VK_USE_PLATFORM_XLIB_KHR)
-
-/* Xorg Surface extension */
-
-VK_INSTANCE_LEVEL_FUNCTION(vkCreateXlibSurfaceKHR)
-
-VK_INSTANCE_LEVEL_FUNCTION(vkGetPhysicalDeviceXlibPresentationSupportKHR)
-
-#endif
-
-
 #undef VK_INSTANCE_LEVEL_FUNCTION
