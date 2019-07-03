@@ -1,5 +1,4 @@
 #include "Vulkan.hpp"
-#include "VulkanFunctions.hpp"
 
 VulkanLoader::VulkanLoader() {
 #if defined(USE_WINDOWS_OPERATING_SYSTEM)

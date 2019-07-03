@@ -95,6 +95,9 @@ void Render::cleanupSwapchain() {
 }
 
 void Render::cleanup() {
+
+	device.waitIdle(deviceLoader);
+
 	// Destroy device related objects
 	cleanupSwapchain();
 	swapchain.cleanup();
