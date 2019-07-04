@@ -74,8 +74,6 @@ workspace "VkHelloTriangle"
 
 	includeVulkan()
 
-	linkVulkan()
-
 project "CompileShaders"
 	kind "Utility"
 	files({ dataDir .. "shaders/*.comp", dataDir .. "shaders/*.frag", dataDir .. "shaders/*.vert"})
@@ -129,3 +127,4 @@ project "compute-fractal"
 	files({ sampleDir .. "compute/*", dataDir .. "shaders/*.comp" })
 
 	links { "CompileShaders" }
+	linkVulkan()
