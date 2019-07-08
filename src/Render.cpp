@@ -5,6 +5,8 @@
 #include <ostream>
 #include <set>
 
+#include "stb_image.h"
+
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -53,6 +55,7 @@ void Render::init() {
 	createDescriptorSetLayout();
 	createGraphicsPipeline();
 	createCommandPool();
+	createTextureImage();
 	createDepthResources();
 	createFramebuffers();
 	createBuffers();
@@ -652,6 +655,34 @@ void Render::createCommandPool() {
 	poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
 
 	commandPool = device.createCommandPool(poolInfo, nullptr, deviceLoader);
+}
+
+void Render::createTextureImage() {
+	for (unsigned int i = 0; i < imageFilenames.size(); i++) {
+		int texWidth, texHeight, texChannels;
+		stbi_uc* pixels = stbi_load(imageFilenames[i].c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+		vk::DeviceSize imageSize = texWidth * texHeight * 4;
+
+		if (!pixels)
+			throw std::runtime_error("Failed to load texture image!");
+
+		vk::Buffer stagingBuffer;
+		vk::DeviceMemory stagingBufferMemory;
+		createBuffer(imageSize, vk::BufferUsageFlagBits::eTransferSrc, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, stagingBuffer, stagingBufferMemory);
+
+		::fillBuffer(device, stagingBufferMemory, pixels, imageSize, deviceLoader);
+
+		stbi_image_free(pixels);
+
+		createImage(texWidth, texHeight, vk::Format::eR8G8B8A8Unorm, vk::ImageTiling::eOptimal, vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled, vk::MemoryPropertyFlagBits::eDeviceLocal, textureImages[i], textureImagesMemory[i]);
+
+		transitionImageLayout(textureImages[i], vk::Format::eR8G8B8A8Unorm, vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal);
+
+		
+
+		device.freeMemory(stagingBufferMemory, nullptr, deviceLoader);
+		device.destroyBuffer(stagingBuffer, nullptr, deviceLoader);
+	}
 }
 
 void Render::createDepthResources() {

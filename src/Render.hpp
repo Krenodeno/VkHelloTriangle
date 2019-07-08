@@ -123,6 +123,8 @@ public:
 		fragmentShaderFile = file;
 	}
 
+	uint32_t addTexture(const std::string& filename) { imageFilenames.push_back(filename); return imageFilenames.size()-1; }
+
 	void waitForFences() { device.waitForFences(inFlightFences[currentFrame], VK_TRUE, std::numeric_limits<uint64_t>::max(), deviceLoader); }
 
 	void waitDeviceIdle() { device.waitIdle(deviceLoader); }
@@ -185,6 +187,10 @@ protected:
 
 	vk::CommandPool commandPool;
 
+	std::vector<std::string> imageFilenames;
+	std::vector<vk::Image>   textureImages;
+	std::vector<vk::DeviceMemory> textureImagesMemory;
+
 	std::vector<vk::Buffer> buffers;
 	std::vector<vk::DeviceMemory> buffersMemory;
 	std::vector<uint64_t> bufferSizes;
@@ -232,6 +238,8 @@ protected:
 	void createFramebuffers();
 
 	void createCommandPool();
+
+	void createTextureImage();
 
 	void createDepthResources();
 

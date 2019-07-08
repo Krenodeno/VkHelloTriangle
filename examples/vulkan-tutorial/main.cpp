@@ -49,6 +49,9 @@ public:
 		render.setVertexShader("data/shaders/shader.vert.spv");
 		render.setFragmentShader("data/shaders/shader.frag.spv");
 
+		// add the quad texture
+		auto textureID = render.addTexture("textures/texture.jpg");
+
 		// Add a quad to be drawn
 		const std::vector<Vertex> vertices = {
 			{{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
