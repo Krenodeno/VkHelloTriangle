@@ -5,6 +5,7 @@
 #include <ostream>
 #include <set>
 
+#define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
 #define GLM_FORCE_RADIANS
@@ -55,7 +56,7 @@ void Render::init() {
 	createDescriptorSetLayout();
 	createGraphicsPipeline();
 	createCommandPool();
-	createTextureImage();
+	//createTextureImage();
 	createDepthResources();
 	createFramebuffers();
 	createBuffers();
