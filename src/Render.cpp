@@ -228,7 +228,7 @@ void Render::addDeviceExtension(const char* extensionName) {
 void Render::enableValidationLayer() {
 	if (validationLayerEnabled == false) {
 		validationLayerEnabled = true;
-		layers.push_back("VK_LAYER_LUNARG_standard_validation");
+		layers.push_back("VK_LAYER_KHRONOS_validation");
 		instanceExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 	}
 }
