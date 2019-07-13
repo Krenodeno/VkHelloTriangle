@@ -221,10 +221,10 @@ public:
 			return surface;
 
 		// Else try X11
-		//vk::XlibSurfaceCreateInfoKHR surfaceCreateInfo;
-		//surfaceCreateInfo.dpy = glfwGetX11Display();
-		//surfaceCreateInfo.window = glfwGetX11Window(window);
-		//return instance.createXlibSurfaceKHR(surfaceCreateInfo, nullptr, dispatch);
+		//vk::XlibSurfaceCreateInfoKHR X11surfaceCreateInfo;
+		//X11surfaceCreateInfo.dpy = glfwGetX11Display();
+		//X11surfaceCreateInfo.window = glfwGetX11Window(window);
+		//return instance.createXlibSurfaceKHR(X11surfaceCreateInfo, nullptr, dispatch);
 #endif
 	}
 
