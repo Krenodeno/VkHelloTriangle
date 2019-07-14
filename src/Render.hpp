@@ -187,20 +187,23 @@ protected:
 
 	vk::CommandPool commandPool;
 
-	std::vector<std::string> imageFilenames;
-	std::vector<vk::Image>   textureImages;
+	std::vector<std::string>      imageFilenames;
+	std::vector<vk::Image>        textureImages;
 	std::vector<vk::DeviceMemory> textureImagesMemory;
+	std::vector<vk::ImageView>    textureImageViews;
 
-	std::vector<vk::Buffer> buffers;
-	std::vector<vk::DeviceMemory> buffersMemory;
-	std::vector<uint64_t> bufferSizes;
+	vk::Sampler textureSampler;
+
+	std::vector<vk::Buffer>           buffers;
+	std::vector<vk::DeviceMemory>     buffersMemory;
+	std::vector<uint64_t>             bufferSizes;
 	std::vector<vk::BufferUsageFlags> bufferUsages;
 
-	std::vector<uint64_t> uniformSizes;
+	std::vector<uint64_t>             uniformSizes;
 	std::vector<vk::ShaderStageFlags> uniformStages;
-	std::vector<vk::Buffer> uniformBuffers;
-	std::vector<vk::DeviceMemory> uniformBuffersMemory;
-	std::vector<vk::Event> uniformEvent;
+	std::vector<vk::Buffer>           uniformBuffers;
+	std::vector<vk::DeviceMemory>     uniformBuffersMemory;
+	std::vector<vk::Event>            uniformEvent;
 
 	std::vector<vk::CommandBuffer> commandBuffers;
 
@@ -241,6 +244,10 @@ protected:
 
 	void createTextureImage();
 
+	void createTextureImageView();
+
+	void createTextureSampler();
+
 	void createDepthResources();
 
 	void createBuffer(vk::DeviceSize, vk::BufferUsageFlags, vk::MemoryPropertyFlags, vk::Buffer&, vk::DeviceMemory&);
@@ -256,6 +263,8 @@ protected:
 	void createUniformBuffers();
 
 	void copyBuffer(vk::Buffer, vk::Buffer, vk::DeviceSize);
+
+	void copyBufferToImage(vk::Buffer, vk::Image, uint32_t w, uint32_t h);
 
 	vk::CommandBuffer beginSingleTimeCommands();
 
