@@ -1,4 +1,4 @@
-template<typename Dispatch = vk::DispatchLoaderDefault>
+template<typename Dispatch>
 bool checkExtensionSupport(const char* extensionName, const Dispatch& d) {
 	bool result = false;
 	for (auto extension : vk::enumerateInstanceExtensionProperties(nullptr, d)) {
@@ -10,7 +10,7 @@ bool checkExtensionSupport(const char* extensionName, const Dispatch& d) {
 	return result;
 }
 
-template<typename Dispatch = vk::DispatchLoaderDefault>
+template<typename Dispatch>
 bool checkLayerSupport(const char* layerName, const Dispatch& d) {
 	bool result = false;
 	for (auto layer : vk::enumerateInstanceLayerProperties(d)) {
@@ -22,7 +22,7 @@ bool checkLayerSupport(const char* layerName, const Dispatch& d) {
 	return result;
 }
 
-template<typename Dispatch = vk::DispatchLoaderDefault>
+template<typename Dispatch>
 bool checkDeviceExtensionSupport(vk::PhysicalDevice device, std::vector<const char*> deviceExtensions, const Dispatch& d) {
 	auto availableExtensions = device.enumerateDeviceExtensionProperties(nullptr, d);
 
@@ -35,7 +35,7 @@ bool checkDeviceExtensionSupport(vk::PhysicalDevice device, std::vector<const ch
 	return requiredExtensions.empty();
 }
 
-template<typename Dispatch = vk::DispatchLoaderDefault>
+template<typename Dispatch>
 QueueFamilyIndices findQueueFamilies(vk::PhysicalDevice device, vk::SurfaceKHR surface, const Dispatch& d) {
 	QueueFamilyIndices indices;
 
@@ -67,7 +67,7 @@ QueueFamilyIndices findQueueFamilies(vk::PhysicalDevice device, vk::SurfaceKHR s
 	return indices;
 }
 
-template<typename Dispatch = vk::DispatchLoaderDefault>
+template<typename Dispatch>
 SwapChainSupportDetails querySwapChainSupport(vk::PhysicalDevice device, vk::SurfaceKHR surface, const Dispatch& d) {
 	SwapChainSupportDetails details;
 
@@ -80,7 +80,7 @@ SwapChainSupportDetails querySwapChainSupport(vk::PhysicalDevice device, vk::Sur
 	return details;
 }
 
-template<typename Dispatch = vk::DispatchLoaderDefault>
+template<typename Dispatch>
 bool isDeviceSuitable(vk::PhysicalDevice device, std::vector<const char*> extensions, vk::QueueFlags wantedQueues, vk::SurfaceKHR surface, const Dispatch& d) {
 	QueueFamilyIndices indices = findQueueFamilies(device, surface, d);
 
@@ -153,7 +153,7 @@ vk::Extent2D chooseSwapExtent(const vk::SurfaceCapabilitiesKHR& capabilities, vk
 	}
 }
 
-template<typename Dispatch = vk::DispatchLoaderDefault>
+template<typename Dispatch>
 uint32_t findMemoryType(vk::PhysicalDevice device, uint32_t typeFilter, vk::MemoryPropertyFlags properties, const Dispatch& d) {
 	auto memProperties = device.getMemoryProperties(d);
 
@@ -166,7 +166,7 @@ uint32_t findMemoryType(vk::PhysicalDevice device, uint32_t typeFilter, vk::Memo
 	throw std::runtime_error("Failed to find suitable memory type!");
 }
 
-template<typename Dispatch = vk::DispatchLoaderDefault>
+template<typename Dispatch>
 vk::Format findSupportedFormat(vk::PhysicalDevice device, const std::vector<vk::Format>& candidates, vk::ImageTiling tiling, vk::FormatFeatureFlags features, const Dispatch& d) {
 	for (auto format : candidates) {
 		vk::FormatProperties props = device.getFormatProperties(format, d);
@@ -180,7 +180,7 @@ vk::Format findSupportedFormat(vk::PhysicalDevice device, const std::vector<vk::
 	throw std::runtime_error("Failed to find supported format!");
 }
 
-template<typename Dispatch = vk::DispatchLoaderDefault>
+template<typename Dispatch>
 vk::Format findDepthFormat(vk::PhysicalDevice device, const Dispatch& d) {
 	return findSupportedFormat( device,
 								{vk::Format::eD32Sfloat, vk::Format::eD32SfloatS8Uint, vk::Format::eD24UnormS8Uint},
@@ -193,14 +193,14 @@ bool hasStencilComponent(vk::Format format) {
 	return format == vk::Format::eD32SfloatS8Uint || format == vk::Format::eD24UnormS8Uint;
 }
 
-template<typename Dispatch = vk::DispatchLoaderDefault>
+template<typename Dispatch>
 void fillBuffer(vk::Device device, vk::DeviceMemory& memory, const void* dataToCopy, vk::DeviceSize size, const Dispatch& d) {
 	auto data = device.mapMemory(memory, /*offset*/ 0, size, vk::MemoryMapFlags(), d);
 		std::memcpy(data, dataToCopy, static_cast<size_t>(size));
 	device.unmapMemory(memory, d);
 }
 
-template<typename T, typename Dispatch = vk::DispatchLoaderDefault>
+template<typename T, typename Dispatch>
 void fillBuffer(vk::Device device, vk::DeviceMemory& memory, std::vector<T> v, const Dispatch& d) {
 	assert(!v.empty());
 	vk::DeviceSize bufferSize = sizeof(v[0]) * v.size();

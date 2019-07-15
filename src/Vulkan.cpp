@@ -2,7 +2,7 @@
 
 VulkanLoader::VulkanLoader() {
 #if defined(USE_WINDOWS_OPERATING_SYSTEM)
-	VulkanLibrary = LoadLibrary("vulkan-1.dll");
+	VulkanLibrary = LoadLibraryA("vulkan-1.dll");
 #elif defined(USE_LINUX_OPERATING_SYSTEM)
 	VulkanLibrary = dlopen("libvulkan.so.1", RTLD_NOW);
 #endif
