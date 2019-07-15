@@ -105,7 +105,9 @@ bool isDeviceSuitable(vk::PhysicalDevice device, std::vector<const char*> extens
 	if (surface)
 		isComplete &= indices.presentFamily.has_value();
 
-	return isComplete && extensionsSupported && swapChainAdequate;
+	vk::PhysicalDeviceFeatures supportedFeatures = device.getFeatures(d);
+
+	return isComplete && extensionsSupported && swapChainAdequate && supportedFeatures.samplerAnisotropy;
 }
 
 vk::SurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<vk::SurfaceFormatKHR>& availableFormats) {

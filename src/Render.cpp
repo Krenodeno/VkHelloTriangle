@@ -56,7 +56,9 @@ void Render::init() {
 	createDescriptorSetLayout();
 	createGraphicsPipeline();
 	createCommandPool();
-	//createTextureImage();
+	createTextureImage();
+	createTextureImageView();
+	createTextureSampler();
 	createDepthResources();
 	createFramebuffers();
 	createBuffers();
@@ -105,6 +107,14 @@ void Render::cleanup() {
 	// Destroy device related objects
 	cleanupSwapchain();
 	swapchain.cleanup();
+
+	device.destroySampler(textureSampler, nullptr, deviceLoader);
+
+	for (int i = 0; i < textureImages.size(); i++) {
+		device.destroyImageView(textureImageViews[i], nullptr, deviceLoader);
+		device.destroyImage(textureImages[i], nullptr, deviceLoader);
+		device.freeMemory(textureImagesMemory[i], nullptr, deviceLoader);
+	}
 
 	if (descriptorSetLayout)
 		device.destroyDescriptorSetLayout(descriptorSetLayout, nullptr, deviceLoader);
@@ -390,6 +400,7 @@ void Render::createLogicalDevice() {
 
 	// Features
 	vk::PhysicalDeviceFeatures deviceFeatures;
+	deviceFeatures.samplerAnisotropy = VK_TRUE;
 
 	// Device creation
 	vk::DeviceCreateInfo createInfo;
@@ -497,7 +508,7 @@ void Render::createDescriptorSetLayout() {
 
 	for (unsigned int i = 0; i < uniformStages.size(); i++) {
 		auto stages = uniformStages[i];
-		
+
 		vk::DescriptorSetLayoutBinding uboLayoutBinding;
 		uboLayoutBinding.binding = i;
 		uboLayoutBinding.descriptorType = vk::DescriptorType::eUniformBuffer;
@@ -507,9 +518,20 @@ void Render::createDescriptorSetLayout() {
 		uboLayoutBindings.push_back(uboLayoutBinding);
 	}
 
+	vk::DescriptorSetLayoutBinding samplerLayoutBinding;
+	samplerLayoutBinding.binding = 1;
+	samplerLayoutBinding.descriptorCount = 1;
+	samplerLayoutBinding.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+	samplerLayoutBinding.pImmutableSamplers = nullptr;
+	samplerLayoutBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
+
+	std::vector<vk::DescriptorSetLayoutBinding> bindings;
+	bindings.insert(bindings.end(), uboLayoutBindings.begin(), uboLayoutBindings.end());
+	bindings.push_back(samplerLayoutBinding);
+
 	vk::DescriptorSetLayoutCreateInfo layoutInfo;
-	layoutInfo.bindingCount = uboLayoutBindings.size();
-	layoutInfo.pBindings = uboLayoutBindings.data();
+	layoutInfo.bindingCount = bindings.size();
+	layoutInfo.pBindings = bindings.data();
 
 	descriptorSetLayout = device.createDescriptorSetLayout(layoutInfo, nullptr, deviceLoader);
 
@@ -675,14 +697,25 @@ void Render::createTextureImage() {
 
 		stbi_image_free(pixels);
 
+		textureImages.emplace_back();
+		textureImagesMemory.emplace_back();
+
 		createImage(texWidth, texHeight, vk::Format::eR8G8B8A8Unorm, vk::ImageTiling::eOptimal, vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled, vk::MemoryPropertyFlagBits::eDeviceLocal, textureImages[i], textureImagesMemory[i]);
 
 		transitionImageLayout(textureImages[i], vk::Format::eR8G8B8A8Unorm, vk::ImageLayout::eUndefined, vk::ImageLayout::eTransferDstOptimal);
 
-		
+		copyBufferToImage(stagingBuffer, textureImages[i], static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
+
+		transitionImageLayout(textureImages[i], vk::Format::eR8G8B8A8Unorm, vk::ImageLayout::eTransferDstOptimal, vk::ImageLayout::eShaderReadOnlyOptimal);
 
 		device.freeMemory(stagingBufferMemory, nullptr, deviceLoader);
 		device.destroyBuffer(stagingBuffer, nullptr, deviceLoader);
+	}
+}
+
+void Render::createTextureImageView() {
+	for (unsigned i = 0; i < textureImages.size(); i++) {
+		textureImageViews.push_back(createImageView(textureImages[i], vk::Format::eR8G8B8A8Unorm, vk::ImageAspectFlagBits::eColor));
 	}
 }
 
@@ -762,6 +795,27 @@ vk::ImageView Render::createImageView(vk::Image image, vk::Format format, vk::Im
 	createInfo.subresourceRange.layerCount = 1;
 
 	return device.createImageView(createInfo, nullptr, deviceLoader);
+}
+
+void Render::createTextureSampler() {
+	vk::SamplerCreateInfo samplerInfo;
+	samplerInfo.magFilter = vk::Filter::eLinear;
+	samplerInfo.minFilter = vk::Filter::eLinear;
+	samplerInfo.addressModeU = vk::SamplerAddressMode::eRepeat;
+	samplerInfo.addressModeV = vk::SamplerAddressMode::eRepeat;
+	samplerInfo.addressModeW = vk::SamplerAddressMode::eRepeat;
+	samplerInfo.anisotropyEnable = VK_TRUE;
+	samplerInfo.maxAnisotropy = 16;
+	samplerInfo.borderColor = vk::BorderColor::eIntOpaqueBlack;
+	samplerInfo.unnormalizedCoordinates = VK_FALSE;
+	samplerInfo.compareEnable = VK_FALSE;
+	samplerInfo.compareOp = vk::CompareOp::eAlways;
+	samplerInfo.mipmapMode = vk::SamplerMipmapMode::eLinear;
+	samplerInfo.mipLodBias = 0.0f;
+	samplerInfo.minLod = 0.0f;
+	samplerInfo.maxLod = 0.0f;
+
+	textureSampler = device.createSampler(samplerInfo, nullptr, deviceLoader);
 }
 
 void Render::transitionImageLayout(vk::Image image, vk::Format format, vk::ImageLayout oldLayout, vk::ImageLayout newLayout) {
@@ -853,13 +907,15 @@ void Render::createDescriptorPool() {
 	uint32_t swapChainImageCount = static_cast<uint32_t>(swapchain.getImageCount());
 	uint32_t uniformCount = static_cast<uint32_t>(uniformSizes.size());
 
-	vk::DescriptorPoolSize poolSize;
-	poolSize.type = vk::DescriptorType::eUniformBuffer;
-	poolSize.descriptorCount = swapChainImageCount * uniformCount;
+	std::array<vk::DescriptorPoolSize, 2> poolSizes;
+	poolSizes[0].type = vk::DescriptorType::eUniformBuffer;
+	poolSizes[0].descriptorCount = swapChainImageCount * uniformCount;
+	poolSizes[1].type = vk::DescriptorType::eCombinedImageSampler;
+	poolSizes[1].descriptorCount = swapChainImageCount;
 
 	vk::DescriptorPoolCreateInfo createInfo;
-	createInfo.poolSizeCount = 1;
-	createInfo.pPoolSizes = &poolSize;
+	createInfo.poolSizeCount = poolSizes.size();
+	createInfo.pPoolSizes = poolSizes.data();
 	createInfo.maxSets = swapChainImageCount;
 
 	descriptorPool = device.createDescriptorPool(createInfo, nullptr, deviceLoader);
@@ -876,8 +932,8 @@ void Render::createDescriptorSets() {
 
 	descriptorSets = device.allocateDescriptorSets(allocInfo, std::allocator<vk::DescriptorSet>(), deviceLoader);
 
-	for (unsigned int uniform = 0; uniform < uniformCount; uniform++)
-		for (unsigned int image = 0; image < swapChainImageCount; image++) {
+	for (unsigned int image = 0; image < swapChainImageCount; image++) {
+		for (unsigned int uniform = 0; uniform < uniformCount; uniform++) {
 			unsigned int bufferIndex = image + uniform * swapChainImageCount;
 			vk::DescriptorBufferInfo bufferInfo;
 			bufferInfo.buffer = uniformBuffers[bufferIndex];
@@ -894,6 +950,21 @@ void Render::createDescriptorSets() {
 
 			device.updateDescriptorSets(descriptorWrite, nullptr, deviceLoader);
 		}
+		vk::DescriptorImageInfo imageInfo;
+		imageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		imageInfo.imageView = textureImageViews[0];	// TODO: maybe update descriptor when recording commandbuffer each frame instead of recording once and for all
+		imageInfo.sampler = textureSampler;
+
+		vk::WriteDescriptorSet descriptorWrite;
+		descriptorWrite.dstSet = descriptorSets[image];
+		descriptorWrite.dstBinding = uniformCount;	// always uniform first, then image sampler
+		descriptorWrite.dstArrayElement = 0;
+		descriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+		descriptorWrite.descriptorCount = 1;
+		descriptorWrite.pImageInfo = &imageInfo;
+
+		device.updateDescriptorSets(descriptorWrite, nullptr, deviceLoader);
+	}
 }
 
 void Render::copyBuffer(vk::Buffer src, vk::Buffer dst, vk::DeviceSize size) {
@@ -904,6 +975,27 @@ void Render::copyBuffer(vk::Buffer src, vk::Buffer dst, vk::DeviceSize size) {
 	copyRegion.dstOffset = 0;
 	copyRegion.size = size;
 	commandBuffer.copyBuffer(src, dst, copyRegion, deviceLoader);
+
+	endSingleTimeCommands(commandBuffer);
+}
+
+void Render::copyBufferToImage(vk::Buffer buffer, vk::Image image, uint32_t width, uint32_t height) {
+	auto commandBuffer = beginSingleTimeCommands();
+
+	vk::BufferImageCopy region;
+	region.bufferOffset = 0;
+	region.bufferRowLength = 0;
+	region.bufferImageHeight = 0;
+
+	region.imageSubresource.aspectMask = vk::ImageAspectFlagBits::eColor;
+	region.imageSubresource.mipLevel = 0;
+	region.imageSubresource.baseArrayLayer = 0;
+	region.imageSubresource.layerCount = 1;
+
+	region.imageOffset = vk::Offset3D(0, 0, 0);
+	region.imageExtent = vk::Extent3D(width, height, 1);
+
+	commandBuffer.copyBufferToImage(buffer, image, vk::ImageLayout::eTransferDstOptimal, region, deviceLoader);
 
 	endSingleTimeCommands(commandBuffer);
 }
