@@ -400,6 +400,7 @@ void Render::createLogicalDevice() {
 
 	// Features
 	vk::PhysicalDeviceFeatures deviceFeatures;
+	deviceFeatures.samplerAnisotropy = VK_TRUE;
 
 	// Device creation
 	vk::DeviceCreateInfo createInfo;
