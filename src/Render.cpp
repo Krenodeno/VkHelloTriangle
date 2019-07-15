@@ -518,9 +518,20 @@ void Render::createDescriptorSetLayout() {
 		uboLayoutBindings.push_back(uboLayoutBinding);
 	}
 
+	vk::DescriptorSetLayoutBinding samplerLayoutBinding;
+	samplerLayoutBinding.binding = 1;
+	samplerLayoutBinding.descriptorCount = 1;
+	samplerLayoutBinding.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+	samplerLayoutBinding.pImmutableSamplers = nullptr;
+	samplerLayoutBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
+
+	std::vector<vk::DescriptorSetLayoutBinding> bindings;
+	bindings.insert(bindings.end(), uboLayoutBindings.begin(), uboLayoutBindings.end());
+	bindings.push_back(samplerLayoutBinding);
+
 	vk::DescriptorSetLayoutCreateInfo layoutInfo;
-	layoutInfo.bindingCount = uboLayoutBindings.size();
-	layoutInfo.pBindings = uboLayoutBindings.data();
+	layoutInfo.bindingCount = bindings.size();
+	layoutInfo.pBindings = bindings.data();
 
 	descriptorSetLayout = device.createDescriptorSetLayout(layoutInfo, nullptr, deviceLoader);
 
@@ -896,13 +907,15 @@ void Render::createDescriptorPool() {
 	uint32_t swapChainImageCount = static_cast<uint32_t>(swapchain.getImageCount());
 	uint32_t uniformCount = static_cast<uint32_t>(uniformSizes.size());
 
-	vk::DescriptorPoolSize poolSize;
-	poolSize.type = vk::DescriptorType::eUniformBuffer;
-	poolSize.descriptorCount = swapChainImageCount * uniformCount;
+	std::array<vk::DescriptorPoolSize, 2> poolSizes;
+	poolSizes[0].type = vk::DescriptorType::eUniformBuffer;
+	poolSizes[0].descriptorCount = swapChainImageCount * uniformCount;
+	poolSizes[1].type = vk::DescriptorType::eCombinedImageSampler;
+	poolSizes[1].descriptorCount = swapChainImageCount;
 
 	vk::DescriptorPoolCreateInfo createInfo;
-	createInfo.poolSizeCount = 1;
-	createInfo.pPoolSizes = &poolSize;
+	createInfo.poolSizeCount = poolSizes.size();
+	createInfo.pPoolSizes = poolSizes.data();
 	createInfo.maxSets = swapChainImageCount;
 
 	descriptorPool = device.createDescriptorPool(createInfo, nullptr, deviceLoader);
@@ -919,8 +932,8 @@ void Render::createDescriptorSets() {
 
 	descriptorSets = device.allocateDescriptorSets(allocInfo, std::allocator<vk::DescriptorSet>(), deviceLoader);
 
-	for (unsigned int uniform = 0; uniform < uniformCount; uniform++)
-		for (unsigned int image = 0; image < swapChainImageCount; image++) {
+	for (unsigned int image = 0; image < swapChainImageCount; image++) {
+		for (unsigned int uniform = 0; uniform < uniformCount; uniform++) {
 			unsigned int bufferIndex = image + uniform * swapChainImageCount;
 			vk::DescriptorBufferInfo bufferInfo;
 			bufferInfo.buffer = uniformBuffers[bufferIndex];
@@ -937,6 +950,21 @@ void Render::createDescriptorSets() {
 
 			device.updateDescriptorSets(descriptorWrite, nullptr, deviceLoader);
 		}
+		vk::DescriptorImageInfo imageInfo;
+		imageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+		imageInfo.imageView = textureImageViews[0];	// TODO: maybe update descriptor when recording commandbuffer each frame instead of recording once and for all
+		imageInfo.sampler = textureSampler;
+
+		vk::WriteDescriptorSet descriptorWrite;
+		descriptorWrite.dstSet = descriptorSets[image];
+		descriptorWrite.dstBinding = uniformCount;	// always uniform first, then image sampler
+		descriptorWrite.dstArrayElement = 0;
+		descriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+		descriptorWrite.descriptorCount = 1;
+		descriptorWrite.pImageInfo = &imageInfo;
+
+		device.updateDescriptorSets(descriptorWrite, nullptr, deviceLoader);
+	}
 }
 
 void Render::copyBuffer(vk::Buffer src, vk::Buffer dst, vk::DeviceSize size) {
