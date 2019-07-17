@@ -34,5 +34,5 @@ It will create a "build" directory where you will find all the project files nee
 
 ## Shipped Libraries
 
-* STB_image
-* Tiny_Obj_Loader
+* STB_image 2.22
+* Tiny_Obj_Loader 2.0
