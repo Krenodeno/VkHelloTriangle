@@ -5,6 +5,9 @@
 
 #include "WindowedApp.hpp"
 
+#define TINYOBJLOADER_IMPLEMENTATION
+#include <tiny_obj_loader.h>
+
 using std::chrono::high_resolution_clock;
 
 struct UniformBufferObject {
@@ -14,6 +17,10 @@ struct UniformBufferObject {
 };
 
 class Tutorial : public WindowedApp {
+
+	std::vector<Vertex> vertices;
+	std::vector<uint32_t> indices;
+
 public:
 
 	Tutorial() : WindowedApp("Vulkan", VK_MAKE_VERSION(0, 0, 0)) {
@@ -45,32 +52,23 @@ public:
 			render.addInstanceExtension(extensionName);
 		render.addDeviceExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
 
-		// set vertex and fragment shader
+		// set vertex and fragment shaders
 		render.setVertexShader("data/shaders/shader.vert.spv");
 		render.setFragmentShader("data/shaders/shader.frag.spv");
 
-		// add the quad texture
-		auto textureID = render.addTexture("data/textures/texture.jpg");
+		// mesh and texture filenames
+		const std::string meshFilename = "data/models/chalet.obj";
+		const std::string meshTextureFilename = "data/textures/chalet.jpg";
 
-		// Add a quad to be drawn
-		const std::vector<Vertex> vertices = {
-			{{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
-			{{0.5f, -0.5f, 0.0f},  {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
-			{{0.5f, 0.5f, 0.0f},   {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
-			{{-0.5f, 0.5f, 0.0f},  {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}},
+		loadMesh(meshFilename);
 
-			{{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-			{{0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-			{{0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-			{{-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}
-		};
-		const std::vector<uint16_t> indices = {
-			0, 1, 2, 2, 3, 0,
-			4, 5, 6, 6, 7, 4
-		};
+		std::cout << "Mesh vertices count : " << vertices.size() << "\n";
+		std::cout << "Mesh triangles count: " << indices.size() / 3 << "\n";
 
 		unsigned int vertexBuffer = render.addBuffer(vertices.size() * sizeof(vertices[0]), vk::BufferUsageFlagBits::eVertexBuffer);
 		unsigned int indexBuffer = render.addBuffer(indices.size() * sizeof(indices[0]), vk::BufferUsageFlagBits::eIndexBuffer);
+
+		render.addTexture(meshTextureFilename);
 
 		unsigned int uniformBuffer = render.addUniform(sizeof(UniformBufferObject), vk::ShaderStageFlagBits::eVertex);
 
@@ -79,8 +77,44 @@ public:
 
 		// render have created actual buffers, we can copy data into it
 		render.fillBuffer<Vertex>(vertexBuffer, vertices);
-		render.fillBuffer<uint16_t>(indexBuffer, indices);
+		render.fillBuffer<uint32_t>(indexBuffer, indices);
 
+	}
+
+	/** Load the mesh and forward it to the render */
+	void loadMesh(const std::string& filename) {
+		tinyobj::attrib_t attrib;
+		std::vector<tinyobj::shape_t> shapes;
+		std::vector<tinyobj::material_t> materials;
+		std::string warn, err;
+
+		if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, filename.c_str()))
+			throw std::runtime_error(warn + err);
+
+		std::unordered_map<Vertex, uint32_t> uniqueVertices;
+
+		for (const auto& shape : shapes) {
+			for (const auto& index : shape.mesh.indices) {
+				Vertex vertex;
+				vertex.pos = {
+					attrib.vertices[3 * index.vertex_index+0],
+					attrib.vertices[3 * index.vertex_index+1],
+					attrib.vertices[3 * index.vertex_index+2]
+				};
+				vertex.texCoord = {
+					attrib.texcoords[2 * index.texcoord_index+0],
+					1.f - attrib.texcoords[2 * index.texcoord_index+1]
+				};
+				vertex.color = {1.f, 1.f, 1.f};
+
+				if (uniqueVertices.count(vertex) == 0) {
+					uniqueVertices[vertex] = static_cast<uint32_t>(vertices.size());
+					vertices.push_back(vertex);
+				}
+
+				indices.push_back(uniqueVertices[vertex]);
+			}
+		}
 	}
 
 	/** Called once at the program exit to handle resource destruction */
