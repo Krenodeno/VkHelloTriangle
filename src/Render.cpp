@@ -1072,7 +1072,7 @@ void Render::createCommandBuffers() {
 				vertexBuffers[0] = buffers[j];
 			if ((bufferUsages[j] & vk::BufferUsageFlagBits::eIndexBuffer) == vk::BufferUsageFlagBits::eIndexBuffer) {
 				indexBuffer = buffers[j];
-				indexCount = bufferSizes[j] / sizeof(uint16_t);
+				indexCount = bufferSizes[j] / sizeof(uint32_t);
 			}
 		}
 
