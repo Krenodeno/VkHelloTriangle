@@ -13,6 +13,7 @@
 #include "RenderTarget.hpp"
 #include "RenderUtils.hpp"
 #include "Shader.hpp"
+#include "Texture.hpp"
 #include "Vertex.hpp"
 
 /* used as callback function to delegate surface creation */
@@ -169,9 +170,7 @@ protected:
 
 	vk::Queue presentQueue;
 
-	vk::Image depthImage;
-	vk::DeviceMemory depthImageMemory;
-	vk::ImageView depthImageView;
+	Texture depthBuffer;
 
 	vk::RenderPass renderPass;
 	vk::DescriptorSetLayout descriptorSetLayout;
@@ -187,10 +186,8 @@ protected:
 
 	vk::CommandPool commandPool;
 
-	std::vector<std::string>      imageFilenames;
-	std::vector<vk::Image>        textureImages;
-	std::vector<vk::DeviceMemory> textureImagesMemory;
-	std::vector<vk::ImageView>    textureImageViews;
+	std::vector<std::string> imageFilenames;
+	std::vector<Texture>     textures;
 
 	vk::Sampler textureSampler;
 
@@ -242,9 +239,9 @@ protected:
 
 	void createCommandPool();
 
-	void createTextureImage();
+	void createTextureImages();
 
-	void createTextureImageView();
+	void createTextureImageViews();
 
 	void createTextureSampler();
 
@@ -252,11 +249,9 @@ protected:
 
 	void createBuffer(vk::DeviceSize, vk::BufferUsageFlags, vk::MemoryPropertyFlags, vk::Buffer&, vk::DeviceMemory&);
 
-	void createImage(uint32_t width, uint32_t height, vk::Format, vk::ImageTiling, vk::ImageUsageFlags, vk::MemoryPropertyFlags, vk::Image&, vk::DeviceMemory&);
+	void createImage(uint32_t width, uint32_t height, uint32_t mipLevels, vk::Format, vk::ImageTiling, vk::ImageUsageFlags, vk::MemoryPropertyFlags, vk::Image&, vk::DeviceMemory&);
 
-	vk::ImageView createImageView(vk::Image, vk::Format, vk::ImageAspectFlags);
-
-	void transitionImageLayout(vk::Image, vk::Format, vk::ImageLayout oldLayout, vk::ImageLayout newLayout);
+	void transitionImageLayout(vk::Image, vk::Format, vk::ImageLayout oldLayout, vk::ImageLayout newLayout, uint32_t mipLevels);
 
 	void createBuffers();
 
@@ -265,6 +260,8 @@ protected:
 	void copyBuffer(vk::Buffer, vk::Buffer, vk::DeviceSize);
 
 	void copyBufferToImage(vk::Buffer, vk::Image, uint32_t w, uint32_t h);
+
+	void generateMipmaps(vk::Image, vk::Format, int32_t texWidth, int32_t texHeight, uint32_t mipLevels);
 
 	vk::CommandBuffer beginSingleTimeCommands();
 

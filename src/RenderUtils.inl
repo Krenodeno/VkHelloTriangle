@@ -196,6 +196,26 @@ bool hasStencilComponent(vk::Format format) {
 }
 
 template<typename Dispatch>
+vk::ImageView createImageView(vk::Device device, vk::Image image, vk::Format format, vk::ImageAspectFlags aspect, uint32_t mipLevels, const Dispatch& d) {
+	vk::ImageViewCreateInfo createInfo;
+	createInfo.image = image;
+	createInfo.viewType = vk::ImageViewType::e2D;
+	createInfo.format = format;
+	// components swizzle
+	createInfo.components.r = vk::ComponentSwizzle::eIdentity;
+	createInfo.components.g = vk::ComponentSwizzle::eIdentity;
+	createInfo.components.b = vk::ComponentSwizzle::eIdentity;
+	//
+	createInfo.subresourceRange.aspectMask = aspect;
+	createInfo.subresourceRange.baseMipLevel = 0;
+	createInfo.subresourceRange.levelCount = mipLevels;
+	createInfo.subresourceRange.baseArrayLayer = 0;
+	createInfo.subresourceRange.layerCount = 1;
+
+	return device.createImageView(createInfo, nullptr, d);
+}
+
+template<typename Dispatch>
 void fillBuffer(vk::Device device, vk::DeviceMemory& memory, const void* dataToCopy, vk::DeviceSize size, const Dispatch& d) {
 	auto data = device.mapMemory(memory, /*offset*/ 0, size, vk::MemoryMapFlags(), d);
 		std::memcpy(data, dataToCopy, static_cast<size_t>(size));

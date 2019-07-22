@@ -77,6 +77,8 @@ template<typename Dispatch = vk::DispatchLoaderDefault>
 inline vk::Format findDepthFormat(vk::PhysicalDevice, const Dispatch& d = Dispatch());
 inline bool hasStencilComponent(vk::Format);
 template<typename Dispatch = vk::DispatchLoaderDefault>
+inline vk::ImageView createImageView(vk::Device, vk::Image, vk::Format, vk::ImageAspectFlags, uint32_t mipLevels, const Dispatch& d = Dispatch());
+template<typename Dispatch = vk::DispatchLoaderDefault>
 inline void fillBuffer(vk::Device, vk::DeviceMemory&, const void*, vk::DeviceSize, const Dispatch& d = Dispatch());
 template<typename T, typename Dispatch = vk::DispatchLoaderDefault>
 inline void fillBuffer(vk::Device, vk::DeviceMemory&, std::vector<T>, const Dispatch& d = Dispatch());
