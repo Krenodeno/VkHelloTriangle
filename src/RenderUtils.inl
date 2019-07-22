@@ -122,19 +122,19 @@ vk::SurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<vk::SurfaceFormat
 }
 
 vk::PresentModeKHR chooseSwapPresentMode(const std::vector<vk::PresentModeKHR>& availablePresentModes) {
-	// Guaranted to be present, but still not really the best
-	vk::PresentModeKHR bestMode = vk::PresentModeKHR::eFifo;
 	for (const auto& availablePresentMode : availablePresentModes) {
-		// Nice mode working as triple-buffering
+		// Nice mode for triple-buffering. If the swapchain is full, the images
+		// are simply replaced with the newer ones.
 		if (availablePresentMode == vk::PresentModeKHR::eMailbox) {
 			return availablePresentMode;
 		}
-		// send image immediatly when available to the screen
-		else if (availablePresentMode == vk::PresentModeKHR::eImmediate) {
-			bestMode = availablePresentMode;
-		}
 	}
-	return bestMode;
+	// Mostly a V-Sync mode, where the swapchain is a queue. If it is full, the application has to wait.
+	return vk::PresentModeKHR::eFifo;
+
+	// The other modes are:
+	// - Immediate : images submitted are transferred to the screen right away, may result in tearing
+	// - FIFO relaxed : if the application is late and the queue was empty, work like immediate in this case, FIFO otherwise
 }
 
 vk::Extent2D chooseSwapExtent(const vk::SurfaceCapabilitiesKHR& capabilities, vk::Extent2D windowExtent) {
