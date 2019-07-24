@@ -7,6 +7,11 @@ WindowedApp::WindowedApp(std::string appName, uint32_t version, int width, int h
 		  window(width, height, appName) {
 	render.setAppName(appName);
 	render.setAppVersion(version);
+	render.setSurfaceCreationFunction(
+		[&](vk::Instance instance, vk::DispatchLoaderDynamic d) {
+			return window.createSurface(instance, d);
+		}
+	);
 }
 
 WindowedApp::~WindowedApp() {
