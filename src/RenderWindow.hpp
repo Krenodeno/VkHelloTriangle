@@ -211,6 +211,8 @@ public:
 	void setResizeCallback(GLFWwindowsizefun resizeFunction);
 	void setKeyCallback(keyCallbackFunction keyFunction);
 
+	void setTitle(const std::string&);
+
 	void pollEvents();
 
 private:

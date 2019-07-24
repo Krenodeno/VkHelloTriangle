@@ -63,6 +63,10 @@ void RenderWindow::setKeyCallback(keyCallbackFunction keyFunction) {
 	keyFun = keyFunction;
 }
 
+void RenderWindow::setTitle(const std::string& title) {
+	glfwSetWindowTitle(window, title.c_str());
+}
+
 void RenderWindow::pollEvents() {
 	glfwPollEvents();
 }
