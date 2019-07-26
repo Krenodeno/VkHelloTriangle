@@ -122,11 +122,19 @@ public:
 
 		static auto startTime = high_resolution_clock::now();
 		static auto lastTime = high_resolution_clock::now();
+		static auto updateTime = high_resolution_clock::now();
 
 		auto currentTime = high_resolution_clock::now();
 
+		// print FPS and frametime
 		float frameTime = std::chrono::duration<float, std::chrono::milliseconds::period>(currentTime - lastTime).count();
-		std::cout << "Frame time = " << frameTime << "ms\r";
+		float framesPerSecond = (1 / frameTime) * 1000;
+		std::string title("vulkan-tutorial FPS : ");
+		if (std::chrono::duration_cast<std::chrono::milliseconds>(currentTime - updateTime) > std::chrono::milliseconds(2000)) {
+			window.setTitle(title + std::to_string(framesPerSecond));
+			updateTime = currentTime;
+		}
+
 		lastTime = currentTime;
 
 		float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
