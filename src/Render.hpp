@@ -82,6 +82,7 @@ public:
 		assert(uniformIndex < uniformSizes.size());
 		assert(dataSize <= uniformSizes[uniformIndex]);
 
+		// TODO update only the next uniform used for rendering if possible (cf. vkAcquireNextImageKHR)
 		// check wether the buffer is ready to be updated (no longer used)
 		for (unsigned int i = 0; i < swapchain.getImageCount(); i++)
 			if (device.getEventStatus(uniformEvent[i], deviceLoader) == vk::Result::eEventSet) {

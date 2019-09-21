@@ -21,6 +21,8 @@ class Tutorial : public WindowedApp {
 	std::vector<Vertex> vertices;
 	std::vector<uint32_t> indices;
 
+	unsigned int uniformIndex;
+
 public:
 
 	Tutorial() : WindowedApp("Vulkan", VK_MAKE_VERSION(0, 0, 0)) {
@@ -64,7 +66,7 @@ public:
 
 		render.addTexture(meshTextureFilename);
 
-		unsigned int uniformBuffer = render.addUniform(sizeof(UniformBufferObject), vk::ShaderStageFlagBits::eVertex);
+		uniformIndex = render.addUniform(sizeof(UniformBufferObject), vk::ShaderStageFlagBits::eVertex);
 
 		// Initialise the render with previous info set
 		render.init();	// TODO replace with wanted functions calls to initialize the render
@@ -145,7 +147,7 @@ public:
 		ubo.proj = glm::perspective(glm::radians(45.0f), window.getWidth() / (float)window.getHeight(), 0.1f, 10.0f);
 		ubo.proj[1][1] *= -1;	// because of OpenGL upside down screen coordinates
 
-		render.updateUniform(0, &ubo, sizeof(ubo));
+		render.updateUniform(uniformIndex, &ubo, sizeof(ubo));
 
 	}
 

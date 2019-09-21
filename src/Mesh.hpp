@@ -33,7 +33,7 @@ private:
 };
 
 struct MeshData {
-	std::Vector<Vertex> data;
+	std::vector<Vertex> data;
 };
 
 #endif
