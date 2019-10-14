@@ -4,6 +4,7 @@
 #include <chrono>
 
 #include "WindowedApp.hpp"
+#include "RenderPipeline.hpp"
 
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <tiny_obj_loader.h>
@@ -22,6 +23,8 @@ class Tutorial : public WindowedApp {
 	std::vector<uint32_t> indices;
 
 	unsigned int uniformIndex;
+
+	RenderPipeline pipeline;
 
 public:
 
@@ -48,9 +51,22 @@ public:
 			render.addInstanceExtension(extensionName);
 		render.addDeviceExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
 
+		// initialise render
+		render.init();
+
+		// Add a pipeline
+		render.addPipeline(pipeline);
+		
 		// set vertex and fragment shaders
-		render.setVertexShader("data/shaders/shader.vert.spv");
-		render.setFragmentShader("data/shaders/shader.frag.spv");
+		pipeline.setVertexShader("data/shaders/shader.vert.spv");
+		pipeline.setFragmentShader("data/shaders/shader.frag.spv");
+		pipeline.setViewportSize(vk::Extent2D(window.getWidth(), window.getHeight()));
+
+		pipeline.enableDepthTest();
+
+		// Add one uniform and one sampler descriptors
+		pipeline.addUniform<UniformBufferObject>(vk::ShaderStageFlagBits::eVertex, 0u);
+		pipeline.addSampler(vk::ShaderStageFlagBits::eFragment, 1u);	
 
 		// mesh and texture filenames
 		const std::string meshFilename = "data/models/chalet.obj";
@@ -61,15 +77,13 @@ public:
 		std::cout << "Mesh vertices count : " << vertices.size() << "\n";
 		std::cout << "Mesh triangles count: " << indices.size() / 3 << "\n";
 
+		// Mesh buffers
 		unsigned int vertexBuffer = render.addBuffer(vertices.size() * sizeof(vertices[0]), vk::BufferUsageFlagBits::eVertexBuffer);
 		unsigned int indexBuffer = render.addBuffer(indices.size() * sizeof(indices[0]), vk::BufferUsageFlagBits::eIndexBuffer);
 
 		render.addTexture(meshTextureFilename);
 
-		uniformIndex = render.addUniform(sizeof(UniformBufferObject), vk::ShaderStageFlagBits::eVertex);
-
-		// Initialise the render with previous info set
-		render.init();	// TODO replace with wanted functions calls to initialize the render
+		render.finishSetup();
 
 		// render have created actual buffers, we can copy data into it
 		render.fillBuffer<Vertex>(vertexBuffer, vertices);
@@ -147,12 +161,21 @@ public:
 		ubo.proj = glm::perspective(glm::radians(45.0f), window.getWidth() / (float)window.getHeight(), 0.1f, 10.0f);
 		ubo.proj[1][1] *= -1;	// because of OpenGL upside down screen coordinates
 
-		render.updateUniform(uniformIndex, &ubo, sizeof(ubo));
+		//render.updateUniform(uniformIndex, &ubo, sizeof(ubo));
+		pipeline.updateUniform(ubo, 0u);
 
 	}
 
 	/** Return true to continue, false to end the main loop and exit the program */
 	bool draw() {
+		// record Command Buffer here
+		//vk::CommandBuffer commandBuffer = render.beginRecording();
+
+		// render.bindVertexBuffer(0u);
+		// render.bindIndexBuffer(1u);
+
+		//render.endRecording(commandBuffer);
+
 		render.drawFrame();
 
 		return !window.isClosed();

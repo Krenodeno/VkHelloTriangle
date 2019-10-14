@@ -52,13 +52,14 @@ void Render::init() {
 	pickPhysicalDevice();
 	createLogicalDevice();
 	createSwapchain();
+	/*
 	createRenderPass();
 	createDescriptorSetLayout();
 	createGraphicsPipeline();
 	createCommandPool();
 	createTextureImages();
 	createTextureImageViews();
-	createTextureSampler();
+	createTextureSampler(16f, static_cast<float>(textures[0].mipLevels));
 	createDepthResources();
 	createFramebuffers();
 	createBuffers();
@@ -68,13 +69,38 @@ void Render::init() {
 	createCommandBuffers();
 	createSemaphores();
 	createFences();
+	*/
+}
+
+void Render::finishSetup() {
+	createCommandPool();
+	for (auto& pipeline : pipelines) {
+		pipeline->createRenderPass(swapchain.getImageFormat(), findDepthFormat(physicalDevice, deviceLoader));
+		pipeline->createDescriptorSetLayout();
+		pipeline->createGraphicsPipeline();
+		// Textures and samplers
+		createTextureImages();
+		createTextureImageViews();
+		createTextureSampler(16.f, static_cast<float>(textures[0].mipLevels));
+		pipeline->depthBuffer = createDepthResources(swapchain.getExtent().width, swapchain.getExtent().height);
+		swapchain.createFramebuffers(pipeline->renderPass, pipeline->depthBuffer.view);
+		// Buffers
+		createBuffers();
+		pipeline->createDescriptorPool(swapchain.getImageCount());
+		pipeline->createDescriptorSets(swapchain.getImageCount());
+		// uniform buffers
+		createPipelineUniformBuffers(*pipeline);
+	}
+	createCommandBuffers();	// TODO: create command buffer at draw time in the main
+	createSemaphores();
+	createFences();
 }
 
 void Render::cleanupSwapchain() {
 
 	if (!commandBuffers.empty())
 		device.freeCommandBuffers(commandPool, commandBuffers, deviceLoader);
-
+/*
 	if (depthBuffer.view) {
 		device.destroyImageView(depthBuffer.view, nullptr, deviceLoader);
 		depthBuffer.view = nullptr;
@@ -94,15 +120,19 @@ void Render::cleanupSwapchain() {
 		device.destroyPipelineLayout(pipelineLayout, nullptr, deviceLoader);
 	if (renderPass)
 		device.destroyRenderPass(renderPass, nullptr, deviceLoader);
+*/
+
+	for (auto& pipeline : pipelines)
+		pipeline->cleanup();
 
 	for (size_t i = 0; i < swapchain.getImageCount(); i++) {
 		device.destroyBuffer(uniformBuffers[i], nullptr, deviceLoader);
 		device.free(uniformBuffersMemory[i], nullptr, deviceLoader);
-		device.destroyEvent(uniformEvent[i], nullptr, deviceLoader);
+		//device.destroyEvent(uniformEvent[i], nullptr, deviceLoader);
 	}
 
-	if (descriptorPool)
-		device.destroyDescriptorPool(descriptorPool, nullptr, deviceLoader);
+//	if (descriptorPool)
+//		device.destroyDescriptorPool(descriptorPool, nullptr, deviceLoader);
 
 }
 
@@ -131,8 +161,8 @@ void Render::cleanup() {
 		}
 	}
 
-	if (descriptorSetLayout)
-		device.destroyDescriptorSetLayout(descriptorSetLayout, nullptr, deviceLoader);
+//	if (descriptorSetLayout)
+//		device.destroyDescriptorSetLayout(descriptorSetLayout, nullptr, deviceLoader);
 
 	for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 		if (inFlightFences[i])
@@ -171,14 +201,14 @@ void Render::recreateSwapChain() {
 	cleanupSwapchain();
 
 	swapchain.recreate(surface, physicalDevice, windowExtent);
-
-	createRenderPass();
-	createGraphicsPipeline();
-	createDepthResources();
+//TODO
+	pipelines[0]->createRenderPass(swapchain.getImageFormat(), findDepthFormat(physicalDevice, deviceLoader));
+	pipelines[0]->createGraphicsPipeline();
+	pipelines[0]->depthBuffer = createDepthResources(swapchain.getExtent().width, swapchain.getExtent().height);
 	createFramebuffers();
-	createUniformBuffers();
-	createDescriptorPool();
-	createDescriptorSets();
+	createPipelineUniformBuffers(*pipelines[0]);
+	pipelines[0]->createDescriptorPool(swapchain.getImageCount());
+	pipelines[0]->createDescriptorSets(swapchain.getImageCount());
 	createCommandBuffers();
 }
 
@@ -193,6 +223,8 @@ void Render::drawFrame() {
 		recreateSwapChain();
 		return;
 	}
+
+	updateUniformBuffer(0u, imageIndex);
 
 	vk::SubmitInfo submitInfo;
 	vk::Semaphore waitSemaphores[] = { imageAvailableSemaphores[currentFrame] };
@@ -458,8 +490,11 @@ void Render::createSwapchain(vk::SwapchainKHR oldSwapchain) {
 	swapchain.init(surface, physicalDevice, device, windowExtent, oldSwapchain, deviceLoader);
 }
 
+/**
+ * Pipeline creation
+ */
 
-void Render::createRenderPass() {
+/*void Render::createRenderPass() {
 	vk::AttachmentDescription colorAttachment;
 	colorAttachment.format = swapchain.getImageFormat();
 	colorAttachment.samples = vk::SampleCountFlagBits::e1;
@@ -497,7 +532,7 @@ void Render::createRenderPass() {
 
 	vk::SubpassDependency dependency;
 	dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-	dependency.dstSubpass = 0;
+	dependency.dstSubpass = 0u;
 
 	dependency.srcStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput;
 	dependency.srcAccessMask = vk::AccessFlags();
@@ -684,7 +719,7 @@ void Render::createGraphicsPipeline() {
 
 	graphicsPipeline = device.createGraphicsPipeline(nullptr, pipelineInfo, nullptr, deviceLoader);
 
-}
+}*/
 
 void Render::createCommandPool() {
 	QueueFamilyIndices queueFamilyIndices = findQueueFamilies(physicalDevice, surface, deviceLoader);
@@ -741,20 +776,20 @@ void Render::createTextureImageViews() {
 	}
 }
 
-void Render::createDepthResources() {
+Texture Render::createDepthResources(uint32_t width, uint32_t height) {
 	vk::Format depthFormat = findDepthFormat(physicalDevice, deviceLoader);
 
-	Texture depth;
+	Texture depth(device, deviceLoader);
 
-	createImage(swapchain.getExtent().width, swapchain.getExtent().height, 1, depthFormat, vk::ImageTiling::eOptimal, vk::ImageUsageFlagBits::eDepthStencilAttachment, vk::MemoryPropertyFlagBits::eDeviceLocal, depth.image, depth.memory);
+	createImage(width, height, 1, depthFormat, vk::ImageTiling::eOptimal, vk::ImageUsageFlagBits::eDepthStencilAttachment, vk::MemoryPropertyFlagBits::eDeviceLocal, depth.image, depth.memory);
 
 	depth.view = createImageView(device, depth.image, depthFormat, vk::ImageAspectFlagBits::eDepth, 1, deviceLoader);
 
-	depthBuffer = std::move(depth);
+	return depth;
 }
 
 void Render::createFramebuffers() {
-	swapchain.createFramebuffers(renderPass, depthBuffer.view);
+	swapchain.createFramebuffers(pipelines[0]->renderPass, pipelines[0]->depthBuffer.view);
 }
 
 void Render::createBuffer(vk::DeviceSize size, vk::BufferUsageFlags usage, vk::MemoryPropertyFlags properties, vk::Buffer& buffer, vk::DeviceMemory& memory) {
@@ -804,7 +839,7 @@ void Render::createImage(uint32_t width, uint32_t height, uint32_t mipLevels, vk
 	device.bindImageMemory(image, imageMemory, /*memoryOffset*/0, deviceLoader);
 }
 
-void Render::createTextureSampler() {
+void Render::createTextureSampler(float maxAnisotropy, float maxMipLod) {
 	vk::SamplerCreateInfo samplerInfo;
 	samplerInfo.magFilter = vk::Filter::eLinear;
 	samplerInfo.minFilter = vk::Filter::eLinear;
@@ -812,7 +847,7 @@ void Render::createTextureSampler() {
 	samplerInfo.addressModeV = vk::SamplerAddressMode::eRepeat;
 	samplerInfo.addressModeW = vk::SamplerAddressMode::eRepeat;
 	samplerInfo.anisotropyEnable = VK_TRUE;
-	samplerInfo.maxAnisotropy = 16;
+	samplerInfo.maxAnisotropy = maxAnisotropy;
 	samplerInfo.borderColor = vk::BorderColor::eIntOpaqueBlack;
 	samplerInfo.unnormalizedCoordinates = VK_FALSE;
 	samplerInfo.compareEnable = VK_FALSE;
@@ -820,7 +855,7 @@ void Render::createTextureSampler() {
 	samplerInfo.mipmapMode = vk::SamplerMipmapMode::eLinear;
 	samplerInfo.mipLodBias = 0.0f;
 	samplerInfo.minLod = 0.0f;
-	samplerInfo.maxLod = static_cast<float>(textures[0].mipLevels);
+	samplerInfo.maxLod = maxMipLod;
 
 	textureSampler = device.createSampler(samplerInfo, nullptr, deviceLoader);
 }
@@ -888,7 +923,7 @@ void Render::createBuffers() {
 		createBuffer(bufferSizes[i], bufferUsages[i], vk::MemoryPropertyFlagBits::eDeviceLocal, buffers[i], buffersMemory[i]);
 	}
 }
-
+/*
 void Render::createUniformBuffers() {
 	unsigned int uniformCount = uniformSizes.size();
 	unsigned int swapChainImageCount = swapchain.getImageCount();
@@ -909,8 +944,72 @@ void Render::createUniformBuffers() {
 		uniformEvent[image] = device.createEvent(createInfo, nullptr, deviceLoader);
 	}
 }
+*/
 
-void Render::createDescriptorPool() {
+void Render::createPipelineUniformBuffers(const RenderPipeline& pipeline) {
+	// uniformBuffers vector is filled like this : u0i0 | u0i1 | u0i2 | u1i0 | u1i1 | u1i2
+	uint uniform = 0u;
+	for (auto& descriptor : pipeline.descriptors) {
+		for (int i = 0; i < swapchain.getImageCount(); i++) {
+			if (descriptor.type == vk::DescriptorType::eUniformBuffer) {
+				vk::Buffer uniformBuffer;
+				vk::DeviceMemory uniformBufferMemory;
+				createUniformBuffer(descriptor.bufferSize, uniformBuffer, uniformBufferMemory);
+
+				unsigned int bufferIndex = uniformBuffers.size();
+
+				uniformBuffers.push_back(uniformBuffer);
+				uniformBuffersMemory.push_back(uniformBufferMemory);
+
+				// Write descriptor
+				//unsigned int bufferIndex = i + uniform * swapchain.getImageCount();
+				vk::DescriptorBufferInfo bufferInfo;
+				bufferInfo.buffer = uniformBuffers[bufferIndex];
+				bufferInfo.offset = 0;
+				bufferInfo.range = descriptor.bufferSize;
+
+				vk::WriteDescriptorSet descriptorWrite;
+				descriptorWrite.dstSet = pipeline.descriptorSets[i];
+				descriptorWrite.dstBinding = descriptor.location;
+				descriptorWrite.dstArrayElement = 0;
+				descriptorWrite.descriptorType = vk::DescriptorType::eUniformBuffer;
+				descriptorWrite.descriptorCount = 1;
+				descriptorWrite.pBufferInfo = &bufferInfo;
+
+				device.updateDescriptorSets(descriptorWrite, nullptr, deviceLoader);
+				uniform++;
+			}
+			if (descriptor.type == vk::DescriptorType::eCombinedImageSampler) {
+				vk::DescriptorImageInfo imageInfo;
+				imageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+				imageInfo.imageView = textures[0].view;	// TODO: maybe update descriptor when recording commandbuffer each frame instead of recording once and for all
+				imageInfo.sampler = textureSampler;
+
+				vk::WriteDescriptorSet descriptorWrite;
+				descriptorWrite.dstSet = pipeline.descriptorSets[i];
+				descriptorWrite.dstBinding = descriptor.location;
+				descriptorWrite.dstArrayElement = 0;
+				descriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
+				descriptorWrite.descriptorCount = 1;
+				descriptorWrite.pImageInfo = &imageInfo;
+
+				device.updateDescriptorSets(descriptorWrite, nullptr, deviceLoader);
+			}
+		}
+	}
+}
+
+void Render::createUniformBuffer(vk::DeviceSize bufferSize, vk::Buffer& buffer, vk::DeviceMemory& memory) {
+	createBuffer(bufferSize, vk::BufferUsageFlagBits::eUniformBuffer, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, buffer, memory);
+}
+
+void Render::updateUniformBuffer(uint32_t uniformIndex, uint32_t imageIndex) {
+	//TODO adapt to any cases
+	uint32_t uniform = imageIndex + uniformIndex * swapchain.getImageCount();
+	::fillBuffer(device, uniformBuffersMemory[uniform], pipelines[0]->uniformData[uniformIndex], pipelines[0]->descriptors[uniformIndex].bufferSize, deviceLoader);
+}
+
+/*void Render::createDescriptorPool() {
 	uint32_t swapChainImageCount = static_cast<uint32_t>(swapchain.getImageCount());
 	uint32_t uniformCount = static_cast<uint32_t>(uniformSizes.size());
 
@@ -972,7 +1071,7 @@ void Render::createDescriptorSets() {
 
 		device.updateDescriptorSets(descriptorWrite, nullptr, deviceLoader);
 	}
-}
+}*/
 
 void Render::copyBuffer(vk::Buffer src, vk::Buffer dst, vk::DeviceSize size) {
 	auto commandBuffer = beginSingleTimeCommands();
@@ -1122,9 +1221,9 @@ void Render::createCommandBuffers() {
 		beginInfo.pInheritanceInfo = nullptr;
 
 		commandBuffers[i].begin(beginInfo, deviceLoader);
-
+//TODO
 		vk::RenderPassBeginInfo renderPassInfo;
-		renderPassInfo.renderPass = renderPass;
+		renderPassInfo.renderPass = pipelines[0]->renderPass;
 		renderPassInfo.framebuffer = swapchain.getFramebuffer(i);
 		renderPassInfo.renderArea.offset = vk::Offset2D(0, 0);
 		renderPassInfo.renderArea.extent = swapchain.getExtent();
@@ -1136,7 +1235,7 @@ void Render::createCommandBuffers() {
 
 		commandBuffers[i].beginRenderPass(renderPassInfo, vk::SubpassContents::eInline, deviceLoader);
 
-		commandBuffers[i].bindPipeline(vk::PipelineBindPoint::eGraphics, graphicsPipeline, deviceLoader);
+		commandBuffers[i].bindPipeline(vk::PipelineBindPoint::eGraphics, pipelines[0]->pipeline, deviceLoader);
 
 		// TODO enhance to handle multiple meshes
 		vk::Buffer vertexBuffers[1];
@@ -1157,13 +1256,13 @@ void Render::createCommandBuffers() {
 		commandBuffers[i].bindVertexBuffers(/*first*/0, /*count*/1, vertexBuffers, offsets, deviceLoader);
 		commandBuffers[i].bindIndexBuffer(indexBuffer, /*offset*/0, vk::IndexType::eUint32, deviceLoader);
 
-		commandBuffers[i].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelineLayout, /*first set*/0, descriptorSets[i], nullptr, deviceLoader);
+		commandBuffers[i].bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipelines[0]->pipelineLayout, /*first set*/0, pipelines[0]->descriptorSets[i], nullptr, deviceLoader);
 
 		commandBuffers[i].drawIndexed(indexCount, /*instance count*/1, /*first index*/0, /*vertex offset*/0, /*first instance*/0, deviceLoader);
 
 		commandBuffers[i].endRenderPass(deviceLoader);
 
-		commandBuffers[i].setEvent(uniformEvent[i], vk::PipelineStageFlagBits::eVertexShader, deviceLoader);
+		//commandBuffers[i].setEvent(uniformEvent[i], vk::PipelineStageFlagBits::eVertexShader, deviceLoader);
 
 		commandBuffers[i].end(deviceLoader);
 	}

@@ -128,10 +128,11 @@ void RenderTarget<Dispatch>::createFramebuffers(vk::RenderPass renderPass, vk::I
 	swapChainFramebuffers.resize(imageCount);
 
 	for(size_t i = 0; i < swapChainImageViews.size(); ++i) {
-		std::array<vk::ImageView, 2> attachments = {
-			swapChainImageViews[i],
-			depthImageView
-		};
+		std::vector<vk::ImageView> attachments;
+		attachments.push_back(swapChainImageViews[i]);
+		if (depthImageView)
+			attachments.push_back(depthImageView);
+		// (From vulkan-tutorial) Same depth image can be used because only a single subpass is running at the same time due to our semaphores
 
 		vk::FramebufferCreateInfo framebufferInfo;
 		framebufferInfo.renderPass = renderPass;

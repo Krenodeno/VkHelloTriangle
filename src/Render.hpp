@@ -10,6 +10,7 @@
 
 #include "Vulkan.hpp"
 
+#include "RenderPipeline.hpp"
 #include "RenderTarget.hpp"
 #include "RenderUtils.hpp"
 #include "Shader.hpp"
@@ -45,10 +46,21 @@ public:
 	void setAppName(std::string name) { appName = name; }
 	void setAppVersion(uint32_t version) { appVersion = version; }
 
+	void addPipeline(RenderPipeline& pipeline) {
+		pipeline.device = device;
+		pipeline.deviceLoader = deviceLoader;
+		pipelines.push_back(&pipeline);
+	}
+
+	/**
+	 * Create Vulkan resources with infos provided by the pipeline
+	 */
+	void finishSetup();
+
 	/**
 	 * Create a buffer of size bytes and return its index
 	 * If writeFromHost is true, you can call fillBuffer on it later
-	 * IF readFromHost if true, you can call getDataFomBuffer on it later
+	 * If readFromHost if true, you can call getDataFomBuffer on it later
 	 */
 	unsigned int addBuffer(uint64_t size, vk::BufferUsageFlags usage, bool writeFromHost = true, bool readFromHost = false);
 
@@ -68,17 +80,17 @@ public:
 	/**
 	 * Add a uniform buffer before init time
 	 */
-	unsigned int addUniform(uint64_t uniformSize, vk::ShaderStageFlags stageFlags) {
+/*	unsigned int addUniform(uint64_t uniformSize, vk::ShaderStageFlags stageFlags) {
 		unsigned int uniformIndex = uniformSizes.size();
 		uniformSizes.push_back(uniformSize);
 		uniformStages.push_back(stageFlags);
 		return uniformIndex;
 	}
-
+*/
 	/**
 	 * Update uniform data while rendering
 	 */
-	void updateUniform(unsigned int uniformIndex, const void* data, uint64_t dataSize) {
+/*	void updateUniform(unsigned int uniformIndex, const void* data, uint64_t dataSize) {
 		assert(uniformIndex < uniformSizes.size());
 		assert(dataSize <= uniformSizes[uniformIndex]);
 
@@ -90,7 +102,7 @@ public:
 				device.resetEvent(uniformEvent[i], deviceLoader);
 			}
 	}
-
+*/
 	/**
 	 * Get data from a buffer
 	 */
@@ -115,14 +127,6 @@ public:
 		device.freeMemory(stagingBufferMemory, nullptr, deviceLoader);
 		device.destroyBuffer(stagingBuffer, nullptr, deviceLoader);
 		return res;
-	}
-
-	void setVertexShader(std::string file) {
-		vertexShaderFile = file;
-	}
-
-	void setFragmentShader(std::string file) {
-		fragmentShaderFile = file;
 	}
 
 	uint32_t addTexture(const std::string& filename) { imageFilenames.push_back(filename); return imageFilenames.size()-1; }
@@ -171,19 +175,18 @@ protected:
 
 	vk::Queue presentQueue;
 
-	Texture depthBuffer;
+	std::vector<RenderPipeline*> pipelines;
 
-	vk::RenderPass renderPass;
-	vk::DescriptorSetLayout descriptorSetLayout;
-	vk::PipelineLayout pipelineLayout;
+//	Texture depthBuffer;
 
-	std::string vertexShaderFile;
-	std::string fragmentShaderFile;
+//	vk::RenderPass renderPass;
+//	vk::DescriptorSetLayout descriptorSetLayout;
+//	vk::PipelineLayout pipelineLayout;
 
-	vk::Pipeline graphicsPipeline;
+//	vk::Pipeline graphicsPipeline;
 
-	vk::DescriptorPool descriptorPool;
-	std::vector<vk::DescriptorSet> descriptorSets;
+//	vk::DescriptorPool descriptorPool;
+//	std::vector<vk::DescriptorSet> descriptorSets;
 
 	vk::CommandPool commandPool;
 
@@ -196,13 +199,13 @@ protected:
 	std::vector<vk::DeviceMemory>     buffersMemory;
 	std::vector<uint64_t>             bufferSizes;
 	std::vector<vk::BufferUsageFlags> bufferUsages;
-
+/*
 	std::vector<uint64_t>             uniformSizes;
 	std::vector<vk::ShaderStageFlags> uniformStages;
-	std::vector<vk::Buffer>           uniformBuffers;
+*/	std::vector<vk::Buffer>           uniformBuffers;
 	std::vector<vk::DeviceMemory>     uniformBuffersMemory;
-	std::vector<vk::Event>            uniformEvent;
-
+/*	std::vector<vk::Event>            uniformEvent;
+*/
 	std::vector<vk::CommandBuffer> commandBuffers;
 
 	/* Semaphores sync GPU's operations */
@@ -226,15 +229,15 @@ protected:
 
 	void createSwapchain(vk::SwapchainKHR = nullptr);
 
-	void createRenderPass();
+//	void createRenderPass();
 
-	void createDescriptorSetLayout();
+//	void createDescriptorSetLayout();
 
-	void createDescriptorPool();
+//	void createDescriptorPool();
 
-	void createDescriptorSets();
+//	void createDescriptorSets();
 
-	void createGraphicsPipeline();
+//	void createGraphicsPipeline();
 
 	void createFramebuffers();
 
@@ -244,9 +247,9 @@ protected:
 
 	void createTextureImageViews();
 
-	void createTextureSampler();
+	void createTextureSampler(float maxAnisotropy, float maxMipLod);
 
-	void createDepthResources();
+	Texture createDepthResources(uint32_t width, uint32_t height);
 
 	void createBuffer(vk::DeviceSize, vk::BufferUsageFlags, vk::MemoryPropertyFlags, vk::Buffer&, vk::DeviceMemory&);
 
@@ -256,7 +259,13 @@ protected:
 
 	void createBuffers();
 
-	void createUniformBuffers();
+//	void createUniformBuffers();
+
+	void createPipelineUniformBuffers(const RenderPipeline&);
+
+	void createUniformBuffer(vk::DeviceSize bufferSize, vk::Buffer& buffer, vk::DeviceMemory& memory);
+
+	void updateUniformBuffer(uint32_t uniformIndex, uint32_t imageIndex);
 
 	void copyBuffer(vk::Buffer, vk::Buffer, vk::DeviceSize);
 

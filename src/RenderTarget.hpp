@@ -29,7 +29,7 @@ public:
 
 	unsigned int getImageCount();
 
-	void createFramebuffers(vk::RenderPass, vk::ImageView);
+	void createFramebuffers(vk::RenderPass, vk::ImageView depth = nullptr);
 
 private:
 
