@@ -118,13 +118,13 @@ void RenderPipeline::createDescriptorSetLayout() {
 	for (unsigned int i = 0; i < descriptors.size(); i++) {
 		auto descriptor = descriptors[i];
 
-		vk::DescriptorSetLayoutBinding uboLayoutBinding;
-		uboLayoutBinding.binding = i;
-		uboLayoutBinding.descriptorType = descriptor.type;
-		uboLayoutBinding.descriptorCount = 1;
-		uboLayoutBinding.stageFlags = descriptor.stage;
+		vk::DescriptorSetLayoutBinding layoutBinding;
+		layoutBinding.binding = i;
+		layoutBinding.descriptorType = descriptor.type;
+		layoutBinding.descriptorCount = 1;
+		layoutBinding.stageFlags = descriptor.stage;
 
-		bindings.push_back(uboLayoutBinding);
+		bindings.push_back(layoutBinding);
 	}
 
 	vk::DescriptorSetLayoutCreateInfo layoutInfo;

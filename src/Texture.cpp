@@ -12,12 +12,18 @@ Texture::~Texture() {
 }
 
 void Texture::cleanup() {
-	if (view)
+	if (view) {
 		device.destroyImageView(view, nullptr, loader);
-	if (image)
+		view = nullptr;
+	}
+	if (image) {
 		device.destroyImage(image, nullptr, loader);
-	if (memory)
+		image = nullptr;
+	}
+	if (memory) {
 		device.freeMemory(memory, nullptr, loader);
+		memory = nullptr;
+	}
 }
 
 Texture::Texture(Texture&& rhs) {

@@ -122,14 +122,46 @@ void Render::cleanupSwapchain() {
 		device.destroyRenderPass(renderPass, nullptr, deviceLoader);
 */
 
-	for (auto& pipeline : pipelines)
-		pipeline->cleanup();
+	for (auto& pipeline : pipelines) {
+		//pipeline->cleanup();
+		if (pipeline->depthBuffer.view) {
+			device.destroyImageView(pipeline->depthBuffer.view, nullptr, deviceLoader);
+			pipeline->depthBuffer.view = nullptr;
+		}
+		if (pipeline->depthBuffer.image) {
+			device.destroyImage(pipeline->depthBuffer.image, nullptr, deviceLoader);
+			pipeline->depthBuffer.image = nullptr;
+		}
+		if (pipeline->depthBuffer.memory) {
+			device.freeMemory(pipeline->depthBuffer.memory, nullptr, deviceLoader);
+			pipeline->depthBuffer.memory = nullptr;
+		}
+
+		if (pipeline->pipeline) {
+			device.destroyPipeline(pipeline->pipeline, nullptr, deviceLoader);
+			pipeline->pipeline = nullptr;
+		}
+		if (pipeline->pipelineLayout) {
+			device.destroyPipelineLayout(pipeline->pipelineLayout, nullptr, deviceLoader);
+			pipeline->pipelineLayout = nullptr;
+		}
+		if (pipeline->renderPass) {
+			device.destroyRenderPass(pipeline->renderPass, nullptr, deviceLoader);
+			pipeline->renderPass = nullptr;
+		}
+
+		if (pipeline->descriptorPool) {
+			device.destroyDescriptorPool(pipeline->descriptorPool, nullptr, deviceLoader);
+		}
+	}
 
 	for (size_t i = 0; i < swapchain.getImageCount(); i++) {
 		device.destroyBuffer(uniformBuffers[i], nullptr, deviceLoader);
 		device.free(uniformBuffersMemory[i], nullptr, deviceLoader);
 		//device.destroyEvent(uniformEvent[i], nullptr, deviceLoader);
 	}
+	uniformBuffers.clear();
+	uniformBuffersMemory.clear();
 
 //	if (descriptorPool)
 //		device.destroyDescriptorPool(descriptorPool, nullptr, deviceLoader);
@@ -201,14 +233,16 @@ void Render::recreateSwapChain() {
 	cleanupSwapchain();
 
 	swapchain.recreate(surface, physicalDevice, windowExtent);
-//TODO
+// TODO
+	pipelines[0]->setViewportSize(swapchain.getExtent());
 	pipelines[0]->createRenderPass(swapchain.getImageFormat(), findDepthFormat(physicalDevice, deviceLoader));
+//	pipelines[0]->createDescriptorSetLayout();
 	pipelines[0]->createGraphicsPipeline();
 	pipelines[0]->depthBuffer = createDepthResources(swapchain.getExtent().width, swapchain.getExtent().height);
 	createFramebuffers();
-	createPipelineUniformBuffers(*pipelines[0]);
 	pipelines[0]->createDescriptorPool(swapchain.getImageCount());
 	pipelines[0]->createDescriptorSets(swapchain.getImageCount());
+	createPipelineUniformBuffers(*pipelines[0]);
 	createCommandBuffers();
 }
 
@@ -1221,7 +1255,7 @@ void Render::createCommandBuffers() {
 		beginInfo.pInheritanceInfo = nullptr;
 
 		commandBuffers[i].begin(beginInfo, deviceLoader);
-//TODO
+// TODO
 		vk::RenderPassBeginInfo renderPassInfo;
 		renderPassInfo.renderPass = pipelines[0]->renderPass;
 		renderPassInfo.framebuffer = swapchain.getFramebuffer(i);
