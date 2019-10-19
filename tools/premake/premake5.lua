@@ -1,6 +1,6 @@
 -- premake5.lua
 workspace "VkHelloTriangle"
-	configurations { "Debug", "DebugSAN", "Release", "ReleaseSAN" }
+	configurations { "Debug", "DebugSAN", "Release" }
 
 	local rootDir =   "../../"
 	local sourceDir = rootDir .. "src/"
@@ -31,7 +31,7 @@ workspace "VkHelloTriangle"
 	filter "toolset:not gcc and not clang"
 		removeconfigurations "*SAN"
 
-	filter { "configurations:*SAN", "toolset:gcc,clang" }
+	filter { "configurations:*SAN", "toolset:gcc or clang" }
 		buildoptions { "-fno-omit-frame-pointer" }
 		buildoptions { "-fsanitize=undefined,address" }
 		linkoptions { "-fsanitize=undefined,address" }
@@ -50,7 +50,7 @@ workspace "VkHelloTriangle"
 			"VK_USE_PLATFORM_WIN32_KHR",
 			"NOMINMAX"
 		}
-		libdirs { libDir .. "lib/*" }
+		libdirs({ libDir .. "lib/*" })
 
 
 	filter "system:Linux"
@@ -74,8 +74,6 @@ workspace "VkHelloTriangle"
 
 	includeVulkan()
 
-	linkVulkan()
-
 project "CompileShaders"
 	kind "Utility"
 	files({ dataDir .. "shaders/*.comp", dataDir .. "shaders/*.frag", dataDir .. "shaders/*.vert"})
@@ -95,14 +93,14 @@ project "CompileShaders"
 project "VkHelloTriangle"
 	kind "StaticLib"
 
-	includedirs { libDir .. "include" }
+	includedirs({ libDir .. "include" })
 
-	files { sourceDir .. "**.hpp", sourceDir .. "**.inl", sourceDir .. "**.cpp" }
+	files({ sourceDir .. "**.hpp", sourceDir .. "**.inl", sourceDir .. "**.cpp" })
 
 
 project "printVulkanInfos"
 	kind "ConsoleApp"
-	includedirs { libDir .. "include", sourceDir }
+	includedirs({ libDir .. "include", sourceDir })
 	files( sampleDir .. "printCapabilities.cpp" )
 
 	links "VkHelloTriangle"
@@ -110,24 +108,37 @@ project "printVulkanInfos"
 
 project "vulkan-tutorial"
 	kind "ConsoleApp"
-	includedirs { libDir .. "include", sourceDir }
+	includedirs({ libDir .. "include", sourceDir })
 	files({ sampleDir .. "vulkan-tutorial/*", dataDir .. "shaders/*.frag", dataDir .. "shaders/*.vert" })
+
+	links { "VkHelloTriangle", "CompileShaders" }
 
 	filter "system:Windows"
 		links "glfw3"
 
 	filter { "system:Linux" , "action:gmake2" }
 		buildoptions { "`pkg-config --cflags glfw3`" }
-		linkoptions { "`pkg-config --static --libs glfw3`" }
-
-	filter {}
-
-	links { "VkHelloTriangle", "CompileShaders" }
+		linkoptions  { "`pkg-config --static --libs glfw3`" }
 
 
 project "compute-fractal"
 	kind "ConsoleApp"
-	includedirs { libDir .. "include", sourceDir }
+	includedirs({ libDir .. "include", sourceDir })
 	files({ sampleDir .. "compute/*", dataDir .. "shaders/*.comp" })
 
 	links { "CompileShaders" }
+	linkVulkan()
+
+project "shadowmap"
+	kind "ConsoleApp"
+	includedirs({ libDir .. "include", sourceDir })
+	files({ sampleDir .. "shadowmap/*", dataDir .. "shaders/*.frag", dataDir .. "shaders/*.vert",})
+
+	links { "VkHelloTriangle", "CompileShaders" }
+
+	filter "system:Windows"
+		links "glfw3"
+
+	filter { "system:Linux" , "action:gmake2" }
+		buildoptions { "`pkg-config --cflags glfw3`" }
+		linkoptions  { "`pkg-config --static --libs glfw3`" }

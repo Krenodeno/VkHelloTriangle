@@ -1,6 +1,6 @@
 #ifndef VK_DEVICE_LEVEL_FUNCTION
 #define VK_DEVICE_LEVEL_FUNCTION( fun )
-#endif // !VK_DEVICE_LEVEL_FUNCTION
+#endif
 
 VK_DEVICE_LEVEL_FUNCTION(vkDestroyDevice)
 
@@ -243,17 +243,5 @@ VK_DEVICE_LEVEL_FUNCTION(vkCmdNextSubpass)
 VK_DEVICE_LEVEL_FUNCTION(vkCmdEndRenderPass)
 
 VK_DEVICE_LEVEL_FUNCTION(vkCmdExecuteCommands)
-
-/* Swapchain extension */
-
-VK_DEVICE_LEVEL_FUNCTION(vkCreateSwapchainKHR)
-
-VK_DEVICE_LEVEL_FUNCTION(vkDestroySwapchainKHR)
-
-VK_DEVICE_LEVEL_FUNCTION(vkGetSwapchainImagesKHR)
-
-VK_DEVICE_LEVEL_FUNCTION(vkQueuePresentKHR)
-
-VK_DEVICE_LEVEL_FUNCTION(vkAcquireNextImageKHR)
 
 #undef VK_DEVICE_LEVEL_FUNCTION

@@ -5,7 +5,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtx/hash.hpp>
 
-#include <vulkan/vulkan.hpp>
+#include "Vulkan.hpp"
 
 #include <array>
 #include <functional>

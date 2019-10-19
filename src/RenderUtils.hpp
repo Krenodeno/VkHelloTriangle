@@ -1,7 +1,8 @@
 #ifndef RENDER_UTILS_HPP
 #define RENDER_UTILS_HPP
 
-#include <vulkan/vulkan.hpp>
+#include "Vulkan.hpp"
+
 #include <optional>
 #include <set>
 #include <vector>
@@ -53,21 +54,34 @@ struct SwapChainSupportDetails {
 	std::vector<vk::PresentModeKHR> presentModes;
 };
 
-inline bool checkExtensionSupport(const char* extension);
-inline bool checkLayerSupport(const char* layer);
-inline bool checkDeviceExtensionSupport(vk::PhysicalDevice, std::vector<const char*>);
-inline QueueFamilyIndices findQueueFamilies(vk::PhysicalDevice, vk::SurfaceKHR);
-inline bool isDeviceSuitable(vk::PhysicalDevice, std::vector<const char*> extensions, vk::QueueFlags, vk::SurfaceKHR);
-inline SwapChainSupportDetails querySwapChainSupport(vk::PhysicalDevice, vk::SurfaceKHR);
+template<typename Dispatch = vk::DispatchLoaderDefault>
+inline bool checkExtensionSupport(const char* extension, const Dispatch& d = Dispatch());
+template<typename Dispatch = vk::DispatchLoaderDefault>
+inline bool checkLayerSupport(const char* layer, const Dispatch& d = Dispatch());
+template<typename Dispatch = vk::DispatchLoaderDefault>
+inline bool checkDeviceExtensionSupport(vk::PhysicalDevice, std::vector<const char*>, const Dispatch& d = Dispatch());
+template<typename Dispatch = vk::DispatchLoaderDefault>
+inline QueueFamilyIndices findQueueFamilies(vk::PhysicalDevice, vk::SurfaceKHR = nullptr, const Dispatch& d = Dispatch());
+template<typename Dispatch = vk::DispatchLoaderDefault>
+inline bool isDeviceSuitable(vk::PhysicalDevice, std::vector<const char*> extensions, vk::QueueFlags, vk::SurfaceKHR = nullptr, const Dispatch& d = Dispatch());
+template<typename Dispatch = vk::DispatchLoaderDefault>
+inline SwapChainSupportDetails querySwapChainSupport(vk::PhysicalDevice, vk::SurfaceKHR, const Dispatch& d = Dispatch());
 inline vk::SurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<vk::SurfaceFormatKHR>&);
 inline vk::PresentModeKHR chooseSwapPresentMode(const std::vector<vk::PresentModeKHR>&);
 inline vk::Extent2D chooseSwapExtent(const vk::SurfaceCapabilitiesKHR&, vk::Extent2D);
-inline uint32_t findMemoryType(vk::PhysicalDevice, uint32_t typeFilter, vk::MemoryPropertyFlags);
-inline vk::Format findSupportedFormat(vk::PhysicalDevice, const std::vector<vk::Format>&, vk::ImageTiling, vk::FormatFeatureFlags);
-inline vk::Format findDepthFormat(vk::PhysicalDevice);
+template<typename Dispatch = vk::DispatchLoaderDefault>
+inline uint32_t findMemoryType(vk::PhysicalDevice, uint32_t typeFilter, vk::MemoryPropertyFlags, const Dispatch& d = Dispatch());
+template<typename Dispatch = vk::DispatchLoaderDefault>
+inline vk::Format findSupportedFormat(vk::PhysicalDevice, const std::vector<vk::Format>&, vk::ImageTiling, vk::FormatFeatureFlags, const Dispatch& d = Dispatch());
+template<typename Dispatch = vk::DispatchLoaderDefault>
+inline vk::Format findDepthFormat(vk::PhysicalDevice, const Dispatch& d = Dispatch());
 inline bool hasStencilComponent(vk::Format);
-inline void fillBuffer(vk::Device, vk::DeviceMemory&, const void*, vk::DeviceSize);
-template<typename T> inline void fillBuffer(vk::Device, vk::DeviceMemory&, std::vector<T>);
+template<typename Dispatch = vk::DispatchLoaderDefault>
+inline vk::ImageView createImageView(vk::Device, vk::Image, vk::Format, vk::ImageAspectFlags, uint32_t mipLevels, const Dispatch& d = Dispatch());
+template<typename Dispatch = vk::DispatchLoaderDefault>
+inline void fillBuffer(vk::Device, vk::DeviceMemory&, const void*, vk::DeviceSize, const Dispatch& d = Dispatch());
+template<typename T, typename Dispatch = vk::DispatchLoaderDefault>
+inline void fillBuffer(vk::Device, vk::DeviceMemory&, std::vector<T>, const Dispatch& d = Dispatch());
 
 #include "RenderUtils.inl"
 

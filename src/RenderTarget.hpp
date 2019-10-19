@@ -1,19 +1,20 @@
 #ifndef RENDER_TARGET_HPP
 #define RENDER_TARGET_HPP
 
-#include <vulkan/vulkan.hpp>
+#include "Vulkan.hpp"
 
 #include <vector>
 
 #include "RenderUtils.hpp"
 
+template<typename Dispatch = vk::DispatchLoaderDefault>
 class RenderTarget {
 public:
 
 	RenderTarget() {}
 	~RenderTarget() {}
 
-	void init(vk::SurfaceKHR, vk::PhysicalDevice, vk::Device, vk::Extent2D, vk::SwapchainKHR = nullptr);
+	void init(vk::SurfaceKHR, vk::PhysicalDevice, vk::Device, vk::Extent2D, vk::SwapchainKHR = nullptr, Dispatch = Dispatch());
 	void cleanup();
 	void recreate(vk::SurfaceKHR, vk::PhysicalDevice, vk::Extent2D);
 
@@ -26,15 +27,17 @@ public:
 
 	vk::Framebuffer getFramebuffer(unsigned long);
 
-	unsigned long getSize();
+	unsigned int getImageCount();
 
-	void createFramebuffers(vk::RenderPass, vk::ImageView);
+	void createFramebuffers(vk::RenderPass, vk::ImageView depth = nullptr);
 
 private:
 
 	vk::Device device;
+	Dispatch deviceLoader;
 
 	vk::SwapchainKHR swapChain;
+	unsigned int imageCount;
 	std::vector<vk::Image> swapChainImages;
 	vk::Format swapChainImageFormat;
 	vk::Extent2D swapChainExtent;
@@ -44,5 +47,7 @@ private:
 	void createImageViews();
 
 };
+
+#include "RenderTarget.inl"
 
 #endif
