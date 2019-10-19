@@ -46,16 +46,30 @@ public:
 	void setAppName(std::string name) { appName = name; }
 	void setAppVersion(uint32_t version) { appVersion = version; }
 
-	void addPipeline(RenderPipeline& pipeline) {
+	uint32_t addPipeline(RenderPipeline& pipeline) {
+		uint32_t index = pipelines.size();
 		pipeline.device = device;
 		pipeline.deviceLoader = deviceLoader;
 		pipelines.push_back(&pipeline);
+		return index;
 	}
 
 	/**
 	 * Create Vulkan resources with infos provided by the pipeline
 	 */
 	void finishSetup();
+
+	/**
+	 * Create a one-time-submit CommandBuffer
+	 */
+	vk::CommandBuffer beginDrawCommands();
+
+	/**
+	 * End the CommandBuffer and submit it
+	 */
+	void endDrawCommands(vk::CommandBuffer);
+
+	void submitDrawCommands(vk::CommandBuffer);
 
 	/**
 	 * Create a buffer of size bytes and return its index
@@ -127,6 +141,34 @@ public:
 		device.freeMemory(stagingBufferMemory, nullptr, deviceLoader);
 		device.destroyBuffer(stagingBuffer, nullptr, deviceLoader);
 		return res;
+	}
+
+	const vk::DispatchLoaderDynamic& getDeviceLoader() { return deviceLoader; }
+
+	vk::Buffer getBuffer(uint32_t bufferIndex) {
+		return buffers[bufferIndex];
+	}
+
+	vk::RenderPassBeginInfo getRenderPassInfo(const RenderPipeline& pipeline) {
+		vk::RenderPassBeginInfo renderPassInfo;
+		renderPassInfo.renderPass = pipeline.renderPass;
+		renderPassInfo.framebuffer = swapchain.getFramebuffer(currentFrame);
+		renderPassInfo.renderArea.offset = vk::Offset2D(0, 0);
+		renderPassInfo.renderArea.extent = swapchain.getExtent();
+		std::array<vk::ClearValue, 2> clearColors;
+		clearColors[0].color = vk::ClearColorValue(std::array<float, 4>({0.2f, 0.2f, 0.2f, 1.f}));
+		clearColors[1].depthStencil = vk::ClearDepthStencilValue(1.0f, 0.0f);
+		renderPassInfo.clearValueCount = clearColors.size();
+		renderPassInfo.pClearValues = clearColors.data();
+		return renderPassInfo;
+	}
+
+	void bindPipeline(vk::CommandBuffer& commandBuffer, const RenderPipeline& pipeline) {
+		commandBuffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline.pipeline, deviceLoader);
+	}
+
+	void bindDescritpor(vk::CommandBuffer& commandBuffer, const RenderPipeline& pipeline) {
+		commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipeline.pipelineLayout, 0u, pipeline.descriptorSets[currentFrame], nullptr, deviceLoader);
 	}
 
 	uint32_t addTexture(const std::string& filename) { imageFilenames.push_back(filename); return imageFilenames.size()-1; }

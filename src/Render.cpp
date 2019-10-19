@@ -356,6 +356,71 @@ void Render::fillBuffer(unsigned int bufferIndex, const void* data, uint64_t dat
 	device.destroyBuffer(stagingBuffer, nullptr, deviceLoader);
 }
 
+vk::CommandBuffer Render::beginDrawCommands() {
+	return beginSingleTimeCommands();
+}
+
+void Render::endDrawCommands(vk::CommandBuffer commandBuffer) {
+	commandBuffer.end(deviceLoader);
+}
+
+void Render::submitDrawCommands(vk::CommandBuffer commandBuffer) {
+	device.waitForFences(inFlightFences[currentFrame], VK_TRUE, std::numeric_limits<uint64_t>::max(), deviceLoader);
+
+	uint32_t imageIndex;
+	try {
+		auto result = device.acquireNextImageKHR(swapchain.getSwapchain(), std::numeric_limits<uint64_t>::max(), imageAvailableSemaphores[currentFrame], nullptr, deviceLoader);
+		imageIndex = result.value;
+	} catch (const vk::OutOfDateKHRError& e) {
+		recreateSwapChain();
+		return;
+	}
+
+	updateUniformBuffer(0u, imageIndex);
+
+	vk::SubmitInfo submitInfo;
+	vk::Semaphore waitSemaphores[] = { imageAvailableSemaphores[currentFrame] };
+	vk::PipelineStageFlags waitStages[] = { vk::PipelineStageFlagBits::eColorAttachmentOutput };
+	submitInfo.waitSemaphoreCount = 1;
+	submitInfo.pWaitSemaphores = waitSemaphores;
+	submitInfo.pWaitDstStageMask = waitStages;
+
+	submitInfo.commandBufferCount = 1;
+	submitInfo.pCommandBuffers = &commandBuffer;
+
+	vk::Semaphore signalSemaphores[] = { renderFinishedSemaphores[currentFrame] };
+	submitInfo.signalSemaphoreCount = 1;
+	submitInfo.pSignalSemaphores = signalSemaphores;
+
+	device.resetFences(inFlightFences[currentFrame], deviceLoader);
+
+	graphicsQueue.submit(submitInfo, inFlightFences[currentFrame], deviceLoader);
+
+	vk::PresentInfoKHR presentInfo;
+	presentInfo.waitSemaphoreCount = 1;
+	presentInfo.pWaitSemaphores = signalSemaphores;
+	vk::SwapchainKHR swapChains[] = { swapchain.getSwapchain() };
+	presentInfo.swapchainCount = 1;
+	presentInfo.pSwapchains = swapChains;
+	presentInfo.pImageIndices = &imageIndex;
+
+	try {
+		auto result = presentQueue.presentKHR(presentInfo, deviceLoader);
+		if (result == vk::Result::eSuboptimalKHR) {
+			recreateSwapChain();
+		}
+	} catch (const vk::OutOfDateKHRError& e) {
+		recreateSwapChain();
+	}
+
+	currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+
+	presentQueue.waitIdle(deviceLoader);
+	graphicsQueue.waitIdle(deviceLoader);
+
+	device.freeCommandBuffers(commandPool, commandBuffer, deviceLoader);
+}
+
 
 /*****************************************************************************/
 /***                            INITIALISATION                             ***/
@@ -1038,7 +1103,7 @@ void Render::createUniformBuffer(vk::DeviceSize bufferSize, vk::Buffer& buffer, 
 }
 
 void Render::updateUniformBuffer(uint32_t uniformIndex, uint32_t imageIndex) {
-	//TODO adapt to any cases
+	//TODO adapt to multiple pipelines
 	uint32_t uniform = imageIndex + uniformIndex * swapchain.getImageCount();
 	::fillBuffer(device, uniformBuffersMemory[uniform], pipelines[0]->uniformData[uniformIndex], pipelines[0]->descriptors[uniformIndex].bufferSize, deviceLoader);
 }

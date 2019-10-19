@@ -24,6 +24,11 @@ class Tutorial : public WindowedApp {
 
 	unsigned int uniformIndex;
 
+	unsigned int textureIndex;
+
+	unsigned int vertexBufferIndex;
+	unsigned int indexBufferIndex;
+
 	RenderPipeline pipeline;
 
 	const uint uniformLocation = 0u;
@@ -81,16 +86,16 @@ public:
 		std::cout << "Mesh triangles count: " << indices.size() / 3 << "\n";
 
 		// Mesh buffers
-		unsigned int vertexBuffer = render.addBuffer(vertices.size() * sizeof(vertices[0]), vk::BufferUsageFlagBits::eVertexBuffer);
-		unsigned int indexBuffer = render.addBuffer(indices.size() * sizeof(indices[0]), vk::BufferUsageFlagBits::eIndexBuffer);
+		vertexBufferIndex = render.addBuffer(vertices.size() * sizeof(vertices[0]), vk::BufferUsageFlagBits::eVertexBuffer);
+		indexBufferIndex  = render.addBuffer(indices.size() * sizeof(indices[0]), vk::BufferUsageFlagBits::eIndexBuffer);
 
-		render.addTexture(meshTextureFilename);
+		textureIndex = render.addTexture(meshTextureFilename);
 
 		render.finishSetup();
 
 		// render have created actual buffers, we can copy data into it
-		render.fillBuffer(vertexBuffer, vertices);
-		render.fillBuffer(indexBuffer, indices);
+		render.fillBuffer(vertexBufferIndex, vertices);
+		render.fillBuffer(indexBufferIndex, indices);
 
 	}
 
@@ -171,15 +176,40 @@ public:
 
 	/** Return true to continue, false to end the main loop and exit the program */
 	bool draw() {
+		const auto& deviceLoader = render.getDeviceLoader();
+
 		// record Command Buffer here
-		//vk::CommandBuffer commandBuffer = render.beginRecording();
+		vk::CommandBuffer commandBuffer = render.beginDrawCommands();
 
-		// render.bindVertexBuffer(0u);
-		// render.bindIndexBuffer(1u);
+		auto renderPassInfo = render.getRenderPassInfo(pipeline);
 
-		//render.endRecording(commandBuffer);
+		commandBuffer.beginRenderPass(renderPassInfo, vk::SubpassContents::eInline, deviceLoader);
 
-		render.drawFrame();
+		render.bindPipeline(commandBuffer, pipeline);
+
+		vk::Buffer vertexBuffers[1] = { render.getBuffer(vertexBufferIndex) };
+		vk::Buffer indexBuffer = render.getBuffer(indexBufferIndex);
+		uint32_t indexCount = indices.size();
+
+		vk::DeviceSize offsets[1] = {0};
+
+		commandBuffer.bindVertexBuffers(/*first*/0, /*count*/1, vertexBuffers, offsets, deviceLoader);
+		commandBuffer.bindIndexBuffer(indexBuffer, /*offset*/0, vk::IndexType::eUint32, deviceLoader);
+
+		render.bindDescritpor(commandBuffer, pipeline);
+
+		//commandBuffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipeline.pipelineLayout, /*first set*/0, pipeline.descriptorSets[i], nullptr, deviceLoader);
+
+		commandBuffer.drawIndexed(indexCount, /*instance count*/1, /*first index*/0, /*vertex offset*/0, /*first instance*/0, deviceLoader);
+
+		commandBuffer.endRenderPass(deviceLoader);
+
+		render.endDrawCommands(commandBuffer);
+
+		render.submitDrawCommands(commandBuffer);
+
+		// TODO : simplify all this with a function call like render.draw(pipeline, model);
+		// TODO : next, pack the models in a scene object
 
 		return !window.isClosed();
 	}
