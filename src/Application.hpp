@@ -4,8 +4,6 @@
 #include <functional>
 #include <string>
 
-#include "Render.hpp"
-
 class Application {
 public:
 

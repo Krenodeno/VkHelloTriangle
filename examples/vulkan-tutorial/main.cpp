@@ -5,6 +5,7 @@
 
 #include "WindowedApp.hpp"
 #include "RenderPipeline.hpp"
+#include "Render.hpp"
 
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <tiny_obj_loader.h>
@@ -17,7 +18,7 @@ struct UniformBufferObject {
 	glm::mat4 proj;
 };
 
-class Tutorial : public WindowedApp {
+class Tutorial : public WindowedApp<Render> {
 
 	std::vector<Vertex> vertices;
 	std::vector<uint32_t> indices;
@@ -217,9 +218,8 @@ public:
 };
 
 int main() {
-	Tutorial app;
-
 	try {
+		Tutorial app;
 		app.run();
 	}
 	catch (const std::exception& e) {
