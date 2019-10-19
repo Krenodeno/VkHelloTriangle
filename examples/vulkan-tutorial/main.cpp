@@ -26,6 +26,9 @@ class Tutorial : public WindowedApp {
 
 	RenderPipeline pipeline;
 
+	const uint uniformLocation = 0u;
+	const uint textureSamplerLocation = 1u;
+
 public:
 
 	Tutorial() : WindowedApp("Vulkan", VK_MAKE_VERSION(0, 0, 0)) {
@@ -65,8 +68,8 @@ public:
 		pipeline.enableDepthTest();
 
 		// Add one uniform and one sampler descriptors
-		pipeline.addUniform<UniformBufferObject>(vk::ShaderStageFlagBits::eVertex, 0u);
-		pipeline.addSampler(vk::ShaderStageFlagBits::eFragment, 1u);	
+		pipeline.addUniform<UniformBufferObject>(vk::ShaderStageFlagBits::eVertex, uniformLocation);
+		pipeline.addSampler(vk::ShaderStageFlagBits::eFragment, textureSamplerLocation);	
 
 		// mesh and texture filenames
 		const std::string meshFilename = "data/models/chalet.obj";
@@ -86,8 +89,8 @@ public:
 		render.finishSetup();
 
 		// render have created actual buffers, we can copy data into it
-		render.fillBuffer<Vertex>(vertexBuffer, vertices);
-		render.fillBuffer<uint32_t>(indexBuffer, indices);
+		render.fillBuffer(vertexBuffer, vertices);
+		render.fillBuffer(indexBuffer, indices);
 
 	}
 
@@ -162,7 +165,7 @@ public:
 		ubo.proj[1][1] *= -1;	// because of OpenGL upside down screen coordinates
 
 		//render.updateUniform(uniformIndex, &ubo, sizeof(ubo));
-		pipeline.updateUniform(ubo, 0u);
+		pipeline.updateUniform(ubo, uniformLocation);
 
 	}
 
