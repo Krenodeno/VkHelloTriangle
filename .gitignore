@@ -17,7 +17,7 @@
 build/
 
 # SPIR-V generated shaders
-*.spv
+**.spv
 
 # Precompiled headers
 **.pch
