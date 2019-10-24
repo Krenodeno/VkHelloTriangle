@@ -1,0 +1,39 @@
+#version 450
+
+layout(binding = 1) uniform sampler2D texSampler;
+layout(binding = 2) uniform sampler2D shadowMap;
+
+layout(location = 0) in vec3 fragColor;
+layout(location = 1) in vec2 fragTexCoord;
+
+layout(location = 0) out vec4 outColor;
+
+
+float lambert(vec3 normal, vec3 light, vec3 position) {
+	return max(0.0, dot(normalize(normal), normalize(light - position)));
+}
+
+float shadow(vec4 lightSpacePosition, vec3 lightDir, vec3 normal) {
+	// Needed in case of a perspective projection
+	vec3 projCoords = lightSpacePosition.xyz / lightSpacePosition.w;
+	// Range is [-1,1], change it to [0,1]
+	projCoords = (projCoords * 0.5) + 0.5;
+	float closestDepth = texture(shadowMap, projCoords.xy).r;
+	float currentDepth = projCoords.z;
+	// prevent shadow acne by adding bias
+	float bias = 0.00008;
+	// check wether current frag in in shadw or not
+	float shadow = (currentDepth - bias > closestDepth) ? 1.0 : 0.0;
+	return shadow;
+}
+
+void main() {
+	
+
+	//float inShadow = shadow(lightSpaceFragPos, lightWorldPos - fragWorldPos, fragNormal);
+
+	//float cos_theta = lambert(fragNormal, lightWorldPos, fragWorldPos);
+	
+	//outColor = texture_color * (1.0 - inShadow) * cos_theta;
+	outColor = texture(texSampler, fragTexCoord);
+}
