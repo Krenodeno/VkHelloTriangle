@@ -12,15 +12,15 @@ RenderPipeline::RenderPipeline(vk::Device dev, vk::DispatchLoaderDynamic dispatc
 }
 
 RenderPipeline::~RenderPipeline() {
-    cleanup();
+	cleanup();
 }
 
 void RenderPipeline::cleanup() {
 	if (pipeline){
-        device.destroyPipeline(pipeline, nullptr, deviceLoader);
+		device.destroyPipeline(pipeline, nullptr, deviceLoader);
 		pipeline = nullptr;
 	}
-    if (pipelineLayout) {
+	if (pipelineLayout) {
 		device.destroyPipelineLayout(pipelineLayout, nullptr, deviceLoader);
 		pipelineLayout = nullptr;
 	}
@@ -28,12 +28,12 @@ void RenderPipeline::cleanup() {
 		device.destroyDescriptorPool(descriptorPool, nullptr, deviceLoader);
 		descriptorPool = nullptr;
 	}
-    if (descriptorSetLayout) {
-        device.destroyDescriptorSetLayout(descriptorSetLayout, nullptr, deviceLoader);
+	if (descriptorSetLayout) {
+		device.destroyDescriptorSetLayout(descriptorSetLayout, nullptr, deviceLoader);
 		descriptorSetLayout = nullptr;
 	}
-    if (renderPass) {
-        device.destroyRenderPass(renderPass, nullptr, deviceLoader);
+	if (renderPass) {
+		device.destroyRenderPass(renderPass, nullptr, deviceLoader);
 		renderPass = nullptr;
 	}
 	
@@ -46,7 +46,7 @@ void RenderPipeline::cleanup() {
 }
 
 void RenderPipeline::createRenderPass(vk::Format colorFormat, vk::Format depthFormat = vk::Format::eUndefined) {
-    vk::AttachmentDescription colorAttachment;
+	vk::AttachmentDescription colorAttachment;
 	colorAttachment.format = colorFormat;
 	colorAttachment.samples = vk::SampleCountFlagBits::e1;
 	colorAttachment.loadOp = vk::AttachmentLoadOp::eClear;
@@ -113,7 +113,7 @@ void RenderPipeline::createRenderPass(vk::Format colorFormat, vk::Format depthFo
 }
 
 void RenderPipeline::createDescriptorSetLayout() {
-    std::vector<vk::DescriptorSetLayoutBinding> bindings;
+	std::vector<vk::DescriptorSetLayoutBinding> bindings;
 
 	for (unsigned int i = 0; i < descriptors.size(); i++) {
 		auto descriptor = descriptors[i];
@@ -135,8 +135,8 @@ void RenderPipeline::createDescriptorSetLayout() {
 }
 
 void RenderPipeline::createGraphicsPipeline() {
-    // TODO create shader only if filenames are provided
-    Shader vert(device, vk::ShaderStageFlagBits::eVertex, vertexShaderFileName, deviceLoader);
+	// TODO create shader only if filenames are provided
+	Shader vert(device, vk::ShaderStageFlagBits::eVertex, vertexShaderFileName, deviceLoader);
 	Shader frag(device, vk::ShaderStageFlagBits::eFragment, fragmentShaderFileName, deviceLoader);
 
 	// Create the actuals shaders and link them
@@ -243,7 +243,7 @@ void RenderPipeline::createGraphicsPipeline() {
 	pipelineLayoutInfo.setLayoutCount = 1;
 	pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
 	pipelineLayoutInfo.pushConstantRangeCount = 0;
-    pipelineLayoutInfo.pPushConstantRanges = nullptr;
+	pipelineLayoutInfo.pPushConstantRanges = nullptr;
 
 	pipelineLayout = device.createPipelineLayout(pipelineLayoutInfo, nullptr, deviceLoader);
 
@@ -269,13 +269,13 @@ void RenderPipeline::createGraphicsPipeline() {
 }
 
 void RenderPipeline::createDescriptorPool(uint32_t swapChainImageCount) {
-    std::vector<vk::DescriptorPoolSize> poolSizes;
-    for (int i = 0; i < descriptors.size(); i++) {
-        vk::DescriptorPoolSize size;
-        size.type = descriptors[i].type;
-        size.descriptorCount = swapChainImageCount;
-        poolSizes.push_back(size);
-    }
+	std::vector<vk::DescriptorPoolSize> poolSizes;
+	for (int i = 0; i < descriptors.size(); i++) {
+		vk::DescriptorPoolSize size;
+		size.type = descriptors[i].type;
+		size.descriptorCount = swapChainImageCount;
+		poolSizes.push_back(size);
+	}
 
 	vk::DescriptorPoolCreateInfo createInfo;
 	createInfo.poolSizeCount = poolSizes.size();
@@ -294,7 +294,7 @@ void RenderPipeline::createDescriptorSets(uint32_t descriptorSetCount) {
 
 	descriptorSets = device.allocateDescriptorSets(allocInfo, std::allocator<vk::DescriptorSet>(), deviceLoader);
 
-    // Update descriptors now, or before drawing ?
+	// Update descriptors now, or before drawing ?
 	// Now : need to know the uniform buffer and its size
 	// as well as ImageView
 }
