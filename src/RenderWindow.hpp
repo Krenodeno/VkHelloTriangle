@@ -169,7 +169,7 @@ public:
 	RenderWindow& operator=(const RenderWindow&) = delete;
 	RenderWindow& operator=(RenderWindow&&) = delete;
 
-	template<typename Dispatch = vk::DispatchLoaderDefault>
+	template<typename Dispatch>
 	vk::UniqueHandle<vk::SurfaceKHR, Dispatch> createSurfaceUnique(vk::Instance instance, Dispatch d) {
 #if defined(USE_WINDOWS_OPERATING_SYSTEM)
 		vk::Win32SurfaceCreateInfoKHR surfaceCreateInfo;
@@ -183,7 +183,7 @@ public:
 		return instance.createXlibSurfaceKHRUnique(surfaceCreateInfo, nullptr, d);
 #endif
 	}
-	template<typename Dispatch = vk::DispatchLoaderDefault>
+	template<typename Dispatch>
 	vk::SurfaceKHR createSurface(vk::Instance instance, Dispatch d) {
 #if defined(USE_WINDOWS_OPERATING_SYSTEM)
 		vk::Win32SurfaceCreateInfoKHR surfaceCreateInfo;

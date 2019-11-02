@@ -7,7 +7,7 @@
 #include "fileUtils.hpp"
 #include "Vulkan.hpp"
 
-template<typename Dispatch = vk::DispatchLoaderDefault>
+template<typename Dispatch>
 struct Shader {
 	std::string path;
 	std::vector<char> buffer;

@@ -7,7 +7,7 @@
 
 #include "RenderUtils.hpp"
 
-template<typename Dispatch = vk::DispatchLoaderDefault>
+template<typename Dispatch>
 class RenderTarget {
 public:
 

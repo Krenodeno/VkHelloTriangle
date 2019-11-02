@@ -61,10 +61,10 @@ private:
 	std::vector<const char*> layers;
 	std::vector<const char*> instanceExtensions;
 
-	vk::UniqueHandle<vk::Instance, VulkanLoader> instance;
+	vk::UniqueInstance instance;
 	vk::DispatchLoaderDynamic instanceLoader;
 
-	vk::UniqueHandle<vk::DebugUtilsMessengerEXT, vk::DispatchLoaderDynamic> messenger;
+	vk::UniqueDebugUtilsMessengerEXT messenger;
 
 	vk::PhysicalDevice physicalDevice;
 
@@ -94,24 +94,34 @@ private:
 	Buffer indexBuffer = {nullptr, nullptr, vk::BufferUsageFlagBits::eIndexBuffer, 0u, 0u};
 	Texture texture;
 
-	struct UniformBufferObject {
+	struct MVPUniformBufferObject {
 		glm::mat4 model;
 		glm::mat4 view;
 		glm::mat4 proj;
 	};
 
-	std::vector<Buffer> uniformBuffers;
+	std::vector<Buffer> sunMVPUniformBuffers;
+	std::vector<Buffer> viewMVPUniformBuffers;
 
-	vk::UniqueHandle<vk::Sampler, vk::DispatchLoaderDynamic> textureSampler;
+	struct LightUniformBufferObject {
+		glm::mat4 light;
+		glm::vec4 viewWorldPos;
+		glm::vec4 lightWorldPos;
+	};
 
-	vk::UniqueHandle<vk::CommandPool, vk::DispatchLoaderDynamic> commandPool;
+	std::vector<Buffer> lightUniformBuffers;
 
-	std::vector<vk::UniqueHandle<vk::CommandBuffer, vk::DispatchLoaderDynamic>> commandBuffers;
 
-	std::vector<vk::UniqueHandle<vk::Semaphore, vk::DispatchLoaderDynamic>> imageAvailableSemaphores;
-	std::vector<vk::UniqueHandle<vk::Semaphore, vk::DispatchLoaderDynamic>> renderFinishedSemaphores;
+	vk::UniqueSampler textureSampler;
 
-	std::vector<vk::UniqueHandle<vk::Fence, vk::DispatchLoaderDynamic>> inFlightFences;
+	vk::UniqueCommandPool commandPool;
+
+	std::vector<vk::UniqueCommandBuffer> commandBuffers;
+
+	std::vector<vk::UniqueSemaphore> imageAvailableSemaphores;
+	std::vector<vk::UniqueSemaphore> renderFinishedSemaphores;
+
+	std::vector<vk::UniqueFence> inFlightFences;
 
 	// Initialisation process functions
 
@@ -155,8 +165,6 @@ private:
 	void createUniformBuffers();
 
 	void createUniformBuffer(vk::DeviceSize bufferSize, vk::Buffer& buffer, vk::DeviceMemory& memory);
-
-	void updateUniformBuffer(void* data, uint32_t imageIndex);
 
 	void createDescriptorPool();
 

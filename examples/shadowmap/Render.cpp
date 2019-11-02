@@ -9,7 +9,9 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-Render::Render(const std::string& appName, uint32_t appVersion, RenderType type) : appName(appName), appVersion(appVersion), renderType(type), validationLayerEnabled(false) {
+Render::Render(const std::string& appName, uint32_t appVersion, RenderType type)
+	: appName(appName), appVersion(appVersion), renderType(type), validationLayerEnabled(false),
+	instanceLoader(loader.vkGetInstanceProcAddr) {
 
 }
 
@@ -148,8 +150,10 @@ void Render::cleanup() {
 	vertexBuffer.cleanup(device.get(), deviceLoader);
 	indexBuffer.cleanup(device.get(), deviceLoader);
 
-	for (uint i = 0; i < uniformBuffers.size(); i++) {
-		uniformBuffers[i].cleanup(device.get(), deviceLoader);
+	for (uint i = 0; i < swapchain.getImageCount(); i++) {
+		sunMVPUniformBuffers[i].cleanup(device.get(), deviceLoader);
+		viewMVPUniformBuffers[i].cleanup(device.get(), deviceLoader);
+		lightUniformBuffers[i].cleanup(device.get(), deviceLoader);
 	}
 }
 
@@ -170,13 +174,33 @@ void Render::drawFrame() {
 
 	float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
-	UniformBufferObject ubo = {};
-		ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(20.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-		ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+	auto model = glm::rotate(glm::mat4(1.0f), time * glm::radians(20.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+	auto lightPos = glm::vec3(4.0f, -4.0f, 4.0f);
+	auto cameraPos = glm::vec3(2.0f, 2.0f, 2.0f);
+
+	auto sunRotation = glm::rotate(glm::mat4(1.0f), time * glm::radians(10.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+
+	MVPUniformBufferObject sun = {};
+		sun.model = model;
+		sun.view = glm::lookAt(lightPos, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+		sun.proj = glm::ortho(-2.f, 2.f, -2.f, 2.f, 0.1f, 100.f);
+		sun.proj[1][1] *= -1;
+
+	MVPUniformBufferObject ubo = {};
+		ubo.model = model;
+		ubo.view = glm::lookAt(cameraPos, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
 		ubo.proj = glm::perspective(glm::radians(45.0f), swapchain.getExtent().width / (float)swapchain.getExtent().height, 0.1f, 10.0f);
 		ubo.proj[1][1] *= -1;	// because of OpenGL upside down screen coordinates
 
-	updateUniformBuffer(&ubo, imageIndex);
+	LightUniformBufferObject light = {};
+		light.light = sun.proj * sun.view * sun.model;
+		light.lightWorldPos = glm::vec4(lightPos, 1.f);
+		light.viewWorldPos = glm::vec4(cameraPos, 1.f) * glm::inverse(ubo.view);
+
+	// Update Uniforms
+	::fillBuffer(device.get(), viewMVPUniformBuffers[imageIndex].memory, &ubo, viewMVPUniformBuffers[imageIndex].size, deviceLoader);
+	::fillBuffer(device.get(), sunMVPUniformBuffers[imageIndex].memory, &sun, sunMVPUniformBuffers[imageIndex].size, deviceLoader);
+	::fillBuffer(device.get(), lightUniformBuffers[imageIndex].memory, &light, lightUniformBuffers[imageIndex].size, deviceLoader);
 
 	vk::SubmitInfo submitInfo;
 	vk::Semaphore waitSemaphores[] = { imageAvailableSemaphores[currentFrame].get() };
@@ -251,7 +275,7 @@ void Render::createInstance() {
 	std::cout << "  Required layers: \n";
 	for (auto layer : layers) {
 		std::cout << "\t" << layer << "\t";
-		if (!checkLayerSupport(layer, loader)) {
+		if (!checkLayerSupport(layer, instanceLoader)) {
 			std::string error_msg1(layer);
 			std::string error_msg2(" not supported !");
 			throw std::runtime_error(error_msg1 + error_msg2);
@@ -262,7 +286,7 @@ void Render::createInstance() {
 	std::cout << "  Required extensions: \n";
 	for (auto extension : instanceExtensions) {
 		std::cout << "\t" << extension << "\t";
-		if (checkExtensionSupport(extension, loader))
+		if (checkExtensionSupport(extension, instanceLoader))
 			std::cout << "supported\n";
 		else {
 			std::cerr << "non supported\n";
@@ -271,7 +295,7 @@ void Render::createInstance() {
 
 	// Remove non-supported extensions
 	instanceExtensions.erase(
-		std::remove_if(instanceExtensions.begin(), instanceExtensions.end(), [&](const char* e){ return !checkExtensionSupport(e, loader); }),
+		std::remove_if(instanceExtensions.begin(), instanceExtensions.end(), [&](const char* e){ return !checkExtensionSupport(e, instanceLoader); }),
 		instanceExtensions.end());
 
 	// Check if there is minimum 2 Surface extensions (VK_KHR_surface and platform Surface)
@@ -292,9 +316,11 @@ void Render::createInstance() {
 	instanceInfo.enabledExtensionCount = instanceExtensions.size();
 	instanceInfo.ppEnabledExtensionNames = instanceExtensions.data();
 
-	instance = vk::createInstanceUnique(instanceInfo, nullptr, loader);
-	loader.loadInstanceLevelEntryPoints(instance.get());
-	instanceLoader.init(instance.get(), loader.vkGetInstanceProcAddr);
+	// TODO: SDK 1.1.126 include a loader to dynamically load vkGetInstanceProcAddr and all the other symbols
+	instance = vk::createInstanceUnique(instanceInfo, nullptr, instanceLoader);
+	//loader.loadInstanceLevelEntryPoints(instance.get());
+	//instanceLoader.init(instance.get(), loader.vkGetInstanceProcAddr);
+	instanceLoader.init(instance.get());
 }
 
 void Render::setupDebugCallback() {
@@ -518,15 +544,18 @@ void Render::createRenderPass() {
 }
 
 void Render::createDescriptorSetLayout() {
+
+	uint32_t binding = 0;
+
 	// UBO
-	vk::DescriptorSetLayoutBinding uboLayoutBinding;
-	uboLayoutBinding.binding = 0;
-	uboLayoutBinding.descriptorType = vk::DescriptorType::eUniformBuffer;
-	uboLayoutBinding.descriptorCount = 1;
-	uboLayoutBinding.stageFlags = vk::ShaderStageFlagBits::eVertex;
+	vk::DescriptorSetLayoutBinding MVPLayoutBinding;
+	MVPLayoutBinding.binding = binding++;
+	MVPLayoutBinding.descriptorType = vk::DescriptorType::eUniformBuffer;
+	MVPLayoutBinding.descriptorCount = 1;
+	MVPLayoutBinding.stageFlags = vk::ShaderStageFlagBits::eVertex;
 
 	std::vector<vk::DescriptorSetLayoutBinding> shadowBindings;
-	shadowBindings.push_back(uboLayoutBinding);
+	shadowBindings.push_back(MVPLayoutBinding);
 
 	vk::DescriptorSetLayoutCreateInfo shadowLayoutInfo;
 	shadowLayoutInfo.bindingCount = shadowBindings.size();
@@ -534,10 +563,16 @@ void Render::createDescriptorSetLayout() {
 
 	pipelines[0].descriptorSetLayout = device->createDescriptorSetLayout(shadowLayoutInfo, nullptr, deviceLoader);
 
+	// Light UBO
+	vk::DescriptorSetLayoutBinding lightLayoutBinding;
+	lightLayoutBinding.binding = binding++;
+	lightLayoutBinding.descriptorType = vk::DescriptorType::eUniformBuffer;
+	lightLayoutBinding.descriptorCount = 1;
+	lightLayoutBinding.stageFlags = vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment;
 
 	// Sampler
 	vk::DescriptorSetLayoutBinding samplerLayoutBinding;
-	samplerLayoutBinding.binding = 1;
+	samplerLayoutBinding.binding = binding++;
 	samplerLayoutBinding.descriptorCount = 1;
 	samplerLayoutBinding.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 	samplerLayoutBinding.pImmutableSamplers = nullptr;
@@ -545,14 +580,15 @@ void Render::createDescriptorSetLayout() {
 
 	// Shadowmap sampler
 	vk::DescriptorSetLayoutBinding shadowMapLayoutBinding;
-	shadowMapLayoutBinding.binding = 2;
+	shadowMapLayoutBinding.binding = binding++;
 	shadowMapLayoutBinding.descriptorCount = 1;
 	shadowMapLayoutBinding.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 	shadowMapLayoutBinding.pImmutableSamplers = nullptr;
 	shadowMapLayoutBinding.stageFlags = vk::ShaderStageFlagBits::eFragment;
 
 	std::vector<vk::DescriptorSetLayoutBinding> bindings;
-	bindings.push_back(uboLayoutBinding);
+	bindings.push_back(MVPLayoutBinding);
+	bindings.push_back(lightLayoutBinding);
 	bindings.push_back(samplerLayoutBinding);
 	bindings.push_back(shadowMapLayoutBinding);
 
@@ -571,13 +607,6 @@ void Render::createGraphicsPipeline() {
 	auto bindingDescription = Vertex::getBindingDescription();
 	auto attributeDescriptions = Vertex::getAttributeDescriptions();
 
-	// Input of the vertex buffer
-	vk::PipelineVertexInputStateCreateInfo vertexInputInfo;
-	vertexInputInfo.vertexBindingDescriptionCount = 1;
-	vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
-	vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
-	vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
-
 	// Primitive style
 	vk::PipelineInputAssemblyStateCreateInfo inputAssembly;
 	inputAssembly.topology = vk::PrimitiveTopology::eTriangleList;
@@ -588,6 +617,13 @@ void Render::createGraphicsPipeline() {
 		Shader vert(device.get(), vk::ShaderStageFlagBits::eVertex, "data/shaders/depthonly.vert.spv", deviceLoader);
 
 		vk::PipelineShaderStageCreateInfo depthonlyShaderInfo = vert.getShaderStageInfo();
+
+		// Input of the vertex buffer
+		vk::PipelineVertexInputStateCreateInfo vertexInputInfo;
+		vertexInputInfo.vertexBindingDescriptionCount = 1;
+		vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
+		vertexInputInfo.vertexAttributeDescriptionCount = 1u;
+		vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
 
 		// Viewport
 		vk::Viewport viewport;
@@ -613,7 +649,7 @@ void Render::createGraphicsPipeline() {
 		// Rasterization
 		vk::PipelineRasterizationStateCreateInfo rasterizer;
 		// If true, clamp fragments beyond near and far to them. Require GPU feature
-		rasterizer.depthClampEnable = VK_TRUE; // can be set to True for shadowmap
+		rasterizer.depthClampEnable = VK_FALSE; // can be set to True for shadowmap
 		rasterizer.rasterizerDiscardEnable = VK_FALSE;
 		rasterizer.polygonMode = vk::PolygonMode::eFill; // any other than fill require a GPU feature
 		rasterizer.lineWidth = 1.0f; // require wideLines feature for lines thicker than 1 fragment
@@ -640,28 +676,6 @@ void Render::createGraphicsPipeline() {
 		depthStencil.depthWriteEnable = VK_TRUE;
 		depthStencil.depthCompareOp = vk::CompareOp::eLess;
 
-		// Color blending
-		// One PipelineColorBlendAttachmentState per attached framebuffer
-		vk::PipelineColorBlendAttachmentState colorBlendAttachment;
-		colorBlendAttachment.colorWriteMask =
-			vk::ColorComponentFlagBits::eR |
-			vk::ColorComponentFlagBits::eG |
-			vk::ColorComponentFlagBits::eB |
-			vk::ColorComponentFlagBits::eA;
-		colorBlendAttachment.blendEnable = VK_FALSE;
-		colorBlendAttachment.srcColorBlendFactor = vk::BlendFactor::eOne;
-		colorBlendAttachment.dstColorBlendFactor = vk::BlendFactor::eZero;
-		colorBlendAttachment.colorBlendOp = vk::BlendOp::eAdd;
-		colorBlendAttachment.srcAlphaBlendFactor = vk::BlendFactor::eOne;
-		colorBlendAttachment.dstAlphaBlendFactor = vk::BlendFactor::eZero;
-		colorBlendAttachment.alphaBlendOp = vk::BlendOp::eAdd;
-
-		vk::PipelineColorBlendStateCreateInfo colorBlending;
-		colorBlending.logicOpEnable = VK_FALSE; // setting to TRUE automatically disable blendAttachment
-		colorBlending.logicOp = vk::LogicOp::eCopy;
-		colorBlending.attachmentCount = 0;
-		colorBlending.pAttachments = nullptr;
-
 		// Dynamic state
 		// Allows to change some parameters without recreating the whole pipeline
 		// See DynamicState to know the ones that can be dynamically set
@@ -684,7 +698,7 @@ void Render::createGraphicsPipeline() {
 		pipelineInfo.pRasterizationState = &rasterizer;
 		pipelineInfo.pMultisampleState = &multisampling;
 		pipelineInfo.pDepthStencilState = &depthStencil;
-		pipelineInfo.pColorBlendState = &colorBlending;
+		pipelineInfo.pColorBlendState = nullptr;
 		pipelineInfo.pDynamicState = nullptr;
 
 		pipelineInfo.layout = pipelines[0].pipelineLayout;
@@ -699,7 +713,7 @@ void Render::createGraphicsPipeline() {
 
 	// Second Pipeline, the one drawing something on the screen
 	{
-		Shader vert(device.get(), vk::ShaderStageFlagBits::eVertex, "data/shaders/shader.vert.spv", deviceLoader);
+		Shader vert(device.get(), vk::ShaderStageFlagBits::eVertex, "data/shaders/shadow.vert.spv", deviceLoader);
 		Shader frag(device.get(), vk::ShaderStageFlagBits::eFragment, "data/shaders/shadow.frag.spv", deviceLoader);
 
 		// Create the actuals shaders and link them
@@ -708,6 +722,13 @@ void Render::createGraphicsPipeline() {
 		vk::PipelineShaderStageCreateInfo fragShaderStageInfo = frag.getShaderStageInfo();
 
 		vk::PipelineShaderStageCreateInfo shaderStages[] = {vertShaderStageInfo, fragShaderStageInfo};
+
+		// Input of the vertex buffer
+		vk::PipelineVertexInputStateCreateInfo vertexInputInfo;
+		vertexInputInfo.vertexBindingDescriptionCount = 1;
+		vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
+		vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
+		vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
 
 		// Viewport
 		vk::Viewport viewport;
@@ -1045,20 +1066,31 @@ void Render::createBuffers() {
 void Render::createUniformBuffers() {
 	unsigned int swapChainImageCount = swapchain.getImageCount();
 
-	uniformBuffers.resize(swapChainImageCount);
-	for (unsigned int image = 0; image < swapChainImageCount; image++) {
-		uniformBuffers[image].usage = vk::BufferUsageFlagBits::eUniformBuffer;
-		uniformBuffers[image].size = sizeof(UniformBufferObject);
-		createBuffer(uniformBuffers[image].size, vk::BufferUsageFlagBits::eUniformBuffer, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, uniformBuffers[image].buffer, uniformBuffers[image].memory);
+	sunMVPUniformBuffers.resize(swapChainImageCount);
+	for (unsigned int i = 0; i < swapChainImageCount; i++) {
+		sunMVPUniformBuffers[i].usage = vk::BufferUsageFlagBits::eUniformBuffer;
+		sunMVPUniformBuffers[i].size = sizeof(MVPUniformBufferObject);
+		createBuffer(sunMVPUniformBuffers[i].size, sunMVPUniformBuffers[i].usage, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, sunMVPUniformBuffers[i].buffer, sunMVPUniformBuffers[i].memory);
 	}
+
+	viewMVPUniformBuffers.resize(swapChainImageCount);
+	for (unsigned int image = 0; image < swapChainImageCount; image++) {
+		viewMVPUniformBuffers[image].usage = vk::BufferUsageFlagBits::eUniformBuffer;
+		viewMVPUniformBuffers[image].size = sizeof(MVPUniformBufferObject);
+		createBuffer(viewMVPUniformBuffers[image].size, viewMVPUniformBuffers[image].usage, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, viewMVPUniformBuffers[image].buffer, viewMVPUniformBuffers[image].memory);
+	}
+
+	lightUniformBuffers.resize(swapChainImageCount);
+	for (unsigned int i = 0; i < swapChainImageCount; i++) {
+		lightUniformBuffers[i].usage = vk::BufferUsageFlagBits::eUniformBuffer;
+		lightUniformBuffers[i].size = sizeof(LightUniformBufferObject);
+		createBuffer(lightUniformBuffers[i].size, lightUniformBuffers[i].usage, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, lightUniformBuffers[i].buffer, lightUniformBuffers[i].memory);
+	}
+
 }
 
 void Render::createUniformBuffer(vk::DeviceSize bufferSize, vk::Buffer& buffer, vk::DeviceMemory& memory) {
 	createBuffer(bufferSize, vk::BufferUsageFlagBits::eUniformBuffer, vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent, buffer, memory);
-}
-
-void Render::updateUniformBuffer(void* data, uint32_t imageIndex) {
-	::fillBuffer(device.get(), uniformBuffers[imageIndex].memory, data, uniformBuffers[imageIndex].size, deviceLoader);
 }
 
 void Render::createDescriptorPool() {
@@ -1077,7 +1109,7 @@ void Render::createDescriptorPool() {
 
 	std::array<vk::DescriptorPoolSize, 2> poolSizes;
 	poolSizes[0].type = vk::DescriptorType::eUniformBuffer;
-	poolSizes[0].descriptorCount = swapChainImageCount;
+	poolSizes[0].descriptorCount = swapChainImageCount * 2u;
 	poolSizes[1].type = vk::DescriptorType::eCombinedImageSampler;
 	poolSizes[1].descriptorCount = swapChainImageCount * 2u;
 
@@ -1104,9 +1136,9 @@ void Render::createDescriptorSets() {
 		for (unsigned int image = 0; image < swapChainImageCount; image++) {
 
 			vk::DescriptorBufferInfo bufferInfo;
-			bufferInfo.buffer = uniformBuffers[image].buffer;
+			bufferInfo.buffer = sunMVPUniformBuffers[image].buffer;
 			bufferInfo.offset = 0;
-			bufferInfo.range = uniformBuffers[image].size;
+			bufferInfo.range = sunMVPUniformBuffers[image].size;
 
 			vk::WriteDescriptorSet descriptorWrite;
 			descriptorWrite.dstSet = pipelines[0].descriptorSets[image];
@@ -1134,20 +1166,35 @@ void Render::createDescriptorSets() {
 
 		for (unsigned int image = 0; image < swapChainImageCount; image++) {
 
-			vk::DescriptorBufferInfo bufferInfo;
-			bufferInfo.buffer = uniformBuffers[image].buffer;
-			bufferInfo.offset = 0;
-			bufferInfo.range = uniformBuffers[image].size;
+			vk::DescriptorBufferInfo MVPBufferInfo;
+			MVPBufferInfo.buffer = viewMVPUniformBuffers[image].buffer;
+			MVPBufferInfo.offset = 0;
+			MVPBufferInfo.range = viewMVPUniformBuffers[image].size;
 
-			vk::WriteDescriptorSet descriptorWrite;
-			descriptorWrite.dstSet = pipelines[1].descriptorSets[image];
-			descriptorWrite.dstBinding = 0u;
-			descriptorWrite.dstArrayElement = 0;
-			descriptorWrite.descriptorType = vk::DescriptorType::eUniformBuffer;
-			descriptorWrite.descriptorCount = 1;
-			descriptorWrite.pBufferInfo = &bufferInfo;
+			vk::WriteDescriptorSet MVPDescritporWrite;
+			MVPDescritporWrite.dstSet = pipelines[1].descriptorSets[image];
+			MVPDescritporWrite.dstBinding = 0u;
+			MVPDescritporWrite.dstArrayElement = 0;
+			MVPDescritporWrite.descriptorType = vk::DescriptorType::eUniformBuffer;
+			MVPDescritporWrite.descriptorCount = 1;
+			MVPDescritporWrite.pBufferInfo = &MVPBufferInfo;
 
-			device->updateDescriptorSets(descriptorWrite, nullptr, deviceLoader);
+			device->updateDescriptorSets(MVPDescritporWrite, nullptr, deviceLoader);
+
+			vk::DescriptorBufferInfo lightBufferInfo;
+			lightBufferInfo.buffer = lightUniformBuffers[image].buffer;
+			lightBufferInfo.offset = 0;
+			lightBufferInfo.range = lightUniformBuffers[image].size;
+
+			vk::WriteDescriptorSet lightDescritporWrite;
+			lightDescritporWrite.dstSet = pipelines[1].descriptorSets[image];
+			lightDescritporWrite.dstBinding = 1u;
+			lightDescritporWrite.dstArrayElement = 0;
+			lightDescritporWrite.descriptorType = vk::DescriptorType::eUniformBuffer;
+			lightDescritporWrite.descriptorCount = 1;
+			lightDescritporWrite.pBufferInfo = &lightBufferInfo;
+
+			device->updateDescriptorSets(lightDescritporWrite, nullptr, deviceLoader);
 
 			vk::DescriptorImageInfo imageInfo;
 			imageInfo.imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
@@ -1156,7 +1203,7 @@ void Render::createDescriptorSets() {
 
 			vk::WriteDescriptorSet textureDescriptorWrite;
 			textureDescriptorWrite.dstSet = pipelines[1].descriptorSets[image];
-			textureDescriptorWrite.dstBinding = 1u;
+			textureDescriptorWrite.dstBinding = 2u;
 			textureDescriptorWrite.dstArrayElement = 0;
 			textureDescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 			textureDescriptorWrite.descriptorCount = 1;
@@ -1171,7 +1218,7 @@ void Render::createDescriptorSets() {
 
 			vk::WriteDescriptorSet shadowDescriptorWrite;
 			shadowDescriptorWrite.dstSet = pipelines[1].descriptorSets[image];
-			shadowDescriptorWrite.dstBinding = 2u;
+			shadowDescriptorWrite.dstBinding = 3u;
 			shadowDescriptorWrite.dstArrayElement = 0;
 			shadowDescriptorWrite.descriptorType = vk::DescriptorType::eCombinedImageSampler;
 			shadowDescriptorWrite.descriptorCount = 1;

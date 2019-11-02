@@ -1,10 +1,18 @@
 #version 450
 
-layout(binding = 1) uniform sampler2D texSampler;
-layout(binding = 2) uniform sampler2D shadowMap;
+layout(binding = 1) uniform ShadowUniform {
+	mat4 light;	// sun's MVP matrix
+	vec3 viewWorldPos;
+	vec3 lightWorldPos;
+} subo;
+
+layout(binding = 2) uniform sampler2D texSampler;
+layout(binding = 3) uniform sampler2D shadowMap;
 
 layout(location = 0) in vec3 fragColor;
 layout(location = 1) in vec2 fragTexCoord;
+layout(location = 2) in vec3 fragWorldPos;
+layout(location = 3) in vec4 lightSpaceFragPos;
 
 layout(location = 0) out vec4 outColor;
 
@@ -13,7 +21,7 @@ float lambert(vec3 normal, vec3 light, vec3 position) {
 	return max(0.0, dot(normalize(normal), normalize(light - position)));
 }
 
-float shadow(vec4 lightSpacePosition, vec3 lightDir, vec3 normal) {
+float shadow(vec4 lightSpacePosition, vec3 lightDir) {
 	// Needed in case of a perspective projection
 	vec3 projCoords = lightSpacePosition.xyz / lightSpacePosition.w;
 	// Range is [-1,1], change it to [0,1]
@@ -30,10 +38,12 @@ float shadow(vec4 lightSpacePosition, vec3 lightDir, vec3 normal) {
 void main() {
 	
 
-	//float inShadow = shadow(lightSpaceFragPos, lightWorldPos - fragWorldPos, fragNormal);
+	float inShadow = shadow(lightSpaceFragPos, subo.lightWorldPos - fragWorldPos);
 
 	//float cos_theta = lambert(fragNormal, lightWorldPos, fragWorldPos);
+
+	vec4 texture_color = texture(texSampler, fragTexCoord);
 	
-	//outColor = texture_color * (1.0 - inShadow) * cos_theta;
-	outColor = texture(texSampler, fragTexCoord);
+	outColor = texture_color * (1.0 - inShadow);// * cos_theta;
+	//outColor = texture(texSampler, fragTexCoord);
 }

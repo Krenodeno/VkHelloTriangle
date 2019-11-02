@@ -2,6 +2,7 @@
 #define VULKAN_LOADER_HPP
 
 #define VK_NO_PROTOTYPES
+#define VULKAN_HPP_DEFAULT_DISPATCHER ::vk::DispatchLoaderDynamic()
 #include <vulkan/vulkan.hpp>
 
 #include "OperatingSystem.hpp"

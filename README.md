@@ -1,4 +1,4 @@
-# Learning Vulkan through vulkan-tutorial.com and Intel Vulkan tutorial
+# Learning Vulkan
 
 I'm currently learning the API by reeding tutorials and experimenting things.
 My goal is to have a general comprehension of the API, and to learn commons graphics technics.
@@ -20,7 +20,7 @@ My goal is to have a general comprehension of the API, and to learn commons grap
 ## How to build
 ### Dependencies
 
-* Vulkan SDK >= 1.1.106 : [Download LunarG's SDK](https://vulkan.lunarg.com) or install vulkan packages for your Linux ditribution.
+* Vulkan SDK >= 1.1.126 : [Download LunarG's SDK](https://vulkan.lunarg.com), install vulkan packages for your Linux ditribution or build it for sources.
 * GLFW >= 3.2.1 : [Download and compile GLFW](https://www.glfw.org) or install GLFW dev and regular packages.
 * GLM >= 0.9.7 : [Download GLM](https://glm.g-truc.net) or install GLM packages.
 
