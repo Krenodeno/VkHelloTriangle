@@ -175,7 +175,7 @@ void Render::drawFrame() {
 	float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
 	auto model = glm::rotate(glm::mat4(1.0f), time * glm::radians(20.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-	auto lightPos = glm::vec3(4.0f, -4.0f, 4.0f);
+	auto lightPos = glm::vec3(2.0f, -2.0f, 2.0f);
 	auto cameraPos = glm::vec3(2.0f, 2.0f, 2.0f);
 
 	auto sunRotation = glm::rotate(glm::mat4(1.0f), time * glm::radians(10.0f), glm::vec3(1.0f, 0.0f, 0.0f));
@@ -183,7 +183,7 @@ void Render::drawFrame() {
 	MVPUniformBufferObject sun = {};
 		sun.model = model;
 		sun.view = glm::lookAt(lightPos, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-		sun.proj = glm::ortho(-2.f, 2.f, -2.f, 2.f, 0.1f, 100.f);
+		sun.proj = glm::ortho(-2.f, 2.f, -2.f, 2.f, -4.f, 4.f);
 		sun.proj[1][1] *= -1;
 
 	MVPUniformBufferObject ubo = {};
@@ -195,7 +195,7 @@ void Render::drawFrame() {
 	LightUniformBufferObject light = {};
 		light.light = sun.proj * sun.view * sun.model;
 		light.lightWorldPos = glm::vec4(lightPos, 1.f);
-		light.viewWorldPos = glm::vec4(cameraPos, 1.f) * glm::inverse(ubo.view);
+		light.viewWorldPos = glm::vec4(cameraPos, 1.f);
 
 	// Update Uniforms
 	::fillBuffer(device.get(), viewMVPUniformBuffers[imageIndex].memory, &ubo, viewMVPUniformBuffers[imageIndex].size, deviceLoader);

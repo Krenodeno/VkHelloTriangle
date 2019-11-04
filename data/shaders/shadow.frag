@@ -36,14 +36,14 @@ float shadow(vec4 lightSpacePosition, vec3 lightDir) {
 }
 
 void main() {
-	
-
 	float inShadow = shadow(lightSpaceFragPos, subo.lightWorldPos - fragWorldPos);
 
 	//float cos_theta = lambert(fragNormal, lightWorldPos, fragWorldPos);
 
 	vec4 texture_color = texture(texSampler, fragTexCoord);
-	
-	outColor = texture_color * (1.0 - inShadow);// * cos_theta;
+
+	float shadowRatio = 0.9;
+
+	outColor = texture_color * (1.0 - (shadowRatio * inShadow));// * cos_theta;
 	//outColor = texture(texSampler, fragTexCoord);
 }
