@@ -47,10 +47,11 @@ public:
 #endif
 		do {
 			render.waitForFences();
+			window.pollEvents();
 			update();
 		} while (draw());
 
-		std::cout << std::endl;
+		std::cout << "Quitting..." << std::endl;
 
 		render.waitDeviceIdle();
 

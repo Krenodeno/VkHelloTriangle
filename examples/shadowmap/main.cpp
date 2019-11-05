@@ -68,7 +68,6 @@ public:
 
 	/** Return true to continue, false to end the main loop and exit the program */
 	bool draw() {
-		window.pollEvents();
 		render.drawFrame();
 		return !window.isClosed();
 	}

@@ -143,8 +143,6 @@ public:
 
 	/** Called at each frame before draw */
 	void update() {
-		window.pollEvents();
-
 		static auto startTime = high_resolution_clock::now();
 		static auto lastTime = high_resolution_clock::now();
 		static auto updateTime = high_resolution_clock::now();
