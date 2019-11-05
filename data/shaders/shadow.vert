@@ -8,7 +8,7 @@ layout(binding = 0) uniform UniformBufferObject {
 } ubo;
 
 layout(binding = 1) uniform ShadowUniform {
-	mat4 light;	// sun's MVP matrix
+	mat4 light;	// sun's VP matrix
 	vec3 viewWorldPos;
 	vec3 lightWorldPos;
 } subo;
@@ -30,6 +30,6 @@ void main() {
 	gl_Position = ubo.proj * ubo.view * ubo.model * vec4(inPosition, 1.0);
 	fragColor = inColor;
 	fragTexCoord = inTexCoord;
-	fragWorldPos = inPosition;
-	lightSpaceFragPos = subo.light * vec4(inPosition, 1.0);
+	fragWorldPos = vec3(ubo.model * vec4(inPosition, 1.0));
+	lightSpaceFragPos = subo.light * ubo.model * vec4(inPosition, 1.0);
 }

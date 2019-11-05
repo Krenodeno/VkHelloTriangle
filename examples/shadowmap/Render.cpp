@@ -193,7 +193,7 @@ void Render::drawFrame() {
 		ubo.proj[1][1] *= -1;	// because of OpenGL upside down screen coordinates
 
 	LightUniformBufferObject light = {};
-		light.light = sun.proj * sun.view * sun.model;
+		light.light = sun.proj * sun.view;
 		light.lightWorldPos = glm::vec4(lightPos, 1.f);
 		light.viewWorldPos = glm::vec4(cameraPos, 1.f);
 

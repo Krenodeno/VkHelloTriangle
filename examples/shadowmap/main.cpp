@@ -10,7 +10,7 @@
 class ShadowMapExample : public WindowedApp<Render> {
 public:
 
-	ShadowMapExample() : WindowedApp("shadowMap", VK_MAKE_VERSION(0, 0, 0)) {
+	ShadowMapExample() : WindowedApp("shadowMap", VK_MAKE_VERSION(0, 0, 0), 1024, 768) {
 		window.setKeyCallback(
 			[&](Key key, int scancode, int action, KeyModifiersFlags modifiers) {
 				if (key == Key::eEscape && action == GLFW_PRESS) {
