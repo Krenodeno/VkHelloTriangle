@@ -5,6 +5,7 @@
 #include <iostream>
 #include <chrono>
 
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -150,7 +151,7 @@ void Render::cleanup() {
 	vertexBuffer.cleanup(device.get(), deviceLoader);
 	indexBuffer.cleanup(device.get(), deviceLoader);
 
-	for (uint i = 0; i < swapchain.getImageCount(); i++) {
+	for (unsigned int i = 0; i < swapchain.getImageCount(); i++) {
 		sunMVPUniformBuffers[i].cleanup(device.get(), deviceLoader);
 		viewMVPUniformBuffers[i].cleanup(device.get(), deviceLoader);
 		lightUniformBuffers[i].cleanup(device.get(), deviceLoader);
@@ -183,13 +184,13 @@ void Render::drawFrame() {
 	MVPUniformBufferObject sun = {};
 		sun.model = model;
 		sun.view = glm::lookAt(lightPos, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-		sun.proj = glm::ortho(-2.f, 2.f, -2.f, 2.f, -4.f, 4.f);
+		sun.proj = glm::ortho(-2.f, 2.f, -2.f, 2.f, -1.f, 5.f);
 		sun.proj[1][1] *= -1;
 
 	MVPUniformBufferObject ubo = {};
 		ubo.model = model;
 		ubo.view = glm::lookAt(cameraPos, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-		ubo.proj = glm::perspective(glm::radians(45.0f), swapchain.getExtent().width / (float)swapchain.getExtent().height, 0.1f, 10.0f);
+		ubo.proj = glm::perspective(glm::radians(45.0f), swapchain.getExtent().width / (float)swapchain.getExtent().height, 0.1f, 5.0f);
 		ubo.proj[1][1] *= -1;	// because of OpenGL upside down screen coordinates
 
 	LightUniformBufferObject light = {};
