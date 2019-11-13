@@ -17,5 +17,5 @@ Mesh::Mesh(Mesh&&) {
 }
 
 Mesh& Mesh::operator=(Mesh&&) {
-
+	return *this;
 }
