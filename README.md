@@ -5,6 +5,7 @@ My goal is to have a general comprehension of the API, and to learn commons grap
 
 # Examples
 * Shadow mapping
+
 ![shadowmap](/examples/shadowmap/shadowmap.gif)
 
 ## TODO LIST
