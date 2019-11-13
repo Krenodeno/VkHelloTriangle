@@ -3,6 +3,10 @@
 I'm currently learning the API by reeding tutorials and experimenting things.
 My goal is to have a general comprehension of the API, and to learn commons graphics technics.
 
+# Examples
+* Shadow mapping
+![shadowmap](/examples/shadowmap/shadowmap.gif)
+
 ## TODO LIST
 
 * Renderer
