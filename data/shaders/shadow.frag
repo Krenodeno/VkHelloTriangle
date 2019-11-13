@@ -37,7 +37,7 @@ void main() {
 
 	vec4 color = texture(texSampler, fragTexCoord);
 
-	vec4 ambient = 0.1 * color;
+	vec4 ambient = vec4(0.1 * color.rgb, 1.0);
 
-	outColor = color * (ambient + (1.0 - isInShadow));
+	outColor = vec4(color.rgb * (ambient.rgb + (1.0 - isInShadow)), 1.0);
 }
