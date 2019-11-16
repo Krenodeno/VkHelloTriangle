@@ -21,6 +21,7 @@ public:
 				return window.createSurface(instance, d);
 			}
 		);
+		render.setExtent(vk::Extent2D(width, height));
 	}
 	virtual ~WindowedApp() {}
 

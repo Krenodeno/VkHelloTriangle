@@ -18,6 +18,11 @@ public:
 				}
 			}
 		);
+		window.setResizeCallback(
+			[&](int width, int height) {
+				render.setExtent(vk::Extent2D(width, height));
+			}
+		);
 	}
 
 	~ShadowMapExample() {

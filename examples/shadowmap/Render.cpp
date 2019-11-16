@@ -171,7 +171,7 @@ void Render::drawFrame() {
 		auto result = device->acquireNextImageKHR(swapchain.getSwapchain(), std::numeric_limits<uint64_t>::max(), imageAvailableSemaphores[currentFrame].get(), nullptr, deviceLoader);
 		imageIndex = result.value;
 	} catch (const vk::OutOfDateKHRError& e) {
-		//recreateSwapChain();
+		recreateSwapchain();
 		return;
 	}
 
@@ -237,10 +237,10 @@ void Render::drawFrame() {
 	try {
 		auto result = presentQueue.presentKHR(presentInfo, deviceLoader);
 		if (result == vk::Result::eSuboptimalKHR) {
-			//recreateSwapChain();
+			recreateSwapchain();
 		}
 	} catch (const vk::OutOfDateKHRError& e) {
-		//recreateSwapChain();
+		recreateSwapchain();
 	}
 
 	currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
@@ -447,11 +447,13 @@ void Render::recreateSwapchain()
 	cleanupSwapchain();
 
 	swapchain.recreate(surface.get(), physicalDevice, windowExtent);
-	createSwapchain(swapchain.getSwapchain());
 	createRenderPass();
+	createDescriptorSetLayout();
 	createGraphicsPipeline();
 	createFramebuffers();
 	createUniformBuffers();
+	createDescriptorPool();
+	createDescriptorSets();
 	createCommandBuffers();
 }
 
