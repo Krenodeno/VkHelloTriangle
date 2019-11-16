@@ -12,6 +12,7 @@ RenderWindow::RenderWindow(int width, int height, std::string name) : width(widt
 		throw std::runtime_error("Can't create Window !");
 
 	glfwSetWindowUserPointer(window, this);
+	glfwSetWindowSizeCallback(window, &resizeCallback);
 	glfwSetKeyCallback(window, &keyCallback);
 }
 
@@ -55,8 +56,8 @@ void RenderWindow::setUserPointer(void * ptr) {
 	glfwSetWindowUserPointer(window, ptr);
 }
 
-void RenderWindow::setResizeCallback(GLFWwindowsizefun resizeFunction) {
-	glfwSetWindowSizeCallback(window, resizeFunction);
+void RenderWindow::setResizeCallback(resizeCallbackFunction resizeFunction) {
+	resizeFun = resizeFunction;
 }
 
 void RenderWindow::setKeyCallback(keyCallbackFunction keyFunction) {
@@ -69,6 +70,13 @@ void RenderWindow::setTitle(const std::string& title) {
 
 void RenderWindow::pollEvents() {
 	glfwPollEvents();
+}
+
+void RenderWindow::resizeCallback(GLFWwindow* window, int width, int height)
+{
+	RenderWindow* windowWrapper = static_cast<RenderWindow*>(glfwGetWindowUserPointer(window));
+	assert(windowWrapper);
+	windowWrapper->resizeFun(width, height);
 }
 
 void RenderWindow::keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {

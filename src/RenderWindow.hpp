@@ -202,13 +202,14 @@ public:
 	int getHeight();
 	std::vector<const char*> getRequiredExtensions();
 
+	using resizeCallbackFunction = std::function<void(int width, int height)>;
 	using keyCallbackFunction = std::function<void(Key key, int scancode, int action, KeyModifiersFlags modifiers)>;
 
 	void close();
 	bool isClosed();
 
 	void setUserPointer(void* ptr);
-	void setResizeCallback(GLFWwindowsizefun resizeFunction);
+	void setResizeCallback(resizeCallbackFunction resizeFunction);
 	void setKeyCallback(keyCallbackFunction keyFunction);
 
 	void setTitle(const std::string&);
@@ -217,8 +218,10 @@ public:
 
 private:
 
+	static void resizeCallback(GLFWwindow* window, int width, int height);
 	static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
 
+	resizeCallbackFunction resizeFun;
 	keyCallbackFunction keyFun;
 
 
