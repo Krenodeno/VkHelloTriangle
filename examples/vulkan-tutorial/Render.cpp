@@ -1047,7 +1047,7 @@ void Render::createUniformBuffers() {
 
 void Render::createPipelineUniformBuffers(const RenderPipeline& pipeline) {
 	// uniformBuffers vector is filled like this : u0i0 | u0i1 | u0i2 | u1i0 | u1i1 | u1i2
-	uint uniform = 0u;
+	unsigned int uniform = 0u;
 	for (auto& descriptor : pipeline.descriptors) {
 		for (int i = 0; i < swapchain.getImageCount(); i++) {
 			if (descriptor.type == vk::DescriptorType::eUniformBuffer) {

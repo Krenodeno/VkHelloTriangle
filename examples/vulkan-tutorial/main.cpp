@@ -32,8 +32,8 @@ class Tutorial : public WindowedApp<Render> {
 
 	RenderPipeline pipeline;
 
-	const uint uniformLocation = 0u;
-	const uint textureSamplerLocation = 1u;
+	const unsigned int uniformLocation = 0u;
+	const unsigned int textureSamplerLocation = 1u;
 
 public:
 
