@@ -56,6 +56,8 @@ private:
 
 	void cleanup();
 
+	void cleanupSwapchain();
+
 	VulkanLoader loader;
 
 	std::vector<const char*> layers;
@@ -135,6 +137,8 @@ private:
 	void createSurface();
 
 	void createSwapchain(vk::SwapchainKHR = nullptr);
+
+	void recreateSwapchain();
 
 	void createRenderPass();
 

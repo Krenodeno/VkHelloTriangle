@@ -145,17 +145,22 @@ void Render::init() {
 }
 
 void Render::cleanup() {
-	pipelines[0].cleanup(device.get(), deviceLoader);
-	pipelines[1].cleanup(device.get(), deviceLoader);
+	cleanupSwapchain();
 
 	vertexBuffer.cleanup(device.get(), deviceLoader);
 	indexBuffer.cleanup(device.get(), deviceLoader);
+}
+
+void Render::cleanupSwapchain() {
+	pipelines[0].cleanup(device.get(), deviceLoader);
+	pipelines[1].cleanup(device.get(), deviceLoader);
 
 	for (unsigned int i = 0; i < swapchain.getImageCount(); i++) {
 		sunMVPUniformBuffers[i].cleanup(device.get(), deviceLoader);
 		viewMVPUniformBuffers[i].cleanup(device.get(), deviceLoader);
 		lightUniformBuffers[i].cleanup(device.get(), deviceLoader);
 	}
+
 }
 
 void Render::drawFrame() {
@@ -433,6 +438,21 @@ void Render::createSurface() {
 
 void Render::createSwapchain(vk::SwapchainKHR oldSwapchain) {
 	swapchain.init(surface.get(), physicalDevice, device.get(), windowExtent, oldSwapchain, deviceLoader);
+}
+
+void Render::recreateSwapchain()
+{
+	device->waitIdle(deviceLoader);
+
+	cleanupSwapchain();
+
+	swapchain.recreate(surface.get(), physicalDevice, windowExtent);
+	createSwapchain(swapchain.getSwapchain());
+	createRenderPass();
+	createGraphicsPipeline();
+	createFramebuffers();
+	createUniformBuffers();
+	createCommandBuffers();
 }
 
 /**
