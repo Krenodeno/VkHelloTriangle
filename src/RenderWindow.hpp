@@ -159,6 +159,37 @@ enum class KeyModifierFlagBits {
 
 using KeyModifiersFlags = vk::Flags<KeyModifierFlagBits, int>;
 
+enum class Error {
+eNoError =            GLFW_NO_ERROR,
+eNotInitialized =     GLFW_NOT_INITIALIZED,
+eNoCurrentContext =   GLFW_NO_CURRENT_CONTEXT,
+eInvalidEnum =        GLFW_INVALID_ENUM,
+eInvalidValue =       GLFW_INVALID_VALUE,
+eOutOfMemory =        GLFW_OUT_OF_MEMORY,
+eAPIUnaivalable =     GLFW_API_UNAVAILABLE,
+eVersionUnaivalable = GLFW_VERSION_UNAVAILABLE,
+ePlatformError =      GLFW_PLATFORM_ERROR,
+eFormatUnaivalable =  GLFW_FORMAT_UNAVAILABLE,
+eNoWindowContext =    GLFW_NO_WINDOW_CONTEXT
+};
+
+std::string to_string(Error value) {
+	switch(value) {
+	case Error::eNoError: return "No Error";
+	case Error::eNotInitialized: return "Not Initialized";
+	case Error::eNoCurrentContext: return "No Current Context";
+	case Error::eInvalidEnum: return "Invalid Enum";
+	case Error::eInvalidValue: return "Invalid Value";
+	case Error::eOutOfMemory: return "Out Of Memory";
+	case Error::eAPIUnaivalable: return "API Unaivalable";
+	case Error::eVersionUnaivalable: return "Version Unaivalable";
+	case Error::ePlatformError: return "Platform Error";
+	case Error::eFormatUnaivalable: return "Format Unaivalable";
+	case Error::eNoWindowContext: return "No Window Context";
+	default: return "invalid";
+	}
+}
+
 class RenderWindow {
 public:
 	RenderWindow(int width, int height, std::string name);
