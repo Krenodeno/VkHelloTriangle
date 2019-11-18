@@ -173,7 +173,7 @@ eFormatUnaivalable =  GLFW_FORMAT_UNAVAILABLE,
 eNoWindowContext =    GLFW_NO_WINDOW_CONTEXT
 };
 
-std::string to_string(Error value) {
+inline std::string to_string(Error value) {
 	switch(value) {
 	case Error::eNoError: return "No Error";
 	case Error::eNotInitialized: return "Not Initialized";
