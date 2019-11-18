@@ -43,17 +43,17 @@ QueueFamilyIndices findQueueFamilies(vk::PhysicalDevice device, vk::SurfaceKHR s
 
 	int i = 0;
 	for (const auto& queueFamily : queueFamilyProperties) {
-		if (queueFamily.queueCount > 0 && queueFamily.queueFlags & vk::QueueFlagBits::eGraphics) {
+		if (queueFamily.queueFlags & vk::QueueFlagBits::eGraphics) {
 			indices.graphicsFamily = i;
 		}
 
-		if (queueFamily.queueCount > 0 && queueFamily.queueFlags & vk::QueueFlagBits::eCompute) {
+		if (queueFamily.queueFlags & vk::QueueFlagBits::eCompute) {
 			indices.computeFamily = i;
 		}
 
 		if (surface) {
 			auto presentSupport = device.getSurfaceSupportKHR(i, surface, d);
-			if (queueFamily.queueCount > 0 && presentSupport) {
+			if (presentSupport) {
 				indices.presentFamily = i;
 			}
 		}
