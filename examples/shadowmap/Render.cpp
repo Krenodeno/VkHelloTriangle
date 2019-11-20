@@ -1402,33 +1402,6 @@ void Render::createCommandBuffers() {
 
 		commandBuffers[i]->begin(beginInfo, deviceLoader);
 		{
-			vk::ImageMemoryBarrier barrier;
-			barrier.oldLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-			barrier.newLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
-			barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-			barrier.image = pipelines[0].depth.image;
-			barrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
-			barrier.subresourceRange.baseMipLevel = 0;
-			barrier.subresourceRange.levelCount = 1;
-			barrier.subresourceRange.baseArrayLayer = 0;
-			barrier.subresourceRange.layerCount = 1;
-
-			barrier.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eDepth;
-			if (hasStencilComponent(findDepthFormat(physicalDevice, deviceLoader)))
-				barrier.subresourceRange.aspectMask |= vk::ImageAspectFlagBits::eStencil;
-
-			vk::PipelineStageFlags srcStage;
-			vk::PipelineStageFlags dstStage;
-
-			barrier.dstAccessMask = vk::AccessFlagBits::eDepthStencilAttachmentRead | vk::AccessFlagBits::eDepthStencilAttachmentWrite;
-			barrier.srcAccessMask = vk::AccessFlagBits::eShaderRead;
-
-			dstStage = vk::PipelineStageFlagBits::eEarlyFragmentTests;
-			srcStage = vk::PipelineStageFlagBits::eFragmentShader;
-
-			commandBuffers[i]->pipelineBarrier(srcStage, dstStage, vk::DependencyFlags(), nullptr, nullptr, barrier, deviceLoader);
-
 			// Shadow pass : compute shadowmap
 			vk::RenderPassBeginInfo renderPassInfo;
 			renderPassInfo.renderPass = pipelines[0].renderPass;
@@ -1460,6 +1433,7 @@ void Render::createCommandBuffers() {
 			commandBuffers[i]->endRenderPass(deviceLoader);
 		}
 		{
+			// transition depth image from pipeline 0 to a readonly layout for pipeline 1
 			vk::ImageMemoryBarrier barrier;
 			barrier.oldLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
 			barrier.newLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
@@ -1486,7 +1460,7 @@ void Render::createCommandBuffers() {
 			dstStage = vk::PipelineStageFlagBits::eFragmentShader;
 
 			commandBuffers[i]->pipelineBarrier(srcStage, dstStage, vk::DependencyFlags(), nullptr, nullptr, barrier, deviceLoader);
-			
+
 			// Color pass : draw mesh with shadows
 			vk::RenderPassBeginInfo renderPassInfo;
 			renderPassInfo.renderPass = pipelines[1].renderPass;
