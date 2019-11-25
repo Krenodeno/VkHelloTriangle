@@ -65,10 +65,6 @@ void RenderTarget<Dispatch>::init(vk::SurfaceKHR surface, vk::PhysicalDevice phy
 
 template<typename Dispatch>
 void RenderTarget<Dispatch>::cleanup() {
-	for (auto framebuffer : swapChainFramebuffers) {
-		device.destroyFramebuffer(framebuffer, nullptr, deviceLoader);
-	}
-	swapChainFramebuffers.clear();
 	for (auto imageView : swapChainImageViews) {
 		device.destroyImageView(imageView, nullptr, deviceLoader);
 	}
@@ -79,10 +75,7 @@ void RenderTarget<Dispatch>::cleanup() {
 
 template<typename Dispatch>
 void RenderTarget<Dispatch>::recreate(vk::SurfaceKHR surface, vk::PhysicalDevice physicalDevice, vk::Extent2D windowExtent) {
-	// Destroy framebuffer and imageViews
-	for (auto framebuffer : swapChainFramebuffers) {
-		device.destroyFramebuffer(framebuffer, nullptr, deviceLoader);
-	}
+	// Destroy imageViews
 	for (auto imageView : swapChainImageViews) {
 		device.destroyImageView(imageView, nullptr, deviceLoader);
 	}
@@ -116,11 +109,6 @@ vk::Extent2D RenderTarget<Dispatch>::getExtent() {
 }
 
 template<typename Dispatch>
-vk::Framebuffer RenderTarget<Dispatch>::getFramebuffer(unsigned long i) {
-	return swapChainFramebuffers[i];
-}
-
-template<typename Dispatch>
 unsigned int RenderTarget<Dispatch>::getImageCount() {
 	return imageCount;
 }
@@ -128,31 +116,6 @@ unsigned int RenderTarget<Dispatch>::getImageCount() {
 template<typename Dispatch>
 vk::ImageView RenderTarget<Dispatch>::getImageView(unsigned int index) {
 	return swapChainImageViews[index];
-}
-
-// TODO: framebuffers depends on renderpass attachments, so different renderpasses get different framebuffers
-template<typename Dispatch>
-void RenderTarget<Dispatch>::createFramebuffers(vk::RenderPass renderPass, vk::ImageView depthImageView) {
-	swapChainFramebuffers.resize(imageCount);
-
-	for(size_t i = 0; i < swapChainImageViews.size(); ++i) {
-		std::vector<vk::ImageView> attachments;
-		attachments.push_back(swapChainImageViews[i]);
-		if (depthImageView)
-			attachments.push_back(depthImageView);
-		// (From vulkan-tutorial) Same depth image can be used because only a single subpass is running at the same time due to our semaphores
-		// https://vulkan-tutorial.com/Drawing_a_triangle/Drawing/Framebuffers
-
-		vk::FramebufferCreateInfo framebufferInfo;
-		framebufferInfo.renderPass = renderPass;
-		framebufferInfo.attachmentCount = attachments.size();
-		framebufferInfo.pAttachments = attachments.data();
-		framebufferInfo.width = swapChainExtent.width;
-		framebufferInfo.height = swapChainExtent.height;
-		framebufferInfo.layers = 1;
-
-		swapChainFramebuffers[i] = device.createFramebuffer(framebufferInfo, nullptr, deviceLoader);
-	}
 }
 
 template<typename Dispatch>

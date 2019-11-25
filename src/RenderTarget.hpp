@@ -25,13 +25,9 @@ public:
 	vk::Format getImageFormat();
 	vk::Extent2D getExtent();
 
-	vk::Framebuffer getFramebuffer(unsigned long);
-
 	unsigned int getImageCount();
 
 	vk::ImageView getImageView(unsigned int index);
-
-	void createFramebuffers(vk::RenderPass, vk::ImageView depth = nullptr);
 
 private:
 
@@ -44,7 +40,6 @@ private:
 	vk::Format swapChainImageFormat;
 	vk::Extent2D swapChainExtent;
 	std::vector<vk::ImageView> swapChainImageViews;
-	std::vector<vk::Framebuffer> swapChainFramebuffers;
 
 	void createImageViews();
 
