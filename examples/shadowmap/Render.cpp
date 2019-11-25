@@ -1397,7 +1397,6 @@ void Render::createCommandBuffers() {
 
 	for (size_t i = 0; i < commandBuffers.size(); i++) {
 		vk::CommandBufferBeginInfo beginInfo;
-		beginInfo.flags = vk::CommandBufferUsageFlagBits::eSimultaneousUse;
 		beginInfo.pInheritanceInfo = nullptr;
 
 		commandBuffers[i]->begin(beginInfo, deviceLoader);
