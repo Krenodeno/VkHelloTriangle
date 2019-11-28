@@ -11,16 +11,18 @@ My goal is to have a general comprehension of the API, and to learn commons grap
 ## TODO LIST
 
 * Renderer
-	* UBO allocator
+	* Memory allocator (VMA ?)
 	* Rendering technics:
-		* Shadow maps
+		* Shadow maps:
+			* PCF
+			* Cascaded
 		* PBR materials
 		* Deferred rendering pipeline
 		* Forward+ rendering pipeline
-		* SSR
-		* SSAO
-		* SSSSS
-		* SMAA
+		* SSR (Screen Space Reflections)
+		* SSAO (Screen Space Ambient Occlusion)
+		* SSSSS (Screen Space Sub Surface Scattering)
+		* SMAA (Subpixel Morphological Anti Aliasing)
 
 ## How to build
 ### Dependencies
