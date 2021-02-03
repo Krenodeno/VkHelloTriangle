@@ -6,6 +6,12 @@
 
 #include <vulkan/vulkan.hpp>
 
+#if VK_HEADER_VERSION > 121
+# define VK_VALIDATION_LAYERS_STRING "VK_LAYER_KHRONOS_validation"
+#else
+# define VK_VALIDATION_LAYERS_STRING "VK_LAYER_LUNARG_standard_validation"
+#endif
+
 using std::cout;
 
 void printVulkanVersion() {
@@ -24,8 +30,8 @@ void printExtensionsProperties(std::vector<vk::ExtensionProperties> extensions) 
 	cout << "====================\n";
 	cout << "Instance Extensions\tcount = " << extensions.size() << "\n";
 	for (const auto& extension : extensions) {
-		std::string extName = extension.extensionName;
-		cout << "\t" << extName << std::setw(64 - extName.size()) << ": exension revision " << extension.specVersion << "\n";
+		auto extName = static_cast<std::string>(extension.extensionName);
+		cout << "\t" << extName << std::setw(64 - extName.size()) << ": extension revision " << extension.specVersion << "\n";
 	}
 	cout << "\n\n";
 }
@@ -38,10 +44,10 @@ void printLayersProperties(std::vector<vk::LayerProperties> layers, std::vector<
 		cout << "Vulkan version " << VK_VERSION_MAJOR(layer.specVersion) << "." << VK_VERSION_MINOR(layer.specVersion) << "." << VK_VERSION_PATCH(layer.specVersion);
 		cout << ", layer version " << layer.implementationVersion << "\n";
 
-		auto layerExtensions = vk::enumerateInstanceExtensionProperties(std::string(layer.layerName));
+		auto layerExtensions = vk::enumerateInstanceExtensionProperties(static_cast<std::string>(layer.layerName));
 		cout << "\tLayer Extensions\tcount = " << layerExtensions.size() << "\n";
 		for (auto extension : layerExtensions) {
-			std::string extName = extension.extensionName;
+			auto extName = static_cast<std::string>(extension.extensionName);
 			cout << "\t\t" << extName << std::setw(64 - extName.size()) << ": extension revision " << extension.specVersion << "\n";
 		}
 
@@ -52,15 +58,11 @@ void printLayersProperties(std::vector<vk::LayerProperties> layers, std::vector<
 			auto properties = device.getProperties();
 			cout << "\t\tGPU id\t: " << deviceId++ << " (" << properties.deviceName << ")\n";
 
-			uint32_t extensionCount = 0;
-			vkEnumerateDeviceExtensionProperties(device, layer.layerName, &extensionCount, nullptr);
+			auto extensions = device.enumerateDeviceExtensionProperties(static_cast<std::string>(layer.layerName));
 
-			std::vector<VkExtensionProperties> extensions(extensionCount);
-			vkEnumerateDeviceExtensionProperties(device, layer.layerName, &extensionCount, extensions.data());
-
-			cout << "\t\tLayer-Device Extensions count = " << extensionCount << "\n";
+			cout << "\t\tLayer-Device Extensions count = " << extensions.size() << "\n";
 			for (auto extension : extensions) {
-				std::string extName = extension.extensionName;
+				std::string extName = static_cast<std::string>(extension.extensionName);
 				cout << "\t\t\t" << extName << std::setw(64 - extName.size()) << ": extension revision " << extension.specVersion << "\n";
 			}
 		}
@@ -69,22 +71,40 @@ void printLayersProperties(std::vector<vk::LayerProperties> layers, std::vector<
 	}
 }
 
-std::vector<VkLayerProperties> getDeviceLayers(VkPhysicalDevice physicalDevice) {
-	uint32_t layerCount = 0;
-	vkEnumerateDeviceLayerProperties(physicalDevice, &layerCount, nullptr);
+void printQueueFamilies(vk::PhysicalDevice physicalDevice) {
+	vk::PhysicalDeviceProperties properties = physicalDevice.getProperties();
 
-	std::vector<VkLayerProperties> layers(layerCount);
-	vkEnumerateDeviceLayerProperties(physicalDevice, &layerCount, layers.data());
+	uint32_t queueFamilyPropertiesCount = 0;
+	vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyPropertiesCount, nullptr);
+
+	auto queueFamilyProperties = physicalDevice.getQueueFamilyProperties();
+
+	cout << "\t" << properties.deviceName << "\n";
+	cout << "\tQueue family properties count : " << queueFamilyPropertiesCount << "\n";
+	int cpt2 = 0;
+	for (auto queueFamilyProperty : queueFamilyProperties) {
+		cout << "\t" << cpt2++ << "\tQueue count : " << queueFamilyProperty.queueCount << "\n\t\tQueue flags :";
+		if (queueFamilyProperty.queueFlags & vk::QueueFlagBits::eGraphics)
+			cout << " GRAPHICS ";
+		if (queueFamilyProperty.queueFlags & vk::QueueFlagBits::eCompute)
+			cout << " COMPUTE ";
+		if (queueFamilyProperty.queueFlags & vk::QueueFlagBits::eTransfer)
+			cout << " TRANSFER ";
+		if (queueFamilyProperty.queueFlags & vk::QueueFlagBits::eSparseBinding)
+			cout << " SPARSE ";
+		cout << "\n";
+	}
+}
+
+
+std::vector<vk::LayerProperties> getDeviceLayers(vk::PhysicalDevice physicalDevice) {
+	auto layers = physicalDevice.enumerateDeviceLayerProperties();
 
 	return layers;
 }
 
-std::vector<VkExtensionProperties> getDeviceExtenstions(VkPhysicalDevice physicalDevice, const char* layerName) {
-	uint32_t extensionCount = 0;
-	vkEnumerateDeviceExtensionProperties(physicalDevice, layerName, &extensionCount, nullptr);
-
-	std::vector<VkExtensionProperties> extensions(extensionCount);
-	vkEnumerateDeviceExtensionProperties(physicalDevice, layerName, &extensionCount, extensions.data());
+std::vector<vk::ExtensionProperties> getDeviceExtensions(vk::PhysicalDevice physicalDevice, const std::string layerName) {
+	auto extensions = physicalDevice.enumerateDeviceExtensionProperties(layerName);
 
 	return extensions;
 }
@@ -113,7 +133,7 @@ vk::Instance createInstance(const std::vector<const char*>& layerNames, const st
 }
 
 
-vk::Device createDevice(VkPhysicalDevice& physicalDevice) {
+vk::Device createDevice(vk::PhysicalDevice physicalDevice) {
 
 }
 
@@ -139,8 +159,8 @@ int main(int argc, char* argv[]) {
 		layerNames[i] = layers[i].layerName;
 	}
 
-	// Validation layer from LUNARG
-	std::vector<const char*> validationLayers = { "VK_LAYER_LUNARG_standard_validation" };
+	// Validation layer
+	std::vector<const char*> validationLayers = { VK_VALIDATION_LAYERS_STRING };
 
 	// Create Instance with validation layer and all available extensions
 	auto instance = createInstance(validationLayers, extensionNames);
@@ -151,7 +171,6 @@ int main(int argc, char* argv[]) {
 	// Print Instance Layers properties and associated Device extensions
 	printLayersProperties(layers , physicalDevices);
 
-	int cpt = 0;
 	cout << "\nVulkan enabled physical devices :\n";
 	for (auto physicalDevice : physicalDevices) {
 		VkPhysicalDeviceProperties properties = {};
@@ -160,27 +179,7 @@ int main(int argc, char* argv[]) {
 		VkPhysicalDeviceFeatures features = {};
 		vkGetPhysicalDeviceFeatures(physicalDevice, &features);
 
-		uint32_t queueFamilyPropertiesCount = 0;
-		vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyPropertiesCount, nullptr);
-
-		std::vector<VkQueueFamilyProperties> queueFamilyProperties(queueFamilyPropertiesCount);
-		vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyPropertiesCount, queueFamilyProperties.data());
-
-		cout << cpt << "\t" << properties.deviceName << "\n";
-		cout << "\tQueue family properties count : " << queueFamilyPropertiesCount << "\n";
-		int cpt2 = 0;
-		for (auto queueFamilyProperty : queueFamilyProperties) {
-			cout << "\t" << cpt2++ << "\tQueue count : " << queueFamilyProperty.queueCount << "\n\t\tQueue flags :";
-			if (queueFamilyProperty.queueFlags & VK_QUEUE_GRAPHICS_BIT)
-				cout << " GRAPHICS ";
-			if (queueFamilyProperty.queueFlags & VK_QUEUE_COMPUTE_BIT)
-				cout << " COMPUTE ";
-			if (queueFamilyProperty.queueFlags & VK_QUEUE_TRANSFER_BIT)
-				cout << " TRANSFER ";
-			if (queueFamilyProperty.queueFlags & VK_QUEUE_SPARSE_BINDING_BIT)
-				cout << " SPARSE ";
-			cout << "\n";
-		}
+		printQueueFamilies(physicalDevice);
 	}
 
 	// Take first physical device for device creation

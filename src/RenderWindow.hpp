@@ -157,7 +157,7 @@ enum class KeyModifierFlagBits {
 	eNumLock =  GLFW_MOD_NUM_LOCK
 };
 
-using KeyModifiersFlags = vk::Flags<KeyModifierFlagBits, int>;
+using KeyModifiersFlags = vk::Flags<KeyModifierFlagBits>;
 
 enum class Error {
 eNoError =            GLFW_NO_ERROR,

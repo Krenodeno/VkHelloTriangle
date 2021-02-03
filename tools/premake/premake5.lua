@@ -103,7 +103,7 @@ project "printVulkanInfos"
 	includedirs({ libDir .. "include", sourceDir })
 	files( sampleDir .. "printCapabilities.cpp" )
 
-	links "VkHelloTriangle"
+	linkVulkan()
 
 
 project "vulkan-tutorial"
