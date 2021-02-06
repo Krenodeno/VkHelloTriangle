@@ -8,9 +8,10 @@ RenderWindow::RenderWindow(int width, int height, std::string name) : width(widt
 		throw std::runtime_error("Can't initalize GLFW !");
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 	window = glfwCreateWindow(width, height, name.data(), nullptr, nullptr);
-	if (window == nullptr)
+	if (window == nullptr) {
+		glfwTerminate();
 		throw std::runtime_error("Can't create Window !");
-
+	}
 	glfwSetWindowUserPointer(window, this);
 	glfwSetWindowSizeCallback(window, &resizeCallback);
 	glfwSetKeyCallback(window, &keyCallback);

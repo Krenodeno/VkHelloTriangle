@@ -3,6 +3,15 @@
 #include <iostream>
 #include <stdexcept>
 #include <vector>
+#include <cstring>
+
+#if defined(USE_WINDOWS_OPERATING_SYSTEM)
+# define VK_USE_PLATFORM_WIN32_KHR
+#elif defined(USE_LINUX_OPERATING_SYSTEM)
+# define VK_USE_PLATFORM_WAYLAND_KHR
+# define VK_USE_PLATFORM_XCB_KHR
+# define VK_USE_PLATFORM_XLIB_KHR
+#endif
 
 #include <vulkan/vulkan.hpp>
 
@@ -96,6 +105,51 @@ void printQueueFamilies(vk::PhysicalDevice physicalDevice) {
 	}
 }
 
+void printWaylandSurfaceCapabilities(vk::Instance instance, vk::PhysicalDevice physicalDevice) {
+	// Connect to wayland Display
+	wl_display* display = wl_display_connect(NULL);
+
+	if (display == NULL) {
+		return;
+	}
+
+	// Get registry
+	wl_registry* registry = wl_display_get_registry(display);
+
+	wl_registry_listener registry_listener = {
+		[](void* data, wl_registry* registry, uint32_t id, const char* interface, uint32_t version) {
+			std::cout << "Got a registry event for " << interface << " id " << id << "\n";
+			if (strcmp(interface, "wl_compositor") == 0)
+				data = wl_registry_bind(registry, id, &wl_compositor_interface, 1);
+		},
+		[](void* data, wl_registry* registry, uint32_t id) {}
+	};
+	wl_compositor* compositor;
+	wl_registry_add_listener(registry, &registry_listener, compositor);
+
+	wl_display_dispatch(display);
+	wl_display_roundtrip(display);
+
+	auto presentationSupport = physicalDevice.getWaylandPresentationSupportKHR(0, display);
+
+	vk::WaylandSurfaceCreateInfoKHR waylandSurfaceCreateInfo;
+	waylandSurfaceCreateInfo.display = display;
+	//waylandSurfaceCreateInfo.surface = ;
+	//auto waylandSurface = instance.createWaylandSurfaceKHR(waylandSurfaceCreateInfo);
+
+	// Destroy surface
+	//instance.destroySurfaceKHR(waylandSurface);
+
+	// Disconnect wayland display
+	wl_display_disconnect(display);
+}
+
+void printSurfaceCapabilities(vk::Instance instance, vk::PhysicalDevice physicalDevice) {
+	// Linux surfaces
+
+	// Wayland
+	printWaylandSurfaceCapabilities(instance, physicalDevice);
+}
 
 std::vector<vk::LayerProperties> getDeviceLayers(vk::PhysicalDevice physicalDevice) {
 	auto layers = physicalDevice.enumerateDeviceLayerProperties();
@@ -180,6 +234,9 @@ int main(int argc, char* argv[]) {
 		vkGetPhysicalDeviceFeatures(physicalDevice, &features);
 
 		printQueueFamilies(physicalDevice);
+
+		// Surface capabilities
+		printSurfaceCapabilities(instance, physicalDevice);
 	}
 
 	// Take first physical device for device creation

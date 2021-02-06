@@ -1,6 +1,14 @@
 #ifndef VULKAN_LOADER_HPP
 #define VULKAN_LOADER_HPP
 
+#if defined(USE_WINDOWS_OPERATING_SYSTEM)
+#define VK_USE_PLATFORM_WIN32_KHR
+#elif defined(USE_LINUX_OPERATING_SYSTEM)
+#define VK_USE_PLATFORM_WAYLAND_KHR
+#define VK_USE_PLATFORM_XCB_KHR
+#define VK_USE_PLATFORM_XLIB_KHR
+#endif
+
 #define VK_NO_PROTOTYPES
 #define VULKAN_HPP_DEFAULT_DISPATCHER ::vk::DispatchLoaderDynamic()
 #include <vulkan/vulkan.hpp>

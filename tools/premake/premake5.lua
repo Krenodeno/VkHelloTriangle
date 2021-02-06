@@ -104,6 +104,7 @@ project "printVulkanInfos"
 	files( sampleDir .. "printCapabilities.cpp" )
 
 	linkVulkan()
+	links { "wayland-client" }
 
 
 project "vulkan-tutorial"
