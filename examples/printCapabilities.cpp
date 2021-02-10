@@ -119,26 +119,39 @@ void printWaylandSurfaceCapabilities(vk::Instance instance, vk::PhysicalDevice p
 	wl_registry_listener registry_listener = {
 		[](void* data, wl_registry* registry, uint32_t id, const char* interface, uint32_t version) {
 			std::cout << "Got a registry event for " << interface << " id " << id << "\n";
-			if (strcmp(interface, "wl_compositor") == 0)
-				data = wl_registry_bind(registry, id, &wl_compositor_interface, 1);
+			if (strcmp(interface, "wl_compositor") == 0) {
+				*(static_cast<wl_compositor**>(data)) = static_cast<wl_compositor*>(wl_registry_bind(registry, id, &wl_compositor_interface, 1));
+			}
 		},
 		[](void* data, wl_registry* registry, uint32_t id) {}
 	};
-	wl_compositor* compositor;
-	wl_registry_add_listener(registry, &registry_listener, compositor);
+	wl_compositor* compositor = NULL;
+	wl_registry_add_listener(registry, &registry_listener, &compositor);
 
 	wl_display_dispatch(display);
 	wl_display_roundtrip(display);
+
+	if (compositor == NULL) {
+		return;
+	}
+
+	wl_surface* surface = wl_compositor_create_surface(compositor);
+
+	if (surface == NULL) {
+		return;
+	}
 
 	auto presentationSupport = physicalDevice.getWaylandPresentationSupportKHR(0, display);
 
 	vk::WaylandSurfaceCreateInfoKHR waylandSurfaceCreateInfo;
 	waylandSurfaceCreateInfo.display = display;
-	//waylandSurfaceCreateInfo.surface = ;
-	//auto waylandSurface = instance.createWaylandSurfaceKHR(waylandSurfaceCreateInfo);
+	waylandSurfaceCreateInfo.surface = surface;
+	auto waylandSurface = instance.createWaylandSurfaceKHR(waylandSurfaceCreateInfo);
+
+	auto surfaceCapabilities = physicalDevice.getSurfaceCapabilitiesKHR(waylandSurface);
 
 	// Destroy surface
-	//instance.destroySurfaceKHR(waylandSurface);
+	instance.destroySurfaceKHR(waylandSurface);
 
 	// Disconnect wayland display
 	wl_display_disconnect(display);
