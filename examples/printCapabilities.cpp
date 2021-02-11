@@ -252,11 +252,11 @@ int main(int argc, char* argv[]) {
 
 	cout << "\nVulkan enabled physical devices :\n";
 	for (auto physicalDevice : physicalDevices) {
-		VkPhysicalDeviceProperties properties = {};
-		vkGetPhysicalDeviceProperties(physicalDevice, &properties);
+		auto properties = physicalDevice.getProperties();
 
-		VkPhysicalDeviceFeatures features = {};
-		vkGetPhysicalDeviceFeatures(physicalDevice, &features);
+		auto features = physicalDevice.getFeatures();
+
+		auto memoryProperties = physicalDevice.getMemoryProperties();
 
 		printQueueFamilies(physicalDevice);
 
