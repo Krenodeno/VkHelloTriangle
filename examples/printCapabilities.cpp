@@ -24,20 +24,26 @@
 using std::cout;
 
 void printVulkanVersion() {
-	cout << "===========\n";
-	cout << "VULKAN INFO\n";
-	cout << "===========\n";
+	cout << "==========\n";
+	cout << "VULKANINFO\n";
+	cout << "==========\n";
 
 	auto version = vk::enumerateInstanceVersion();
 
-	cout << "\nVulkan API Version: " << VK_VERSION_MAJOR(version) << "." << VK_VERSION_MINOR(version) << "." << VK_VERSION_PATCH(version) << "\n";
+	cout << "\nVulkan Instance Version: " << VK_VERSION_MAJOR(version) << "." << VK_VERSION_MINOR(version) << "." << VK_VERSION_PATCH(version) << "\n";
 	cout << "\n\n";
 }
 
 void printExtensionsProperties(std::vector<vk::ExtensionProperties> extensions) {
-	cout << "Instance Extensions:\n";
-	cout << "====================\n";
-	cout << "Instance Extensions\tcount = " << extensions.size() << "\n";
+	// header
+	std::ostringstream countString;
+	countString << "Instance Extensions: count = " << extensions.size() << "\n";
+	cout << countString.str();
+	const int stringSize = countString.str().size() - 1;
+	for(int i = 0; i < stringSize; i++)
+		cout << "=";
+	cout << "\n";
+
 	for (const auto& extension : extensions) {
 		auto extName = static_cast<std::string>(extension.extensionName);
 		cout << "\t" << extName << std::setw(64 - extName.size()) << ": extension revision " << extension.specVersion << "\n";
@@ -46,12 +52,18 @@ void printExtensionsProperties(std::vector<vk::ExtensionProperties> extensions) 
 }
 
 void printLayersProperties(std::vector<vk::LayerProperties> layers, std::vector<vk::PhysicalDevice> physicalDevices) {
-	cout << "Layers: count = " << layers.size() << "\n";
-	cout << "=======\n";
+	// header
+	std::ostringstream countString;
+	countString << "Layers: count = " << layers.size() << "\n";
+	const int stringSize= countString.str().size() - 1;
+	for (int i = 0; i < stringSize; i++)
+		cout << "=";
+	cout << "\n";
+
 	for (const auto& layer : layers) {
 		cout << layer.layerName << " (" << layer.description << ") ";
 		cout << "Vulkan version " << VK_VERSION_MAJOR(layer.specVersion) << "." << VK_VERSION_MINOR(layer.specVersion) << "." << VK_VERSION_PATCH(layer.specVersion);
-		cout << ", layer version " << layer.implementationVersion << "\n";
+		cout << ", layer version " << layer.implementationVersion << ":\n";
 
 		auto layerExtensions = vk::enumerateInstanceExtensionProperties(static_cast<std::string>(layer.layerName));
 		cout << "\tLayer Extensions\tcount = " << layerExtensions.size() << "\n";
@@ -62,10 +74,10 @@ void printLayersProperties(std::vector<vk::LayerProperties> layers, std::vector<
 
 		// Devices
 		unsigned int deviceId = 0;
-		cout << "\tDevices\tcount = " << physicalDevices.size() << "\n";
+		cout << "\tDevices: count = " << physicalDevices.size() << "\n";
 		for (auto device : physicalDevices) {
 			auto properties = device.getProperties();
-			cout << "\t\tGPU id\t: " << deviceId++ << " (" << properties.deviceName << ")\n";
+			cout << "\t\tGPU id = " << deviceId++ << " (" << properties.deviceName << ")\n";
 
 			auto extensions = device.enumerateDeviceExtensionProperties(static_cast<std::string>(layer.layerName));
 
