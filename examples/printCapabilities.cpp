@@ -117,7 +117,43 @@ void printQueueFamilies(vk::PhysicalDevice physicalDevice) {
 	}
 }
 
-void printWaylandSurfaceCapabilities(vk::Instance instance, vk::PhysicalDevice physicalDevice) {
+/*** SURFACE ***/
+
+void printSurfaceCapabilities(vk::PhysicalDevice physicalDevice, vk::SurfaceKHR surface) {
+
+	auto surfaceCapabilities = physicalDevice.getSurfaceCapabilitiesKHR(surface);
+
+	auto surfaceSupport = physicalDevice.getSurfaceSupportKHR(0, surface);
+
+	auto surfaceFormats = physicalDevice.getSurfaceFormatsKHR(surface);
+
+	auto surfacePresentModes = physicalDevice.getSurfacePresentModesKHR(surface);
+
+	cout << "\tFormats: count = " << surfaceFormats.size() << "\n";
+	for (int i = 0; i < surfaceFormats.size(); i++) {
+		cout << "\t\tSurfaceFormat[" << i << "]:\n";
+		cout << "\t\t\tformat = " << vk::to_string(surfaceFormats[i].format) << "\n";
+		cout << "\t\t\tcolorSpace = " << vk::to_string(surfaceFormats[i].colorSpace) << "\n";
+	}
+
+	cout << "\tPresent Modes: count = " << surfacePresentModes.size() << "\n";
+	for (auto mode : surfacePresentModes) {
+		cout << "\t\t" << vk::to_string(mode) << "\n";
+	}
+
+	cout << "\tVkSurfaceCapabilitiesKHR:\n";
+	cout << "\t-----------------------\n";
+
+
+
+	cout << "\n\n";
+}
+
+void printXorgSurface(vk::Instance instance, vk::PhysicalDevice physicalDevice) {
+
+}
+
+void printWaylandSurface(vk::Instance instance, vk::PhysicalDevice physicalDevice) {
 	// Connect to wayland Display
 	wl_display* display = wl_display_connect(NULL);
 
@@ -130,7 +166,7 @@ void printWaylandSurfaceCapabilities(vk::Instance instance, vk::PhysicalDevice p
 
 	wl_registry_listener registry_listener = {
 		[](void* data, wl_registry* registry, uint32_t id, const char* interface, uint32_t version) {
-			std::cout << "Got a registry event for " << interface << " id " << id << "\n";
+			// std::cout << "Got a registry event for " << interface << " id " << id << "\n";
 			if (strcmp(interface, "wl_compositor") == 0) {
 				*(static_cast<wl_compositor**>(data)) = static_cast<wl_compositor*>(wl_registry_bind(registry, id, &wl_compositor_interface, 1));
 			}
@@ -153,6 +189,9 @@ void printWaylandSurfaceCapabilities(vk::Instance instance, vk::PhysicalDevice p
 		return;
 	}
 
+	cout << "\tSurface types: count = 1\n";
+	cout << "\t\tVK_KHR_wayland_surface\n";
+
 	auto presentationSupport = physicalDevice.getWaylandPresentationSupportKHR(0, display);
 
 	vk::WaylandSurfaceCreateInfoKHR waylandSurfaceCreateInfo;
@@ -160,7 +199,7 @@ void printWaylandSurfaceCapabilities(vk::Instance instance, vk::PhysicalDevice p
 	waylandSurfaceCreateInfo.surface = surface;
 	auto waylandSurface = instance.createWaylandSurfaceKHR(waylandSurfaceCreateInfo);
 
-	auto surfaceCapabilities = physicalDevice.getSurfaceCapabilitiesKHR(waylandSurface);
+	printSurfaceCapabilities(physicalDevice, waylandSurface);
 
 	// Destroy surface
 	instance.destroySurfaceKHR(waylandSurface);
@@ -169,11 +208,14 @@ void printWaylandSurfaceCapabilities(vk::Instance instance, vk::PhysicalDevice p
 	wl_display_disconnect(display);
 }
 
-void printSurfaceCapabilities(vk::Instance instance, vk::PhysicalDevice physicalDevice) {
+void printPhysicalDevicePresentableSurface(vk::Instance instance, vk::PhysicalDevice physicalDevice) {
 	// Linux surfaces
-
+#ifdef USE_LINUX_OPERATING_SYSTEM
+	// Xorg
+	printXorgSurface(instance, physicalDevice);
 	// Wayland
-	printWaylandSurfaceCapabilities(instance, physicalDevice);
+	printWaylandSurface(instance, physicalDevice);
+#endif
 }
 
 std::vector<vk::LayerProperties> getDeviceLayers(vk::PhysicalDevice physicalDevice) {
@@ -250,6 +292,15 @@ int main(int argc, char* argv[]) {
 	// Print Instance Layers properties and associated Device extensions
 	printLayersProperties(layers , physicalDevices);
 
+	// Surfaces
+	cout << "Presentable Surfaces:\n";
+	cout << "=====================\n";
+	int deviceId = 0;
+	for (auto physicalDevice : physicalDevices) {
+		cout << "GPU id : " << deviceId++ << "(" << physicalDevice.getProperties().deviceName << "):\n";
+		printPhysicalDevicePresentableSurface(instance, physicalDevice);
+	}
+
 	cout << "\nVulkan enabled physical devices :\n";
 	for (auto physicalDevice : physicalDevices) {
 		auto properties = physicalDevice.getProperties();
@@ -259,9 +310,6 @@ int main(int argc, char* argv[]) {
 		auto memoryProperties = physicalDevice.getMemoryProperties();
 
 		printQueueFamilies(physicalDevice);
-
-		// Surface capabilities
-		printSurfaceCapabilities(instance, physicalDevice);
 	}
 
 	// Take first physical device for device creation
