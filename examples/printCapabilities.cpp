@@ -142,9 +142,35 @@ void printSurfaceCapabilities(vk::PhysicalDevice physicalDevice, vk::SurfaceKHR 
 	}
 
 	cout << "\tVkSurfaceCapabilitiesKHR:\n";
-	cout << "\t-----------------------\n";
+	cout << "\t-------------------------\n";
 
+	cout << "\t\tminImageCount       = " << surfaceCapabilities.minImageCount << "\n";
+	cout << "\t\tmaxImageCount       = " << surfaceCapabilities.maxImageCount << "\n";
 
+	cout << "\t\tcurrentExtent:\n";
+	cout << "\t\t\twidth  = " << surfaceCapabilities.currentExtent.width << "\n";
+	cout << "\t\t\theight = " << surfaceCapabilities.currentExtent.height << "\n";
+
+	cout << "\t\tminImageExtent:\n";
+	cout << "\t\t\twidth  = " << surfaceCapabilities.minImageExtent.width << "\n";
+	cout << "\t\t\theight = " << surfaceCapabilities.minImageExtent.height << "\n";
+
+	cout << "\t\tmaxImageExtent:\n";
+	cout << "\t\t\twidth  = " << surfaceCapabilities.maxImageExtent.width << "\n";
+	cout << "\t\t\theight = " << surfaceCapabilities.maxImageExtent.height << "\n";
+
+	cout << "\t\tmaxImageArrayLayers = " << surfaceCapabilities.maxImageArrayLayers << "\n";
+
+	cout << "\t\tsupportedTransforms: count = \n";
+	cout << "\t\t\t" << vk::to_string(surfaceCapabilities.supportedTransforms) << "\n";
+
+	cout << "\t\tcurrentTransform    = " << vk::to_string(surfaceCapabilities.currentTransform) << "\n";
+
+	cout << "\t\tsupportedCompositeAlpha : count = \n";
+	cout << "\t\t\t" << vk::to_string(surfaceCapabilities.supportedCompositeAlpha) << "\n";
+
+	cout << "\t\tsupportedUsageFlags: count = \n";
+	cout << "\t\t\t" << vk::to_string(surfaceCapabilities.supportedUsageFlags) << "\n";
 
 	cout << "\n\n";
 }
