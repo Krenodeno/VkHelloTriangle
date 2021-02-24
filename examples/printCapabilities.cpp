@@ -176,7 +176,38 @@ void printSurfaceCapabilities(vk::PhysicalDevice physicalDevice, vk::SurfaceKHR 
 }
 
 void printXorgSurface(vk::Instance instance, vk::PhysicalDevice physicalDevice) {
+	// Use XCB to query surface
+	int screenNum;
+	xcb_connection_t* connection = xcb_connect(NULL, &screenNum);
+	if (xcb_connection_has_error(connection) != 0) {
+		return;
+	}
 
+	const xcb_setup_t* setup = xcb_get_setup(connection);
+	xcb_screen_iterator_t iter = xcb_setup_roots_iterator(setup);
+	for (int i = 0; i < screenNum; i++) {
+		xcb_screen_next(&iter);
+	}
+	xcb_screen_t* screen = iter.data;
+	xcb_window_t window = screen->root;
+
+	vk::XcbSurfaceCreateInfoKHR surfaceCreateInfo = {};
+	surfaceCreateInfo.connection = connection;
+	surfaceCreateInfo.window = window;
+
+	auto xcbSurface = instance.createXcbSurfaceKHR(surfaceCreateInfo);
+
+	cout << "\tSurface types: count = 2\n";
+	cout << "\t\tVK_KHR_xcb_surface\n";
+	cout << "\t\tVK_KHR_xlib_surface\n";
+
+	xcb_visualid_t visual_id = screen->root_visual;
+	auto presentationSupport = physicalDevice.getXcbPresentationSupportKHR(0, connection, visual_id);
+	printSurfaceCapabilities(physicalDevice, xcbSurface);
+
+	instance.destroySurfaceKHR(xcbSurface);
+
+	xcb_disconnect(connection);
 }
 
 void printWaylandSurface(vk::Instance instance, vk::PhysicalDevice physicalDevice) {
