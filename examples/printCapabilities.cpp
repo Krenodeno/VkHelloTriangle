@@ -373,7 +373,7 @@ vk::Instance createInstance(const std::vector<const char*>& layerNames, const st
 
 
 vk::Device createDevice(vk::PhysicalDevice physicalDevice) {
-
+	return vk::Device{};
 }
 
 int main(int argc, char* argv[]) {
