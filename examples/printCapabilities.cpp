@@ -1,6 +1,7 @@
 #include <string>
 #include <iomanip>
 #include <iostream>
+#include <sstream>
 #include <stdexcept>
 #include <vector>
 #include <cstring>
