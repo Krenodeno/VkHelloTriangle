@@ -46,7 +46,7 @@ void printExtensionsProperties(std::vector<vk::ExtensionProperties> extensions) 
 	cout << "\n";
 
 	for (const auto& extension : extensions) {
-		auto extName = static_cast<std::string>(extension.extensionName);
+		std::string_view extName = extension.extensionName;
 		cout << "\t" << extName << std::setw(64 - extName.size()) << ": extension revision " << extension.specVersion << "\n";
 	}
 	cout << "\n\n";
@@ -66,10 +66,11 @@ void printLayersProperties(std::vector<vk::LayerProperties> layers, std::vector<
 		cout << "Vulkan version " << VK_VERSION_MAJOR(layer.specVersion) << "." << VK_VERSION_MINOR(layer.specVersion) << "." << VK_VERSION_PATCH(layer.specVersion);
 		cout << ", layer version " << layer.implementationVersion << ":\n";
 
-		auto layerExtensions = vk::enumerateInstanceExtensionProperties(static_cast<std::string>(layer.layerName));
+		std::string layerName = layer.layerName;
+		auto layerExtensions = vk::enumerateInstanceExtensionProperties(layerName);
 		cout << "\tLayer Extensions\tcount = " << layerExtensions.size() << "\n";
 		for (auto extension : layerExtensions) {
-			auto extName = static_cast<std::string>(extension.extensionName);
+			std::string_view extName = extension.extensionName;
 			cout << "\t\t" << extName << std::setw(64 - extName.size()) << ": extension revision " << extension.specVersion << "\n";
 		}
 
@@ -80,11 +81,12 @@ void printLayersProperties(std::vector<vk::LayerProperties> layers, std::vector<
 			auto properties = device.getProperties();
 			cout << "\t\tGPU id = " << deviceId++ << " (" << properties.deviceName << ")\n";
 
-			auto extensions = device.enumerateDeviceExtensionProperties(static_cast<std::string>(layer.layerName));
+			std::string layerName = layer.layerName;
+			auto extensions = device.enumerateDeviceExtensionProperties(layerName);
 
 			cout << "\t\tLayer-Device Extensions count = " << extensions.size() << "\n";
 			for (auto extension : extensions) {
-				std::string extName = static_cast<std::string>(extension.extensionName);
+				std::string_view extName = extension.extensionName;
 				cout << "\t\t\t" << extName << std::setw(64 - extName.size()) << ": extension revision " << extension.specVersion << "\n";
 			}
 		}
