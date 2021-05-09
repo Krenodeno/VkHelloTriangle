@@ -104,7 +104,9 @@ project "printVulkanInfos"
 	files( sampleDir .. "printCapabilities.cpp" )
 
 	linkVulkan()
-	links { "wayland-client", "xcb" }
+
+	filter "system:Linux"
+		links { "wayland-client", "xcb" }
 
 
 project "vulkan-tutorial"
