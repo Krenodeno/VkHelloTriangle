@@ -177,7 +177,7 @@ void printSurfaceCapabilities(vk::PhysicalDevice physicalDevice, vk::SurfaceKHR 
 
 	cout << "\n\n";
 }
-
+#ifdef USE_LINUX_OPERATING_SYSTEM
 void printXorgSurface(vk::Instance instance, vk::PhysicalDevice physicalDevice) {
 	// Use XCB to query surface
 	int screenNum;
@@ -267,7 +267,60 @@ void printWaylandSurface(vk::Instance instance, vk::PhysicalDevice physicalDevic
 	// Disconnect wayland display
 	wl_display_disconnect(display);
 }
+#endif
+#ifdef USE_WINDOWS_OPERATING_SYSTEM
+LRESULT CALLBACK DummyWndProc( HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam ) {
+	switch ( message ) {
+	case WM_CREATE:
+		break;
 
+	default:
+		return DefWindowProcA( hWnd, message, wParam, lParam );
+	}
+
+	return 0;
+}
+
+void printWin32Surface(vk::Instance instance, vk::PhysicalDevice physicalDevice) {
+	const wchar_t className[] = L"Vulkan Sample Class";
+	auto hInstance = GetModuleHandle(nullptr);
+
+	// Register Window Class
+	WNDCLASS wc = {};
+	wc.lpfnWndProc = DummyWndProc;
+	wc.hInstance = hInstance;
+	wc.lpszClassName = className;
+	RegisterClass(&wc);
+
+	// Create Window
+	auto hWnd = CreateWindow(
+		className,
+		L"Vulkan info",
+		WS_OVERLAPPEDWINDOW,
+		CW_USEDEFAULT, CW_USEDEFAULT, 1, 1,
+		NULL,
+		NULL,
+		hInstance,
+		NULL
+	);
+
+	// Create Surface
+	vk::Win32SurfaceCreateInfoKHR win32SurfaceCreateInfo;
+	win32SurfaceCreateInfo.hinstance = hInstance;
+	win32SurfaceCreateInfo.hwnd = hWnd;
+	auto win32Surface = instance.createWin32SurfaceKHR(win32SurfaceCreateInfo);
+
+	// Print surface capabilities
+	if (win32Surface) printSurfaceCapabilities;
+
+	// Destroy surface
+	instance.destroySurfaceKHR(win32Surface);
+
+	// Destroy window
+	DestroyWindow(hWnd);
+	UnregisterClass(className, hInstance);
+}
+#endif
 void printPhysicalDevicePresentableSurface(vk::Instance instance, vk::PhysicalDevice physicalDevice) {
 	// Linux surfaces
 #ifdef USE_LINUX_OPERATING_SYSTEM
@@ -275,6 +328,11 @@ void printPhysicalDevicePresentableSurface(vk::Instance instance, vk::PhysicalDe
 	printXorgSurface(instance, physicalDevice);
 	// Wayland
 	printWaylandSurface(instance, physicalDevice);
+#endif
+	// Windows surface
+#ifdef USE_WINDOWS_OPERATING_SYSTEM
+	// Win32
+	printWin32Surface(instance, physicalDevice);
 #endif
 }
 
