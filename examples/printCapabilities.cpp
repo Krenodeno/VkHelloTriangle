@@ -311,7 +311,7 @@ void printWin32Surface(vk::Instance instance, vk::PhysicalDevice physicalDevice)
 	auto win32Surface = instance.createWin32SurfaceKHR(win32SurfaceCreateInfo);
 
 	// Print surface capabilities
-	if (win32Surface) printSurfaceCapabilities;
+	if (win32Surface) printSurfaceCapabilities(physicalDevice, win32Surface);
 
 	// Destroy surface
 	instance.destroySurfaceKHR(win32Surface);
