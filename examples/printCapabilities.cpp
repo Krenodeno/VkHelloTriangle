@@ -164,15 +164,15 @@ void printSurfaceCapabilities(vk::PhysicalDevice physicalDevice, vk::SurfaceKHR 
 
 	cout << "\t\tmaxImageArrayLayers = " << surfaceCapabilities.maxImageArrayLayers << "\n";
 
-	cout << "\t\tsupportedTransforms: count = \n";
+	cout << "\t\tsupportedTransforms: count = \n"; // TODO
 	cout << "\t\t\t" << vk::to_string(surfaceCapabilities.supportedTransforms) << "\n";
 
 	cout << "\t\tcurrentTransform    = " << vk::to_string(surfaceCapabilities.currentTransform) << "\n";
 
-	cout << "\t\tsupportedCompositeAlpha : count = \n";
+	cout << "\t\tsupportedCompositeAlpha : count = \n"; // TODO
 	cout << "\t\t\t" << vk::to_string(surfaceCapabilities.supportedCompositeAlpha) << "\n";
 
-	cout << "\t\tsupportedUsageFlags: count = \n";
+	cout << "\t\tsupportedUsageFlags: count = \n"; // TODO
 	cout << "\t\t\t" << vk::to_string(surfaceCapabilities.supportedUsageFlags) << "\n";
 
 	cout << "\n\n";
@@ -415,7 +415,7 @@ int main(int argc, char* argv[]) {
 	cout << "=====================\n";
 	int deviceId = 0;
 	for (auto physicalDevice : physicalDevices) {
-		cout << "GPU id : " << deviceId++ << "(" << physicalDevice.getProperties().deviceName << "):\n";
+		cout << "GPU id : " << deviceId++ << " (" << physicalDevice.getProperties().deviceName << "):\n";
 		printPhysicalDevicePresentableSurface(instance, physicalDevice);
 	}
 
