@@ -24,6 +24,16 @@
 
 using std::cout;
 
+template<class T>
+int popcount(vk::Flags<T> flag) {
+	unsigned f = flag;
+	int count = 0;
+	for(;f != 0; f &= f -1) {
+		count++;
+	}
+	return count;
+}
+
 void printVulkanVersion() {
 	cout << "==========\n";
 	cout << "VULKANINFO\n";
@@ -164,15 +174,15 @@ void printSurfaceCapabilities(vk::PhysicalDevice physicalDevice, vk::SurfaceKHR 
 
 	cout << "\t\tmaxImageArrayLayers = " << surfaceCapabilities.maxImageArrayLayers << "\n";
 
-	cout << "\t\tsupportedTransforms: count = \n"; // TODO
+	cout << "\t\tsupportedTransforms: count = " << popcount(surfaceCapabilities.supportedTransforms) << "\n";
 	cout << "\t\t\t" << vk::to_string(surfaceCapabilities.supportedTransforms) << "\n";
 
 	cout << "\t\tcurrentTransform    = " << vk::to_string(surfaceCapabilities.currentTransform) << "\n";
 
-	cout << "\t\tsupportedCompositeAlpha : count = \n"; // TODO
+	cout << "\t\tsupportedCompositeAlpha : count = " << popcount(surfaceCapabilities.supportedCompositeAlpha) << "\n";
 	cout << "\t\t\t" << vk::to_string(surfaceCapabilities.supportedCompositeAlpha) << "\n";
 
-	cout << "\t\tsupportedUsageFlags: count = \n"; // TODO
+	cout << "\t\tsupportedUsageFlags: count = " << popcount(surfaceCapabilities.supportedUsageFlags) << "\n";
 	cout << "\t\t\t" << vk::to_string(surfaceCapabilities.supportedUsageFlags) << "\n";
 
 	cout << "\n\n";
