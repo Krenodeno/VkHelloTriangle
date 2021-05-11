@@ -47,7 +47,6 @@ workspace "VkHelloTriangle"
 	filter "system:Windows"
 		defines {
 			"USE_WINDOWS_OPERATING_SYSTEM",
-			"VK_USE_PLATFORM_WIN32_KHR",
 			"NOMINMAX"
 		}
 		libdirs({ libDir .. "lib/*" })
@@ -56,9 +55,6 @@ workspace "VkHelloTriangle"
 	filter "system:Linux"
 		defines {
 			"USE_LINUX_OPERATING_SYSTEM",
-			"VK_USE_PLATFORM_WAYLAND_KHR",
-			"VK_USE_PLATFORM_XCB_KHR",
-			"VK_USE_PLATFORM_XLIB_KHR"
 		}
 		links { "dl" }
 
